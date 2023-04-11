@@ -1,8 +1,7 @@
 import tensorflow as tf
-from tensorflow import keras
-
 from keras_cv import bounding_box
 from keras_cv.layers import VectorizedBaseImageAugmentationLayer
+from tensorflow import keras
 
 H_AXIS = -3
 W_AXIS = -2
@@ -30,12 +29,8 @@ class Pad(VectorizedBaseImageAugmentationLayer):
         seed: Integer. Used to create a random seed.
     """
 
-    def __init__(
-        self, seed=None, bounding_box_format=None, **kwargs
-    ):
-        super().__init__(
-            seed=seed, **kwargs
-        )
+    def __init__(self, seed=None, bounding_box_format=None, **kwargs):
+        super().__init__(seed=seed, **kwargs)
         self.seed = seed
         self.bounding_box_format = bounding_box_format
 
