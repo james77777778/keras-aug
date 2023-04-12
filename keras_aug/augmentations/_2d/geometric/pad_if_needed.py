@@ -8,8 +8,8 @@ from keras_aug.utils import augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
-    """Pad the images with zeros to ensure that all images within the same
-    batch are of the same size.
+    """Pad the images with constant value to ensure that all images within the
+    same batch are of the same size.
 
     This layer can be configured by specifying the fixed sizes or the divisors.
 
@@ -29,6 +29,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
             by this value.
         position: A string specifying the padding method, defaults
             to "center".
+        value: padding value, defaults to 0.
         bounding_box_format: The format of bounding boxes of input dataset.
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
@@ -43,6 +44,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         pad_height_divisor=None,
         pad_width_divisor=None,
         position="center",
+        value=0,
         bounding_box_format=None,
         seed=None,
         **kwargs,
@@ -62,6 +64,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         self.pad_height_divisor = pad_height_divisor
         self.pad_width_divisor = pad_width_divisor
         self.position = augmentation_utils.get_padding_position(position)
+        self.value = value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
@@ -150,7 +153,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
                 tf.zeros(shape=(2,), dtype=pad_top.dtype),
             )
         )
-        images = tf.pad(images, paddings=paddings)
+        images = tf.pad(images, paddings=paddings, constant_values=self.value)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -259,6 +262,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
             "pad_height_divisor": self.pad_height_divisor,
             "pad_width_divisor": self.pad_width_divisor,
             "position": self.position,
+            "value": self.value,
             "bounding_box_format": self.bounding_box_format,
             "seed": self.seed,
         }

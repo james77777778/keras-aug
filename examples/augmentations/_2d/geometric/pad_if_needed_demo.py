@@ -10,6 +10,7 @@ def main():
         min_height=512,
         min_width=512,
         position="random",
+        value=114,
         bounding_box_format="xyxy",
     )
     result = dataset.map(layer, num_parallel_calls=tf.data.AUTOTUNE)
