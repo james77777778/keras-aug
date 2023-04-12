@@ -13,5 +13,4 @@ __pycache__/
 
 #VS Code files and container
 .vscode/
-.devcontainer/
 .coverage

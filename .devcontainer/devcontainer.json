@@ -1,0 +1,49 @@
+{
+    "name": "KerasAug",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "VERSION": "2.12.0"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.linting.enabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.linting.pylintEnabled": false,
+                "python.testing.pytestEnabled": true,
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": true
+                },
+                "[python]": {
+                    "editor.defaultFormatter": "ms-python.black-formatter"
+                },
+                "editor.rulers": [
+                    80
+                ]
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.isort",
+                "ms-python.flake8",
+                "ms-python.black-formatter",
+                "ms-vscode.cpptools",
+                "xaver.clang-format"
+            ]
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    // TODO: Improve to allow dynamic runArgs, see microsoft/vscode-remote-release#3972
+    // Uncomment this if GPU support is required
+    // "runArgs": [
+    //     "--gpus=all"
+    // ],
+    "onCreateCommand": "locale-gen \"en_US.UTF-8\"",
+    // Optional: install pre-commit hooks
+    // "postCreateCommand": "git config core.hooksPath .github/.githooks"
+    "postCreateCommand": "sh /setup.sh"
+}
