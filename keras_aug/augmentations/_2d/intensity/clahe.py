@@ -60,10 +60,9 @@ class CLAHE(KerasAug2DBaseLayer):
             "images": images,
             "clip_limits": transformations,
         }
-        clahed_images = tf.map_fn(
+        clahed_images = tf.vectorized_map(
             self.clahe_single_image,
             inputs_for_clahe_single_image,
-            fn_output_signature=images.dtype,
         )
         return tf.cast(clahed_images, self.compute_dtype)
 
@@ -81,9 +80,24 @@ class CLAHE(KerasAug2DBaseLayer):
     def augment_keypoints(self, keypoints, transformations, **kwargs):
         return keypoints
 
+    def compute_clipped_hists(self, clip_limit, tile_shape, hists):
+        clip_limit_actual = clip_limit * tf.cast(
+            ((tile_shape[0] * tile_shape[1]) / 256), tf.float32
+        )
+        clip_limit_actual = tf.cast(clip_limit_actual, tf.int32)
+        clipped_hists = tf.clip_by_value(
+            hists, clip_value_min=0, clip_value_max=clip_limit_actual
+        )
+        clipped_px_count = tf.math.reduce_sum(hists - clipped_hists, axis=0)
+        clipped_hists = tf.cast(clipped_hists, tf.float32)
+        clipped_px_count = tf.cast(clipped_px_count, tf.float32)
+        clipped_hists = clipped_hists + tf.math.truediv(clipped_px_count, 256)
+        return clipped_hists
+
     def clahe_single_image(self, inputs):
         """Hardly borrow from:
         https://github.com/isears/tf_clahe
+        This function is modified to use tf.vectorized_map.
         """
         image = inputs.get("images", None)
         clip_limit = inputs.get("clip_limits", None)
@@ -100,10 +114,16 @@ class CLAHE(KerasAug2DBaseLayer):
         # Reflection-pad image
         pad_y = 0
         pad_x = 0
-        if original_2d_shape[0] % tile_shape[0] != 0:
-            pad_y = tile_shape[0] - (original_2d_shape[0] % tile_shape[0])
-        if original_2d_shape[1] % tile_shape[1] != 0:
-            pad_x = tile_shape[1] - (original_2d_shape[1] % tile_shape[1])
+        pad_y = tf.cond(
+            tf.math.equal(original_2d_shape[0] % tile_shape[0], 0),
+            lambda: 0,
+            lambda: tile_shape[0] - (original_2d_shape[0] % tile_shape[0]),
+        )
+        pad_x = tf.cond(
+            tf.math.equal(original_2d_shape[1] % tile_shape[1], 0),
+            lambda: 0,
+            lambda: tile_shape[1] - (original_2d_shape[1] % tile_shape[1]),
+        )
 
         image_padded = tf.pad(
             image, [[0, pad_y], [0, pad_x], [0, 0]], "REFLECT"
@@ -149,22 +169,11 @@ class CLAHE(KerasAug2DBaseLayer):
                 ),
             )
 
-        if clip_limit > 0:
-            clip_limit_actual = clip_limit * tf.cast(
-                ((tile_shape[0] * tile_shape[1]) / 256), tf.float32
-            )
-            clip_limit_actual = tf.cast(clip_limit_actual, tf.int32)
-            clipped_hists = tf.clip_by_value(
-                hists, clip_value_min=0, clip_value_max=clip_limit_actual
-            )
-            clipped_px_count = tf.math.reduce_sum(hists - clipped_hists, axis=0)
-            clipped_hists = tf.cast(clipped_hists, tf.float32)
-            clipped_px_count = tf.cast(clipped_px_count, tf.float32)
-            clipped_hists = clipped_hists + tf.math.truediv(
-                clipped_px_count, 256
-            )
-        else:
-            clipped_hists = tf.cast(hists, tf.float32)
+        clipped_hists = tf.cond(
+            tf.math.greater(clip_limit, 0),
+            lambda: self.compute_clipped_hists(clip_limit, tile_shape, hists),
+            lambda: tf.cast(hists, tf.float32),
+        )
 
         cdf = tf.math.cumsum(clipped_hists, axis=0)
         cdf_min = tf.math.reduce_min(cdf, axis=0)
