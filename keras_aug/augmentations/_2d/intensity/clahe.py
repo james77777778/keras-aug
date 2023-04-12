@@ -1,14 +1,12 @@
 import tensorflow as tf
+from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from tensorflow import keras
 
-from keras_aug.augmentations._2d.keras_aug_2d_base_layer import (
-    KerasAug2DBaseLayer,
-)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class CLAHE(KerasAug2DBaseLayer):
+class CLAHE(VectorizedBaseImageAugmentationLayer):
     """Apply Contrast Limited Adaptive Histogram Equalization to the input
     image.
 

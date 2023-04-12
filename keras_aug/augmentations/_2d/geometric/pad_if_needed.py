@@ -1,10 +1,8 @@
 import tensorflow as tf
 from keras_cv import bounding_box
+from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from tensorflow import keras
 
-from keras_aug.augmentations._2d.keras_aug_2d_base_layer import (
-    KerasAug2DBaseLayer,
-)
 from keras_aug.utils import augmentation_utils
 
 H_AXIS = -3
@@ -12,7 +10,7 @@ W_AXIS = -2
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class PadIfNeeded(KerasAug2DBaseLayer):
+class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
     """Pad the images with zeros to ensure that all images within the same
     batch are of the same size.
 
@@ -131,14 +129,6 @@ class PadIfNeeded(KerasAug2DBaseLayer):
             "pad_lefts": w_lefts,
             "pad_rights": w_rights,
         }
-
-    def compute_ragged_image_signature(self, images, transformations):
-        ragged_spec = tf.RaggedTensorSpec(
-            shape=(None, None, images.shape[-1]),
-            ragged_rank=1,
-            dtype=self.compute_dtype,
-        )
-        return ragged_spec
 
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)

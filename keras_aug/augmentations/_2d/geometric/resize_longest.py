@@ -2,12 +2,10 @@ import collections.abc
 
 import tensorflow as tf
 from keras_cv import bounding_box
+from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
-from keras_aug.augmentations._2d.keras_aug_2d_base_layer import (
-    KerasAug2DBaseLayer,
-)
 from keras_aug.utils import augmentation_utils
 
 H_AXIS = -3
@@ -15,7 +13,7 @@ W_AXIS = -2
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ResizeLongest(KerasAug2DBaseLayer):
+class ResizeLongest(VectorizedBaseImageAugmentationLayer):
     """Resize images so that maximum side is equal to max_size, keeping the
     aspect ratio of the initial images.
 
