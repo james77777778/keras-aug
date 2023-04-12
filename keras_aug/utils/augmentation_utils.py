@@ -2,9 +2,33 @@ import enum
 from typing import Sequence
 
 import tensorflow as tf
-
-H_AXIS = -3
-W_AXIS = -2
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    BATCHED,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    BOUNDING_BOXES,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    H_AXIS,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    IMAGES,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    KEYPOINTS,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    LABELS,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    SEGMENTATION_MASKS,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    TARGETS,
+)
+from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
+    W_AXIS,
+)
 
 
 class PaddingPosition(enum.Enum):

@@ -5,9 +5,6 @@ from tensorflow import keras
 
 from keras_aug.utils import augmentation_utils
 
-H_AXIS = -3
-W_AXIS = -2
-
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
