@@ -1,6 +1,6 @@
-from keras_aug.augmentations._2d.geometric.pad_if_needed import PadIfNeeded
-from keras_aug.augmentations._2d.geometric.random_affine import RandomAffine
-from keras_aug.augmentations._2d.geometric.resize_by_longest_side import (
+from keras_aug.augmentations._2d.geometry.pad_if_needed import PadIfNeeded
+from keras_aug.augmentations._2d.geometry.random_affine import RandomAffine
+from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
     ResizeByLongestSide,
 )
 from keras_aug.augmentations._2d.intensity.clahe import CLAHE
