@@ -10,15 +10,15 @@ from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ResizeLongest(VectorizedBaseImageAugmentationLayer):
-    """Resize images so that maximum side is equal to max_size, keeping the
+class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
+    """Resize images so that longest side is equal to max_size, keeping the
     aspect ratio of the initial images.
 
     This layer produces outputs of the same max_size within a batch but varying
     max_size across different batches.
 
     Args:
-        max_size: A list of int, tuple of int or a int. Represents maximum size
+        max_size: A list of int, tuple of int or a int. Represents longest size
             of the image after the transformation. When using a list, max size
             will be randomly selected from the values in the list.
         interpolation: A string specifying the sampling method for

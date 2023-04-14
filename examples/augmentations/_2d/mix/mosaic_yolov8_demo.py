@@ -4,12 +4,12 @@ import tensorflow as tf
 
 from examples import demo_utils
 from keras_aug.augmentations import MosaicYOLOV8
-from keras_aug.augmentations import ResizeLongest
+from keras_aug.augmentations import ResizeByLongestSide
 
 
 def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
-    resize = ResizeLongest(max_size=320, bounding_box_format="xyxy")
+    resize = ResizeByLongestSide(max_size=320, bounding_box_format="xyxy")
     mosaic = MosaicYOLOV8(
         height=640,
         width=640,

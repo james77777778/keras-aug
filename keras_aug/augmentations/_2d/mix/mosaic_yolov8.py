@@ -4,7 +4,6 @@ from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
-from keras_aug.augmentations import ResizeLongest
 from keras_aug.utils import augmentation_utils
 from keras_aug.utils.augmentation_utils import BATCHED
 from keras_aug.utils.augmentation_utils import BOUNDING_BOXES
@@ -74,11 +73,6 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
-        self.resize_longest = ResizeLongest(
-            max_size=single_image_max_size,
-            bounding_box_format=bounding_box_format,
-            seed=seed,
-        )
         self.center_sampler = preprocessing_utils.parse_factor(
             offset, param_name="offset", seed=seed
         )
