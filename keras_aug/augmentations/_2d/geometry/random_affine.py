@@ -7,8 +7,6 @@ from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.utils import augmentation_utils
-from keras_aug.utils.augmentation_utils import H_AXIS
-from keras_aug.utils.augmentation_utils import W_AXIS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -24,7 +22,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         `(..., height, width, channels)`, in `"channels_last"` format
 
     Args:
-        TODO: docstring
         rotation_factor: a float represented as fraction of 2 Pi, or a tuple of
             size 2 representing lower and upper bound for rotating clockwise and
             counter-clockwise. A positive values means rotating counter
@@ -67,17 +64,27 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
             for both the upper and lower bound. For instance,
             `width_factor=(0.2, 0.3)` result in an output zooming out between
             20% to 30%. `width_factor=(-0.3, -0.2)` result in an output zooming
-            in between 20% to 30%. Defaults to `None`, i.e., zooming vertical
-            and horizontal directions by preserving the aspect ratio. If
-            height_factor=0 and width_factor=None, it would result in images
-            with no zoom at all.
-        shear_height_factor:.
-        shear_width_factor:.
-        interpolation: Interpolation mode. Supported values: `"nearest"`,
-            `"bilinear"`.
+            in between 20% to 30%.
+        shear_height_factor: a float represented as fraction of value, or a tuple
+            of size 2 representing lower and upper bound for shearing
+            vertically. When represented as a single float, this value is used
+            for both the upper and lower bound. For instance,
+            `width_factor=(0.2, 0.3)` result in an output shearing between
+            20% to 30%. `width_factor=(-0.3, -0.2)` result in an output shearing
+            between 20% to 30%.
+        shear_width_factor: a float represented as fraction of value, or a tuple
+            of size 2 representing lower and upper bound for shearing
+            horizontally. When represented as a single float, this value is used
+            for both the upper and lower bound. For instance,
+            `width_factor=(0.2, 0.3)` result in an output zooming out between
+            20% to 30%. `width_factor=(-0.3, -0.2)` result in an output shearing
+            between 20% to 30%.
+        interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
+            values: `"nearest"`, `"bilinear"`.
         fill_mode: Points outside the boundaries of the input are filled
             according to the given mode
-            (one of `{"constant", "reflect", "wrap", "nearest"}`).
+            (one of `{"constant", "reflect", "wrap", "nearest"}`), defaults to
+            `"constant"`.
             - *reflect*: `(d c b a | a b c d | d c b a)` The input is extended
             by reflecting about the edge of the last pixel.
             - *constant*: `(k k k k | a b c d | k k k k)` The input is extended
@@ -158,6 +165,13 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         else:
             lower = 1.0 - zoom_height_factor
             upper = 1.0 + zoom_height_factor
+        # TODO: should support zoom with bounding_boxes augmentation
+        if (lower != 1 or upper != 1) and bounding_box_format is not None:
+            raise NotImplementedError(
+                "RandomAffine does not currently support bounding boxes"
+                "augmentation with zoom factors. As a temporary solution, you "
+                "can set `zoom_height_factor=0` and `zoom_width_factor=0`"
+            )
         self.zoom_height_factor_input = zoom_height_factor
         self.zoom_height_factor = preprocessing_utils.parse_factor(
             (lower, upper), min_value=0, max_value=None
@@ -168,6 +182,13 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         else:
             lower = 1.0 - zoom_width_factor
             upper = 1.0 + zoom_width_factor
+        # TODO: should support zoom with bounding_boxes augmentation
+        if (lower != 1 or upper != 1) and bounding_box_format is not None:
+            raise NotImplementedError(
+                "RandomAffine does not currently support bounding boxes"
+                "augmentation with zoom factors. As a temporary solution, you "
+                "can set `zoom_height_factor=0` and `zoom_width_factor=0`"
+            )
         self.zoom_width_factor_input = zoom_width_factor
         self.zoom_width_factor = preprocessing_utils.parse_factor(
             (lower, upper), min_value=0, max_value=None
@@ -207,6 +228,10 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        heights, widths = augmentation_utils.get_images_shape(
+            images, dtype=tf.float32
+        )
+
         angles = self.rotation_factor(shape=(batch_size, 1))
         translation_heights = self.translation_height_factor(
             shape=(batch_size, 1)
@@ -223,11 +248,34 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         shear_heights = self.shear_height_factor(shape=(batch_size, 1))
         shear_widths = self.shear_width_factor(shape=(batch_size, 1))
         shears = tf.concat([shear_widths, shear_heights], axis=1)
+
+        # combine matrix
+        rotation_matrixes = augmentation_utils.get_rotation_matrix(
+            angles, heights, widths, to_square=True
+        )
+        translation_matrixes = augmentation_utils.get_translation_matrix(
+            translations, heights, widths, to_square=True
+        )
+        zoom_matrixes = augmentation_utils.get_zoom_matrix(
+            zooms, heights, widths, to_square=True
+        )
+        shear_matrixes = augmentation_utils.get_shear_matrix(
+            shears, to_square=True
+        )
+        # (batch_size, 3, 3)
+        combined_matrixes = (
+            translation_matrixes
+            @ shear_matrixes
+            @ zoom_matrixes
+            @ rotation_matrixes
+        )
+
         return {
             "angles": angles,
             "translations": translations,
             "zooms": zooms,
             "shears": shears,
+            "combined_matrixes": combined_matrixes,
         }
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -241,41 +289,20 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        original_shape = images.shape
         batch_size = tf.shape(images)[0]
-        height = tf.cast(tf.shape(images)[H_AXIS], dtype=tf.float32)
-        width = tf.cast(tf.shape(images)[W_AXIS], dtype=tf.float32)
-        angles = transformations["angles"]
-        translations = transformations["translations"]
-        zooms = transformations["zooms"]
-        shears = transformations["shears"]
-
-        rotation_matrix = augmentation_utils.get_rotation_matrix(
-            angles, height, width, to_square=True
+        combined_matrixes = transformations["combined_matrixes"]
+        combined_matrixes = tf.reshape(
+            combined_matrixes, shape=(batch_size, -1)
         )
-        translation_matrix = augmentation_utils.get_translation_matrix(
-            translations, height, width, to_square=True
-        )
-        zoom_matrix = augmentation_utils.get_zoom_matrix(
-            zooms, height, width, to_square=True
-        )
-        shear_matrix = augmentation_utils.get_shear_matrix(
-            shears, to_square=True
-        )
-        combined_matrix = (
-            translation_matrix @ shear_matrix @ zoom_matrix @ rotation_matrix
-        )
-        combined_matrix = tf.reshape(combined_matrix, shape=(batch_size, -1))
-        combined_matrix = combined_matrix[:, :-1]
+        combined_matrixes = combined_matrixes[:, :-1]
 
         images = preprocessing_utils.transform(
             images,
-            combined_matrix,
+            combined_matrixes,
             fill_mode=self.fill_mode,
             fill_value=self.fill_value,
             interpolation=self.interpolation,
         )
-        images.set_shape(original_shape)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -291,14 +318,85 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
                 "Please specify a bounding box format in the constructor. i.e."
                 "`RandomAffine(bounding_box_format='xyxy')`"
             )
+        heights, widths = augmentation_utils.get_images_shape(
+            raw_images, dtype=self.compute_dtype
+        )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
+            dtype=tf.float32,
         )
 
+        # process rotations
+        origin_x = widths / 2
+        origin_y = heights / 2
+        angles = -transformations["angles"]
+        angles = angles[:, tf.newaxis, tf.newaxis]
+        boxes = bounding_boxes["boxes"]
+        # points: (batch_size, max_num_boxes, 4, 2)
+        points = tf.stack(
+            [
+                tf.stack([boxes[:, :, 0], boxes[:, :, 1]], axis=2),
+                tf.stack([boxes[:, :, 2], boxes[:, :, 1]], axis=2),
+                tf.stack([boxes[:, :, 2], boxes[:, :, 3]], axis=2),
+                tf.stack([boxes[:, :, 0], boxes[:, :, 3]], axis=2),
+            ],
+            axis=2,
+        )
+        point_x_offsets = points[..., 0] - origin_x[..., tf.newaxis]
+        point_y_offsets = points[..., 1] - origin_y[..., tf.newaxis]
+        new_x = (
+            origin_x[..., tf.newaxis, tf.newaxis]
+            + tf.multiply(tf.cos(angles), point_x_offsets[..., tf.newaxis])
+            - tf.multiply(tf.sin(angles), point_y_offsets[..., tf.newaxis])
+        )
+        new_y = (
+            origin_y[..., tf.newaxis, tf.newaxis]
+            + tf.multiply(tf.sin(angles), point_x_offsets[..., tf.newaxis])
+            + tf.multiply(tf.cos(angles), point_y_offsets[..., tf.newaxis])
+        )
+        out = tf.concat([new_x, new_y], axis=3)
+        min_cordinates = tf.math.reduce_min(out, axis=2)
+        max_cordinates = tf.math.reduce_max(out, axis=2)
+        boxes = tf.concat([min_cordinates, max_cordinates], axis=2)
+
+        # process translations
+        translations = transformations["translations"]
+        translation_widths = translations[:, 0:1] * widths
+        translation_heights = translations[:, 1:2] * heights
+        _x1s = boxes[:, :, 0] + translation_widths
+        _y1s = boxes[:, :, 1] + translation_heights
+        _x2s = boxes[:, :, 2] + translation_widths
+        _y2s = boxes[:, :, 3] + translation_heights
+
+        # process shear
+        shears = transformations["shears"]
+        shear_widths = shears[:, 0:1]
+        shear_heights = shears[:, 1:2]
+        # x1, x2
+        x1_tops = _x1s - (shear_widths * _y1s)
+        x1_bottoms = _x1s - (shear_widths * _y2s)
+        x1s = tf.where(shear_widths < 0, x1_tops, x1_bottoms)
+        x2_tops = _x2s - (shear_widths * _y1s)
+        x2_bottoms = _x2s - (shear_widths * _y2s)
+        x2s = tf.where(shear_widths < 0, x2_bottoms, x2_tops)
+        # y1, y2
+        y1_lefts = _y1s - (shear_heights * _x1s)
+        y1_rights = _y1s - (shear_heights * _x2s)
+        y1s = tf.where(shear_heights > 0, y1_rights, y1_lefts)
+        y2_lefts = _y2s - (shear_heights * _x1s)
+        y2_rights = _y2s - (shear_heights * _x2s)
+        y2s = tf.where(shear_heights > 0, y2_lefts, y2_rights)
+
+        # process zoom
+        # TODO
+
+        boxes = tf.stack([x1s, y1s, x2s, y2s], axis=-1)
+        bounding_boxes = bounding_boxes.copy()
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
@@ -313,6 +411,25 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
             images=raw_images,
         )
         return bounding_boxes
+
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, raw_images=None, **kwargs
+    ):
+        batch_size = tf.shape(raw_images)[0]
+        combined_matrixes = transformations["combined_matrixes"]
+        combined_matrixes = tf.reshape(
+            combined_matrixes, shape=(batch_size, -1)
+        )
+        combined_matrixes = combined_matrixes[:, :-1]
+
+        segmentation_masks = preprocessing_utils.transform(
+            segmentation_masks,
+            combined_matrixes,
+            fill_mode=self.fill_mode,
+            fill_value=0,
+            interpolation="nearest",
+        )
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()
