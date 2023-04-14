@@ -67,9 +67,9 @@ class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
-        heights, widths = augmentation_utils.get_images_shape(images)
-        heights = tf.cast(heights, dtype=tf.float32)
-        widths = tf.cast(widths, dtype=tf.float32)
+        heights, widths = augmentation_utils.get_images_shape(
+            images, dtype=tf.float32
+        )
 
         # sample 1 max_size for the batch
         indices = self._random_generator.random_uniform(

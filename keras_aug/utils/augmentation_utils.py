@@ -29,6 +29,7 @@ from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer impo
 from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
     W_AXIS,
 )
+from tensorflow.keras import backend
 
 
 class PaddingPosition(enum.Enum):
@@ -50,7 +51,7 @@ PADDING_POSITION = {
 }
 
 
-def get_images_shape(images):
+def get_images_shape(images, dtype=tf.int32):
     if isinstance(images, tf.RaggedTensor):
         heights = tf.reshape(images.row_lengths(), (-1, 1))
         widths = tf.reshape(
@@ -62,7 +63,7 @@ def get_images_shape(images):
         heights = tf.reshape(heights, shape=(-1, 1))
         widths = tf.repeat(tf.shape(images)[W_AXIS], repeats=[batch_size])
         widths = tf.reshape(widths, shape=(-1, 1))
-    return tf.cast(heights, dtype=tf.int32), tf.cast(widths, dtype=tf.int32)
+    return tf.cast(heights, dtype=dtype), tf.cast(widths, dtype=dtype)
 
 
 def get_padding_position(position):
@@ -83,35 +84,246 @@ def expand_dict_dims(dicts, axis):
     return new_dicts
 
 
-def to_tuple(param, low=None, bias=None):
-    """Convert input argument to min-max tuple.
+def get_rotation_matrix(
+    angles, image_height, image_width, to_square=False, name=None
+):
+    """Returns projective transform(s) for the given angle(s).
+    Args:
+        angles: A scalar angle to rotate all images by, or
+            (for batches of images) a vector with an angle to rotate each image
+            in the batch. The rank must be statically known
+            (the shape is not `TensorShape(None)`).
+        image_height: Height of the image(s) to be transformed.
+        image_width: Width of the image(s) to be transformed.
+        to_square: Whether to append ones to last dimension and reshape to
+            (batch_size, 3, 3), defaults to False.
+        name: The name of the op.
+    Returns:
+        A tensor of shape (num_images, 8). Projective transforms which can be
+            given to operation `image_projective_transform_v2`. If one row of
+            transforms is [a0, a1, a2, b0, b1, b2, c0, c1], then it maps the
+            *output* point `(x, y)` to a transformed *input* point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`.
+    """
+    with backend.name_scope(name or "rotation_matrix"):
+        x_offset = (
+            (image_width - 1)
+            - (
+                tf.cos(angles) * (image_width - 1)
+                - tf.sin(angles) * (image_height - 1)
+            )
+        ) / 2.0
+        y_offset = (
+            (image_height - 1)
+            - (
+                tf.sin(angles) * (image_width - 1)
+                + tf.cos(angles) * (image_height - 1)
+            )
+        ) / 2.0
+        num_angles = tf.shape(angles)[0]
+        if to_square:
+            matrix = tf.concat(
+                [
+                    tf.cos(angles),
+                    -tf.sin(angles),
+                    x_offset,
+                    tf.sin(angles),
+                    tf.cos(angles),
+                    y_offset,
+                    tf.zeros((num_angles, 2), tf.float32),
+                    tf.ones((num_angles, 1), tf.float32),
+                ],
+                axis=1,
+            )
+            matrix = tf.reshape(matrix, (num_angles, 3, 3))
+        else:
+            matrix = tf.concat(
+                [
+                    tf.cos(angles),
+                    -tf.sin(angles),
+                    x_offset,
+                    tf.sin(angles),
+                    tf.cos(angles),
+                    y_offset,
+                    tf.zeros((num_angles, 2), tf.float32),
+                ],
+                axis=1,
+            )
+        return matrix
+
+
+def get_translation_matrix(
+    translations, image_height, image_width, to_square=False, name=None
+):
+    """Returns projective transform(s) for the given translation(s).
 
     Args:
-        param: Input value.
-            If value is scalar, return value would be
-                (offset - value, offset + value).
-            If value is tuple, return value would be
-                value + offset (broadcasted).
-        low:  Second element of tuple can be passed as optional argument
-        bias: An offset factor added to each element
+        translations: A matrix of 2-element lists representing `[dx, dy]`
+            to translate for each image (for a batch of images).
+        image_height: Height of the image(s) to be transformed.
+        image_width: Width of the image(s) to be transformed.
+        to_square: Whether to append ones to last dimension and reshape to
+            (batch_size, 3, 3), defaults to False.
+        name: The name of the op.
+
+    Returns:
+        A tensor of shape `(num_images, 8)` projective transforms which can be
+        given to `transform`.
     """
-    if low is not None and bias is not None:
-        raise ValueError("Arguments low and bias are mutually exclusive")
-    if param is None:
-        return param
-    if isinstance(param, (int, float)):
-        if low is None:
-            param = -param, +param
+    with backend.name_scope(name or "translation_matrix"):
+        num_translations = tf.shape(translations)[0]
+        # The translation matrix looks like:
+        #     [[1 0 -dx]
+        #      [0 1 -dy]
+        #      [0 0 1]]
+        # where the last entry is implicit.
+        # Translation matrices are always float32.
+        if to_square:
+            matrix = tf.concat(
+                [
+                    tf.ones((num_translations, 1), tf.float32),
+                    tf.zeros((num_translations, 1), tf.float32),
+                    -translations[:, 0, tf.newaxis] * image_width,
+                    tf.zeros((num_translations, 1), tf.float32),
+                    tf.ones((num_translations, 1), tf.float32),
+                    -translations[:, 1, tf.newaxis] * image_height,
+                    tf.zeros((num_translations, 2), tf.float32),
+                    tf.ones((num_translations, 1), tf.float32),
+                ],
+                axis=1,
+            )
+            matrix = tf.reshape(matrix, (num_translations, 3, 3))
         else:
-            param = (low, param) if low < param else (param, low)
-    elif isinstance(param, Sequence):
-        if len(param) != 2:
-            raise ValueError("to_tuple expects 1 or 2 values")
-        param = tuple(param)
-    else:
-        raise ValueError(
-            "Argument param must be either scalar (int, float) or tuple"
-        )
-    if bias is not None:
-        return tuple(bias + x for x in param)
-    return tuple(param)
+            matrix = tf.concat(
+                values=[
+                    tf.ones((num_translations, 1), tf.float32),
+                    tf.zeros((num_translations, 1), tf.float32),
+                    -translations[:, 0, tf.newaxis] * image_width,
+                    tf.zeros((num_translations, 1), tf.float32),
+                    tf.ones((num_translations, 1), tf.float32),
+                    -translations[:, 1, tf.newaxis] * image_height,
+                    tf.zeros((num_translations, 2), tf.float32),
+                ],
+                axis=1,
+            )
+        return matrix
+
+
+def get_zoom_matrix(
+    zooms, image_height, image_width, to_square=False, name=None
+):
+    """Returns projective transform(s) for the given zoom(s).
+
+    Args:
+        zooms: A matrix of 2-element lists representing `[zx, zy]` to zoom for
+            each image (for a batch of images).
+        image_height: Height of the image(s) to be transformed.
+        image_width: Width of the image(s) to be transformed.
+        to_square: Whether to append ones to last dimension and reshape to
+            (batch_size, 3, 3), defaults to False.
+        name: The name of the op.
+
+    Returns:
+        A tensor of shape `(num_images, 8)`. Projective transforms which can be
+            given to operation `image_projective_transform_v2`.
+            If one row of transforms is
+            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the *output* point
+            `(x, y)` to a transformed *input* point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`.
+    """
+    with backend.name_scope(name or "zoom_matrix"):
+        num_zooms = tf.shape(zooms)[0]
+        # The zoom matrix looks like:
+        #     [[zx 0 0]
+        #      [0 zy 0]
+        #      [0 0 1]]
+        # where the last entry is implicit.
+        # Zoom matrices are always float32.
+        x_offset = ((image_width - 1.0) / 2.0) * (1.0 - zooms[:, 0, None])
+        y_offset = ((image_height - 1.0) / 2.0) * (1.0 - zooms[:, 1, None])
+        if to_square:
+            matrix = tf.concat(
+                values=[
+                    zooms[:, 0, None],
+                    tf.zeros((num_zooms, 1), tf.float32),
+                    x_offset,
+                    tf.zeros((num_zooms, 1), tf.float32),
+                    zooms[:, 1, None],
+                    y_offset,
+                    tf.zeros((num_zooms, 2), tf.float32),
+                    tf.ones((num_zooms, 1), tf.float32),
+                ],
+                axis=1,
+            )
+            matrix = tf.reshape(matrix, (num_zooms, 3, 3))
+        else:
+            matrix = tf.concat(
+                values=[
+                    zooms[:, 0, None],
+                    tf.zeros((num_zooms, 1), tf.float32),
+                    x_offset,
+                    tf.zeros((num_zooms, 1), tf.float32),
+                    zooms[:, 1, None],
+                    y_offset,
+                    tf.zeros((num_zooms, 2), tf.float32),
+                ],
+                axis=1,
+            )
+        return matrix
+
+
+def get_shear_matrix(shears, to_square=False, name=None):
+    """Returns projective transform(s) for the given shear(s).
+
+    Args:
+        shears: A matrix of 2-element lists representing `[sx, sy]` to shear for
+            each image (for a batch of images).
+        to_square: Whether to append ones to last dimension and reshape to
+            (batch_size, 3, 3), defaults to False.
+        name: The name of the op.
+
+    Returns:
+        A tensor of shape `(num_images, 8)`. Projective transforms which can be
+            given to operation `image_projective_transform_v2`.
+            If one row of transforms is
+            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the *output* point
+            `(x, y)` to a transformed *input* point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`.
+    """
+    with backend.name_scope(name or "zoom_matrix"):
+        num_shears = tf.shape(shears)[0]
+        # The transform matrix looks like:
+        # (1, x, 0)
+        # (y, 1, 0)
+        # (0, 0, 1)
+        # where the last entry is implicit.
+        if to_square:
+            matrix = tf.concat(
+                values=[
+                    tf.ones((num_shears, 1), tf.float32),
+                    shears[:, 0, tf.newaxis],
+                    tf.zeros((num_shears, 1), tf.float32),
+                    shears[:, 1, tf.newaxis],
+                    tf.ones((num_shears, 1), tf.float32),
+                    tf.zeros((num_shears, 3), tf.float32),
+                    tf.ones((num_shears, 1), tf.float32),
+                ],
+                axis=1,
+            )
+            matrix = tf.reshape(matrix, (num_shears, 3, 3))
+        else:
+            matrix = tf.concat(
+                values=[
+                    tf.ones((num_shears, 1), tf.float32),
+                    shears[:, 0, tf.newaxis],
+                    tf.zeros((num_shears, 1), tf.float32),
+                    shears[:, 1, tf.newaxis],
+                    tf.ones((num_shears, 1), tf.float32),
+                    tf.zeros((num_shears, 3), tf.float32),
+                ],
+                axis=1,
+            )
+        return matrix
