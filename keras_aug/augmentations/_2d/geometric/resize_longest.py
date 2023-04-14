@@ -37,8 +37,8 @@ class ResizeLongest(VectorizedBaseImageAugmentationLayer):
         max_size,
         interpolation="bilinear",
         antialias=False,
-        seed=None,
         bounding_box_format=None,
+        seed=None,
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
@@ -171,6 +171,7 @@ class ResizeLongest(VectorizedBaseImageAugmentationLayer):
                 "max_size": self.max_size,
                 "interpolation": self.interpolation,
                 "antialias": self.antialias,
+                "bounding_box_format": self.bounding_box_format,
                 "seed": self.seed,
             }
         )

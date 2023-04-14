@@ -1,8 +1,7 @@
 import tensorflow as tf
 from keras_cv.layers import VectorizedBaseImageAugmentationLayer
+from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
-
-from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -13,9 +12,9 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
     This layer expects input images with int32 types.
 
     Args:
-        clip_limit: upper threshold value for contrast limiting.
-            If clip_limit is a single float value, the range will be
-            (1, clip_limit), defaults to (1, 4).
+        factor: A tuple of ints or an int represents threshold values
+            for contrast limiting. If factor is a single float value, the range
+            will be (1, clip_limit), defaults to (1, 4).
         tile_grid_size: A tuple of int representing the size of grid for
             histogram equalization, defaults to (8, 8).
         gpu_optimized: A bool specifying whether or not to use functions that
@@ -25,24 +24,29 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
 
     def __init__(
         self,
-        clip_limit=(1, 4),
+        factor=(1, 4),
         tile_grid_size=(8, 8),
         gpu_optimized=True,
         seed=None,
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        self.clip_limit = augmentation_utils.to_tuple(clip_limit, low=1)
+        if isinstance(factor, (tuple, list)):
+            min = factor[0]
+            max = factor[1]
+        else:
+            min = 1
+            max = factor
+        self.factor_input = factor
+        self.factor = preprocessing_utils.parse_factor(
+            (min, max), min_value=1, max_value=None, seed=seed
+        )
         self.tile_grid_size = tuple(tile_grid_size)
         self.gpu_optimized = gpu_optimized
+        self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        clip_limits = self._random_generator.random_uniform(
-            shape=(batch_size, 1),
-            minval=self.clip_limit[0],
-            maxval=self.clip_limit[1],
-            dtype=tf.float32,
-        )
+        clip_limits = self.factor(shape=(batch_size, 1), dtype=tf.float32)
         return clip_limits
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -253,7 +257,14 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"blur_limit": self.blur_limit, "seed": self.seed})
+        config.update(
+            {
+                "factor": self.factor_input,
+                "tile_grid_size": self.tile_grid_size,
+                "gpu_optimized": self.gpu_optimized,
+                "seed": self.seed,
+            }
+        )
         return config
 
     @classmethod

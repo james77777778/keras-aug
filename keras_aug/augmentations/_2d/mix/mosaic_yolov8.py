@@ -449,6 +449,7 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
             "height": self.height,
             "width": self.width,
             "offset": self.offset,
+            "padding_value": self.padding_value,
             "bounding_box_format": self.bounding_box_format,
             "seed": self.seed,
         }

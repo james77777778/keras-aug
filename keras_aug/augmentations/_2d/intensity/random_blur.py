@@ -1,8 +1,7 @@
 import tensorflow as tf
 from keras_cv.layers import VectorizedBaseImageAugmentationLayer
+from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
-
-from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -10,34 +9,41 @@ class RandomBlur(VectorizedBaseImageAugmentationLayer):
     """Blur the images using random-sized kernels.
 
     This layer applies a mean filter with varying kernel sizes to blur the
-    images.
+    images. The sampled kernel sizes are always odd numbers.
 
     Args:
-        blur_limit: A tuple of int or an int represents kernel size range for
-            blurring the input image. Should be in range [3, inf).
+        factor: A tuple of ints or an int represents kernel size range for
+            blurring the input image. If factor is a single value, the range
+            will be (3, factor). The value range of the factor should be in
+            (3, inf).
         seed: Used to create a random seed, defaults to None.
     """
 
     def __init__(
         self,
-        blur_limit,
+        factor,
         seed=None,
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        self.blur_limit = augmentation_utils.to_tuple(blur_limit, low=3)
+        if isinstance(factor, (tuple, list)):
+            factor_range = (factor[1] - factor[0]) // 2 + 1
+            factor_bias = factor[0]
+        else:
+            factor_range = (factor[1] - 3) // 2 + 1
+            factor_bias = 1
+        self.factor_input = factor
+
+        self.factor_bias = factor_bias
+        self.factor = preprocessing_utils.parse_factor(
+            factor_range, min_value=0, max_value=None, seed=seed
+        )
+        self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        bias = self.blur_limit[0]
-        num_blur_limit = (self.blur_limit[1] - self.blur_limit[0]) // 2
-        blur_kernel_sizes = self._random_generator.random_uniform(
-            shape=(batch_size, 1),
-            minval=0,
-            maxval=num_blur_limit + 1,
-            dtype=tf.int32,
-        )
+        blur_kernel_sizes = self.factor(shape=(batch_size, 1), dtype=tf.int32)
         # [0, k] => [0, ..., 2k+1] ensures only odd numbers
-        blur_kernel_sizes = blur_kernel_sizes * 2 + bias
+        blur_kernel_sizes = blur_kernel_sizes * 2 + self.factor_bias
         return blur_kernel_sizes
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -91,7 +97,7 @@ class RandomBlur(VectorizedBaseImageAugmentationLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"blur_limit": self.blur_limit, "seed": self.seed})
+        config.update({"factor": self.factor_input, "seed": self.seed})
         return config
 
     @classmethod

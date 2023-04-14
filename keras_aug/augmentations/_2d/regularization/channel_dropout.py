@@ -1,7 +1,6 @@
 import tensorflow as tf
-from keras_cv.layers.preprocessing.vectorized_base_image_augmentation_layer import (  # noqa: E501
-    VectorizedBaseImageAugmentationLayer,
-)
+from keras_cv.layers import VectorizedBaseImageAugmentationLayer
+from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 
@@ -17,27 +16,29 @@ class ChannelDropout(VectorizedBaseImageAugmentationLayer):
         `(..., height, width, channels)`, in `"channels_last"` format
 
     Args:
-        channel_drop_range: A tuple or list of int represents the range from
+        factor: A tuple or list of int represents the range from
             which we choose the number of channels to drop, defaults to (0, 2).
         fill_value: The pixel value for the dropped channel, defauls to 0.
         seed: Integer. Used to create a random seed.
     """
 
-    def __init__(
-        self, channel_drop_range=[0, 2], fill_value=0, seed=None, **kwargs
-    ):
+    def __init__(self, factor=(0, 2), fill_value=0, seed=None, **kwargs):
         super().__init__(seed=seed, **kwargs)
-        self.channel_drop_range = sorted(channel_drop_range)
+        if isinstance(factor, (tuple, list)):
+            min = factor[0]
+            max = factor[1] + 1
+        else:
+            min = 0
+            max = factor + 1
+        self.factor_input = factor
+        self.factor = preprocessing_utils.parse_factor(
+            (min, max), min_value=0, max_value=None, seed=seed
+        )
         self.fill_value = fill_value
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        channels_to_drop = self._random_generator.random_uniform(
-            (batch_size, 1),
-            minval=self.channel_drop_range[0],
-            maxval=self.channel_drop_range[1] + 1,
-            dtype=tf.int32,
-        )
+        channels_to_drop = self.factor(shape=(batch_size, 1), dtype=tf.int32)
         return channels_to_drop
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -83,7 +84,7 @@ class ChannelDropout(VectorizedBaseImageAugmentationLayer):
 
     def get_config(self):
         config = {
-            "channel_drop_range": self.channel_drop_range,
+            "factor": self.factor_input,
             "fill_value": self.fill_value,
             "seed": self.seed,
         }
