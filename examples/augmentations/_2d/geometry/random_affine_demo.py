@@ -8,16 +8,18 @@ def main():
     dataset = demo_utils.load_voc_dataset(
         bounding_box_format="xyxy", batch_size=9
     )
-    # RandomAffine does not currently support bounding boxes augmentation with
-    # zoom factors.
+
+    # The bounding boxes after rotation augmentation is not optimal,
+    # so you should not augment rotation by large value.
+    # 10 degrees (`10 / 360`) should be fine.
     layer = RandomAffine(
-        rotation_factor=10 / 360,  # 20 degrees
-        translation_height_factor=0.1,  # 20%
-        translation_width_factor=0.1,
-        zoom_height_factor=0.0,
-        zoom_width_factor=0.0,
-        shear_height_factor=0.1,  # 20%
-        shear_width_factor=0.1,
+        rotation_factor=10 / 360,  # 10 degrees
+        translation_height_factor=0.2,  # 20%
+        translation_width_factor=0.2,
+        zoom_height_factor=0.2,  # 20%
+        zoom_width_factor=0.2,
+        shear_height_factor=0.2,  # 20%
+        shear_width_factor=0.2,
         fill_value=114,
         bounding_box_format="xyxy",
     )

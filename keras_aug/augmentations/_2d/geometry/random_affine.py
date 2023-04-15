@@ -165,13 +165,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         else:
             lower = 1.0 - zoom_height_factor
             upper = 1.0 + zoom_height_factor
-        # TODO: should support zoom with bounding_boxes augmentation
-        if (lower != 1 or upper != 1) and bounding_box_format is not None:
-            raise NotImplementedError(
-                "RandomAffine does not currently support bounding boxes"
-                "augmentation with zoom factors. As a temporary solution, you "
-                "can set `zoom_height_factor=0` and `zoom_width_factor=0`"
-            )
         self.zoom_height_factor_input = zoom_height_factor
         self.zoom_height_factor = preprocessing_utils.parse_factor(
             (lower, upper), min_value=0, max_value=None
@@ -182,13 +175,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         else:
             lower = 1.0 - zoom_width_factor
             upper = 1.0 + zoom_width_factor
-        # TODO: should support zoom with bounding_boxes augmentation
-        if (lower != 1 or upper != 1) and bounding_box_format is not None:
-            raise NotImplementedError(
-                "RandomAffine does not currently support bounding boxes"
-                "augmentation with zoom factors. As a temporary solution, you "
-                "can set `zoom_height_factor=0` and `zoom_width_factor=0`"
-            )
         self.zoom_width_factor_input = zoom_width_factor
         self.zoom_width_factor = preprocessing_utils.parse_factor(
             (lower, upper), min_value=0, max_value=None
@@ -392,7 +378,15 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         y2s = tf.where(shear_heights > 0, y2_lefts, y2_rights)
 
         # process zoom
-        # TODO
+        zooms = transformations["zooms"]
+        zoom_widths = zooms[:, 0:1]
+        zoom_heights = zooms[:, 1:2]
+        x_offsets = ((widths - 1.0) / 2.0) * (1.0 - zoom_widths)
+        y_offsets = ((heights - 1.0) / 2.0) * (1.0 - zoom_heights)
+        x1s = (x1s - x_offsets) / zoom_widths
+        x2s = (x2s - x_offsets) / zoom_widths
+        y1s = (y1s - y_offsets) / zoom_heights
+        y2s = (y2s - y_offsets) / zoom_heights
 
         boxes = tf.stack([x1s, y1s, x2s, y2s], axis=-1)
         bounding_boxes = bounding_boxes.copy()
