@@ -120,7 +120,6 @@ class RandomHSV(VectorizedBaseImageAugmentationLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        # TODO
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 1), dtype=self.compute_dtype
         )

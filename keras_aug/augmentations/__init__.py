@@ -4,6 +4,7 @@ from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
     ResizeByLongestSide,
 )
 from keras_aug.augmentations._2d.intensity.clahe import CLAHE
+from keras_aug.augmentations._2d.intensity.normalize import Normalize
 from keras_aug.augmentations._2d.intensity.random_blur import RandomBlur
 from keras_aug.augmentations._2d.intensity.random_gamma import RandomGamma
 from keras_aug.augmentations._2d.intensity.random_hsv import RandomHSV
