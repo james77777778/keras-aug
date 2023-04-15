@@ -6,6 +6,7 @@ from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
 from keras_aug.augmentations._2d.intensity.clahe import CLAHE
 from keras_aug.augmentations._2d.intensity.random_blur import RandomBlur
 from keras_aug.augmentations._2d.intensity.random_gamma import RandomGamma
+from keras_aug.augmentations._2d.intensity.random_hsv import RandomHSV
 from keras_aug.augmentations._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentations._2d.regularization.channel_dropout import (
     ChannelDropout,
