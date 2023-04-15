@@ -6,13 +6,13 @@ from keras_aug.augmentations import RandomHSV
 
 
 class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
-    regular_factors = {
+    regular_args = {
         "value_range": (0, 255),
         "hue_factor": (0.5 - 0.00725, 0.5 + 0.00725),  # 1.5%
         "saturation_factor": (0.5 - 0.35, 0.5 + 0.35),  # 70%
         "value_factor": (0.5 - 0.2, 0.5 + 0.2),  # 40%
     }
-    no_aug_factors = {
+    no_aug_args = {
         "value_range": (0, 255),
         "hue_factor": (0.5, 0.5),
         "saturation_factor": (0.5, 0.5),
@@ -23,7 +23,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        layer = RandomHSV(**self.regular_factors)
+        layer = RandomHSV(**self.regular_args)
         output = layer(image)
 
         self.assertEqual(image.shape, output.shape)
@@ -33,14 +33,14 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        layer = RandomHSV(**self.no_aug_factors)
+        layer = RandomHSV(**self.no_aug_args)
         output = layer(image)
         self.assertAllClose(image, output, atol=1e-5, rtol=1e-5)
 
     def test_adjust_full_opposite_hue(self):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"hue_factor": (1.0, 1.0)})
 
         layer = RandomHSV(**args)
@@ -67,7 +67,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"saturation_factor": (0.0, 0.0)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -85,7 +85,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"saturation_factor": (1.0, 1.0)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -98,7 +98,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"value_factor": (0.0, 0.0)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -112,7 +112,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"hue_factor": (0.5 - factor, 0.5 + factor)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -123,7 +123,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"saturation_factor": (0.5 - factor, 0.5 + factor)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -134,7 +134,7 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        args = self.no_aug_factors.copy()
+        args = self.no_aug_args.copy()
         args.update({"value_factor": (0.5 - factor, 0.5 + factor)})
         layer = RandomHSV(**args)
         output = layer(image)
@@ -145,11 +145,11 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         # Value range (0, 100)
         image = tf.random.uniform(shape=image_shape) * 100.0
 
-        layer = RandomHSV(**self.no_aug_factors)
+        layer = RandomHSV(**self.no_aug_args)
         output = layer(image)
         self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
 
-        layer = RandomHSV(**self.regular_factors)
+        layer = RandomHSV(**self.regular_args)
         output = layer(image)
         self.assertNotAllClose(image, output)
 
@@ -159,17 +159,17 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
             tf.random.uniform(shape=image_shape) * 255.0, dtype=tf.uint8
         )
 
-        layer = RandomHSV(**self.no_aug_factors)
+        layer = RandomHSV(**self.no_aug_args)
         output = layer(image)
         self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
 
-        layer = RandomHSV(**self.regular_factors)
+        layer = RandomHSV(**self.regular_args)
         output = layer(image)
         self.assertNotAllClose(image, output)
 
     def test_config_with_custom_name(self):
         layer = RandomHSV(
-            **self.regular_factors,
+            **self.regular_args,
             name="image_preproc",
         )
         config = layer.get_config()
@@ -177,10 +177,10 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         self.assertEqual(layer_1.name, layer.name)
 
     def test_config(self):
-        layer = RandomHSV(**self.regular_factors)
+        layer = RandomHSV(**self.regular_args)
         config = layer.get_config()
         self.assertEqual(
-            config["value_range"], self.regular_factors["value_range"]
+            config["value_range"], self.regular_args["value_range"]
         )
         self.assertTrue(
             isinstance(config["hue_factor"], core.UniformFactorSampler)
@@ -193,9 +193,9 @@ class RandomHSVTest(tf.test.TestCase, parameterized.TestCase):
         )
         self.assertEqual(
             config["hue_factor"].get_config()["lower"],
-            self.regular_factors["hue_factor"][0],
+            self.regular_args["hue_factor"][0],
         )
         self.assertEqual(
             config["hue_factor"].get_config()["upper"],
-            self.regular_factors["hue_factor"][1],
+            self.regular_args["hue_factor"][1],
         )
