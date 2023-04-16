@@ -100,11 +100,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        segmentation_classes: an optional integer with the number of classes in
-            the input segmentation mask. Required iff augmenting data with
-            sparse (non one-hot) segmentation masks. Include the background
-            class in this count
-            (e.g. for segmenting dog vs background, this should be set to 2).
         seed: Integer. Used to create a random seed.
     """  # noqa: E501
 
@@ -121,7 +116,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         fill_mode="constant",
         fill_value=0,
         bounding_box_format=None,
-        segmentation_classes=None,
         seed=None,
         **kwargs,
     ):
@@ -208,7 +202,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
         self.fill_mode = fill_mode
         self.fill_value = fill_value
         self.bounding_box_format = bounding_box_format
-        self.segmentation_classes = segmentation_classes
         self.seed = seed
 
     def get_random_transformation_batch(
@@ -440,7 +433,6 @@ class RandomAffine(VectorizedBaseImageAugmentationLayer):
                 "fill_value": self.fill_value,
                 "interpolation": self.interpolation,
                 "bounding_box_format": self.bounding_box_format,
-                "segmentation_classes": self.segmentation_classes,
                 "seed": self.seed,
             }
         )

@@ -64,7 +64,9 @@ class RandomGammaTest(tf.test.TestCase):
         image = tf.random.uniform((100, 100, 3))
         batched_images = tf.stack((image, image), axis=0)
         layer = augmentations.RandomGamma(**self.regular_args)
+
         results = layer(batched_images)
+
         self.assertNotAllClose(results[0], results[1])
 
     def test_config_with_custom_name(self):
@@ -72,13 +74,17 @@ class RandomGammaTest(tf.test.TestCase):
             **self.regular_args,
             name="image_preproc",
         )
+
         config = layer.get_config()
         layer_1 = augmentations.RandomGamma.from_config(config)
+
         self.assertEqual(layer_1.name, layer.name)
 
     def test_config(self):
         layer = augmentations.RandomGamma(**self.regular_args)
+
         config = layer.get_config()
+
         self.assertEqual(
             config["value_range"], self.regular_args["value_range"]
         )
@@ -87,6 +93,9 @@ class RandomGammaTest(tf.test.TestCase):
     def test_output_dtypes(self):
         inputs = np.array([[[1], [2]], [[3], [4]]], dtype="float64")
         layer = augmentations.RandomGamma(**self.regular_args)
+
         self.assertAllEqual(layer(inputs).dtype, "float32")
+
         layer = augmentations.RandomGamma(**self.regular_args, dtype="uint8")
+
         self.assertAllEqual(layer(inputs).dtype, "uint8")

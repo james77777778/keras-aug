@@ -10,6 +10,11 @@ class NormalizeTest(tf.test.TestCase):
         "mean": (0.485, 0.456, 0.406),
         "std": (0.229, 0.224, 0.225),
     }
+    no_aug_args = {
+        "value_range": (0, 1),
+        "mean": (0.0, 0.0, 0.0),
+        "std": (1.0, 1.0, 1.0),
+    }
 
     def test_preserves_output_shape(self):
         image_shape = (4, 8, 8, 3)
@@ -20,6 +25,15 @@ class NormalizeTest(tf.test.TestCase):
 
         self.assertEqual(image.shape, output.shape)
         self.assertNotAllClose(image, output)
+
+    def test_no_adjustment(self):
+        image_shape = (4, 8, 8, 3)
+        image = tf.random.uniform(shape=image_shape)
+
+        layer = augmentations.Normalize(**self.no_aug_args)
+        output = layer(image)
+
+        self.assertAllClose(image, output)
 
     def test_normalize_output(self):
         image_shape = (4, 8, 8, 3)
