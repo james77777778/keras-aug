@@ -7,6 +7,9 @@ from keras_aug.augmentations._2d.geometry.resize_and_pad import ResizeAndPad
 from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
     ResizeByLongestSide,
 )
+from keras_aug.augmentations._2d.geometry.resize_by_smallest_side import (
+    ResizeBySmallestSide,
+)
 from keras_aug.augmentations._2d.intensity.clahe import CLAHE
 from keras_aug.augmentations._2d.intensity.normalize import Normalize
 from keras_aug.augmentations._2d.intensity.random_blur import RandomBlur

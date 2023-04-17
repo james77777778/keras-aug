@@ -5,46 +5,46 @@ from keras_cv import bounding_box
 from keras_aug import augmentations
 
 
-class ResizeByLongestSideTest(tf.test.TestCase):
-    max_size = 224
+class ResizeBySmallestSideTest(tf.test.TestCase):
+    min_size = 224
     height, width = 224, 448
     regular_args = {
-        "max_size": [224],
+        "min_size": [224],
         "interpolation": "bilinear",
         "antialias": False,
         "bounding_box_format": "rel_xyxy",
     }
 
     def test_with_uint8(self):
-        image_shape = (4, self.max_size, self.max_size, 3)
+        image_shape = (4, self.min_size, self.min_size, 3)
         image = tf.cast(
             tf.random.uniform(shape=image_shape) * 255.0, dtype=tf.uint8
         )
 
-        layer = augmentations.ResizeByLongestSide(**self.regular_args)
+        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
         output = layer(image)
         self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
 
     def test_config_with_custom_name(self):
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, name="image_preproc"
         )
 
         config = layer.get_config()
-        layer_reconstructed = augmentations.ResizeByLongestSide.from_config(
+        layer_reconstructed = augmentations.ResizeBySmallestSide.from_config(
             config
         )
 
         self.assertEqual(layer_reconstructed.name, layer.name)
 
     def test_config(self):
-        layer = augmentations.ResizeByLongestSide(**self.regular_args)
+        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
 
         config = layer.get_config()
 
         self.assertEqual(
-            config["max_size"],
-            self.regular_args["max_size"],
+            config["min_size"],
+            self.regular_args["min_size"],
         )
         self.assertEqual(
             config["interpolation"], self.regular_args["interpolation"]
@@ -59,85 +59,85 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         inputs = tf.random.uniform(
             (self.height, self.width, 3), dtype=tf.float64
         )
-        layer = augmentations.ResizeByLongestSide(**self.regular_args)
+        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
 
         self.assertAllEqual(layer(inputs).dtype, "float32")
 
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, dtype="uint8"
         )
 
         self.assertAllEqual(layer(inputs).dtype, "uint8")
 
     def test_no_adjustment(self):
-        image_shape = (4, self.max_size, self.max_size, 3)
+        image_shape = (4, self.min_size, self.min_size, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        layer = augmentations.ResizeByLongestSide(**self.regular_args)
+        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
         output = layer(image)
         self.assertAllClose(image, output)
 
     def test_adjustment_for_non_rgb_value_range(self):
-        image_shape = (4, self.max_size, self.max_size, 3)
+        image_shape = (4, self.min_size, self.min_size, 3)
         # Value range (0, 100)
         image = tf.random.uniform(shape=image_shape) * 100.0
 
-        layer = augmentations.ResizeByLongestSide(**self.regular_args)
+        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
         output = layer(image)
         self.assertAllClose(image, output)
 
     def test_resize_image(self):
         input_image_shape = (4, self.height, self.width, 3)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, seed=2023
         )
 
         output = layer(image)
 
         self.assertAllEqual(
-            output.shape, (4, self.max_size // 2, self.max_size, 3)
+            output.shape, (4, self.min_size, self.min_size * 2, 3)
         )
 
-    def test_resize_longest_image(self):
+    def test_resize_smallest_image(self):
         input_image_shape = (123, 456, 3)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, seed=2023
         )
 
         output = layer(image)
 
-        ratio = self.max_size / 456
-        short_side = round(123 * ratio)
-        self.assertAllEqual(tf.reduce_max(output.shape[:2]), self.max_size)
-        self.assertAllEqual(tf.reduce_min(output.shape[:2]), short_side)
+        ratio = self.min_size / 123
+        larger_side = round(456 * ratio)
+        self.assertAllEqual(tf.reduce_max(output.shape[:2]), larger_side)
+        self.assertAllEqual(tf.reduce_min(output.shape[:2]), self.min_size)
 
-    def test_resize_longest2_image(self):
+    def test_resize_smallest2_image(self):
         input_image_shape = (567, 456, 3)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, seed=2023
         )
 
         output = layer(image)
 
-        ratio = self.max_size / 567
-        short_side = round(456 * ratio)
-        self.assertAllEqual(tf.reduce_max(output.shape[:2]), self.max_size)
-        self.assertAllEqual(tf.reduce_min(output.shape[:2]), short_side)
+        ratio = self.min_size / 456
+        larger_side = round(567 * ratio)
+        self.assertAllEqual(tf.reduce_max(output.shape[:2]), larger_side)
+        self.assertAllEqual(tf.reduce_min(output.shape[:2]), self.min_size)
 
     def test_grayscale(self):
         input_image_shape = (4, self.height, self.width, 1)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = augmentations.ResizeByLongestSide(
+        layer = augmentations.ResizeBySmallestSide(
             **self.regular_args, seed=2023
         )
 
         output = layer(image)
 
         self.assertAllEqual(
-            output.shape, (4, self.max_size // 2, self.max_size, 1)
+            output.shape, (4, self.min_size, self.min_size * 2, 1)
         )
 
     def test_augment_sparse_segmentation_mask(self):
@@ -150,8 +150,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
 
         # Crop-only to exactly 1/2 of the size
         args = self.regular_args.copy()
-        args.update({"max_size": 150})
-        layer = augmentations.ResizeByLongestSide(**args, seed=2023)
+        args.update({"min_size": 150})
+        layer = augmentations.ResizeBySmallestSide(**args, seed=2023)
         input_mask_resized = tf.image.resize(mask, (150, 150), "nearest")
 
         output = layer(inputs)
@@ -160,8 +160,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
 
         # Crop to an arbitrary size and make sure we don't do bad interpolation
         args = self.regular_args.copy()
-        args.update({"max_size": 233})
-        layer = augmentations.ResizeByLongestSide(**args, seed=2023)
+        args.update({"min_size": 233})
+        layer = augmentations.ResizeBySmallestSide(**args, seed=2023)
 
         output = layer(inputs)
 
@@ -175,8 +175,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 10})
-        layer = augmentations.ResizeByLongestSide(**args, seed=2023)
+        args.update({"min_size": 10})
+        layer = augmentations.ResizeBySmallestSide(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor([[0, 0, 1, 1]], dtype=tf.float32),
             "classes": tf.convert_to_tensor([0], dtype=tf.float32),
@@ -207,8 +207,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": [image, image], "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 18})
-        layer = augmentations.ResizeByLongestSide(**args, seed=2023)
+        args.update({"min_size": 18})
+        layer = augmentations.ResizeBySmallestSide(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor(
                 [
@@ -241,8 +241,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 18})
-        layer = augmentations.ResizeByLongestSide(**args, seed=2023)
+        args.update({"min_size": 18})
+        layer = augmentations.ResizeBySmallestSide(**args, seed=2023)
         # the result boxes will still have the entire image in them
         expected_output = {
             "boxes": tf.ragged.constant(

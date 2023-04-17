@@ -10,15 +10,15 @@ from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
-    """Resize images so that longest side is equal to max_size, keeping the
+class ResizeBySmallestSide(VectorizedBaseImageAugmentationLayer):
+    """Resize images so that smallest side is equal to min_size, keeping the
     aspect ratio of the initial images.
 
-    This layer produces outputs of the same max_size within a batch but may
-    varying max_size across different batches if max_size is a list.
+    This layer produces outputs of the same min_size within a batch but may
+    varying min_size across different batches if min_size is a list.
 
     Args:
-        max_size: A list of int, tuple of int or a int. Represents longest size
+        min_size: A list of int, tuple of int or a int. Represents smallest size
             of the image after the transformation. When using a list, max size
             will be randomly selected from the values in the list.
         interpolation: A string specifying the sampling method for
@@ -34,7 +34,7 @@ class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
 
     def __init__(
         self,
-        max_size,
+        min_size,
         interpolation="bilinear",
         antialias=False,
         bounding_box_format=None,
@@ -42,21 +42,21 @@ class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        if isinstance(max_size, collections.abc.Sequence):
-            if not isinstance(max_size[0], int):
+        if isinstance(min_size, collections.abc.Sequence):
+            if not isinstance(min_size[0], int):
                 raise ValueError(
-                    "`max_size` must a list of int, tuple of int or a int. "
-                    f"Received max_size={max_size}"
+                    "`min_size` must a list of int, tuple of int or a int. "
+                    f"Received min_size={min_size}"
                 )
-        elif not isinstance(max_size, int):
+        elif not isinstance(min_size, int):
             raise ValueError(
-                "`max_size` must a list of int, tuple of int or a int. "
-                f"Received max_size={max_size}"
+                "`min_size` must a list of int, tuple of int or a int. "
+                f"Received min_size={min_size}"
             )
 
-        if isinstance(max_size, int):
-            max_size = [max_size]
-        self.max_size = sorted(max_size)
+        if isinstance(min_size, int):
+            min_size = [min_size]
+        self.min_size = sorted(min_size)
         self.interpolation = preprocessing_utils.get_interpolation(
             interpolation
         )
@@ -71,22 +71,22 @@ class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
             images, dtype=tf.float32
         )
 
-        # sample 1 max_size for the batch
+        # sample 1 min_size for the batch
         indices = self._random_generator.random_uniform(
             shape=(1,),
             minval=0,
-            maxval=len(self.max_size),
+            maxval=len(self.min_size),
             dtype=tf.int32,
         )
-        max_sizes = tf.convert_to_tensor(self.max_size, dtype=tf.float32)
-        max_sizes = tf.gather(max_sizes, indices[0])
-        max_sizes = tf.reshape(max_sizes, shape=(1, 1))
-        max_sizes = tf.tile(max_sizes, multiples=(batch_size, 1))
+        min_sizes = tf.convert_to_tensor(self.min_size, dtype=tf.float32)
+        min_sizes = tf.gather(min_sizes, indices[0])
+        min_sizes = tf.reshape(min_sizes, shape=(1, 1))
+        min_sizes = tf.tile(min_sizes, multiples=(batch_size, 1))
 
-        larger_sides = tf.cast(
-            tf.where(heights > widths, heights, widths), dtype=tf.float32
+        smaller_sides = tf.cast(
+            tf.where(heights < widths, heights, widths), dtype=tf.float32
         )
-        scales = max_sizes / larger_sides
+        scales = min_sizes / smaller_sides
         new_heights = tf.cast(tf.round(heights * scales), tf.int32)
         new_widths = tf.cast(tf.round(widths * scales), tf.int32)
         scaled_sizes = tf.concat((new_heights, new_widths), axis=-1)
@@ -196,7 +196,7 @@ class ResizeByLongestSide(VectorizedBaseImageAugmentationLayer):
         config = super().get_config()
         config.update(
             {
-                "max_size": self.max_size,
+                "min_size": self.min_size,
                 "interpolation": self.interpolation,
                 "antialias": self.antialias,
                 "bounding_box_format": self.bounding_box_format,
