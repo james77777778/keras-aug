@@ -6,6 +6,9 @@ from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
 from keras_aug.augmentations._2d.intensity.clahe import CLAHE
 from keras_aug.augmentations._2d.intensity.normalize import Normalize
 from keras_aug.augmentations._2d.intensity.random_blur import RandomBlur
+from keras_aug.augmentations._2d.intensity.random_brightness_contrast import (
+    RandomBrightnessContrast,
+)
 from keras_aug.augmentations._2d.intensity.random_color_jitter import (
     RandomColorJitter,
 )
