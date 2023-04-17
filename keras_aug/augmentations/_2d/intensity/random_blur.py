@@ -14,8 +14,9 @@ class RandomBlur(VectorizedBaseImageAugmentationLayer):
     Args:
         factor: A tuple of ints or an int represents kernel size range for
             blurring the input image. If factor is a single value, the range
-            will be (3, factor). The value range of the factor should be in
-            (3, inf).
+            will be (1, factor). The value range of the factor should be in
+            (1, inf). When kernel size=1 is sampled, there is no blur
+            effect.
         seed: Used to create a random seed, defaults to None.
     """
 
@@ -27,16 +28,21 @@ class RandomBlur(VectorizedBaseImageAugmentationLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         if isinstance(factor, (tuple, list)):
-            factor_range = (factor[1] - factor[0]) // 2 + 1
+            factor_range = (factor[1] - factor[0]) // 2
             factor_bias = factor[0]
         else:
-            factor_range = (factor[1] - 3) // 2 + 1
+            factor_range = (factor[1] - 1) // 2
             factor_bias = 1
+        if factor_range < 0 or factor_bias < 1:
+            raise ValueError(
+                "RandomBlur expects `factor` to be in range `(1, inf)`. Got: "
+                f"`factor` = {factor}"
+            )
         self.factor_input = factor
 
         self.factor_bias = factor_bias
         self.factor = preprocessing_utils.parse_factor(
-            factor_range, min_value=0, max_value=None, seed=seed
+            factor_range + 1, min_value=0, max_value=None, seed=seed
         )
         self.seed = seed
 

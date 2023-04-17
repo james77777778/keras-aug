@@ -35,7 +35,11 @@ def load_voc_dataset(
         lambda x: preprocess_voc(x, format=bounding_box_format),
         num_parallel_calls=tf.data.AUTOTUNE,
     )
-    dataset = dataset.ragged_batch(batch_size)
+    dataset = dataset.apply(
+        tf.data.experimental.dense_to_ragged_batch(
+            batch_size, drop_remainder=True
+        )
+    )
     return dataset
 
 

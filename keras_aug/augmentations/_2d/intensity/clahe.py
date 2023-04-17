@@ -9,9 +9,11 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
     """Apply Contrast Limited Adaptive Histogram Equalization to the input
     image.
 
-    This layer expects input images with int32 types.
-
     Args:
+        value_range: the range of values the incoming images will have.
+            Represented as a two number tuple written [low, high]. This is
+            typically either `[0, 1]` or `[0, 255]` depending on how your
+            preprocessing pipeline is set up.
         factor: A tuple of ints or an int represents threshold values
             for contrast limiting. If factor is a single float value, the range
             will be (1, clip_limit), defaults to (1, 4).
@@ -24,6 +26,7 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
 
     def __init__(
         self,
+        value_range,
         factor=(1, 4),
         tile_grid_size=(8, 8),
         gpu_optimized=True,
@@ -31,6 +34,7 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
+        self.value_range = value_range
         if isinstance(factor, (tuple, list)):
             min = factor[0]
             max = factor[1]
@@ -58,6 +62,13 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
+        images = preprocessing_utils.transform_value_range(
+            images,
+            original_range=self.value_range,
+            target_range=(0, 255),
+            dtype=tf.float32,
+        )
+
         inputs_for_clahe_single_image = {
             "images": images,
             "clip_limits": transformations,
@@ -66,7 +77,15 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
             self.clahe_single_image,
             inputs_for_clahe_single_image,
         )
-        return tf.cast(clahed_images, self.compute_dtype)
+
+        clahed_images = preprocessing_utils.transform_value_range(
+            clahed_images,
+            original_range=(0, 255),
+            target_range=self.value_range,
+            dtype=tf.float32,
+        )
+
+        return tf.cast(clahed_images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -259,6 +278,7 @@ class CLAHE(VectorizedBaseImageAugmentationLayer):
         config = super().get_config()
         config.update(
             {
+                "value_range": self.value_range,
                 "factor": self.factor_input,
                 "tile_grid_size": self.tile_grid_size,
                 "gpu_optimized": self.gpu_optimized,

@@ -18,7 +18,6 @@ class RandomRotationTest(tf.test.TestCase):
         "fill_value": 0,
         "interpolation": "bilinear",
         "bounding_box_format": "xyxy",
-        "seed": 2023,
     }
     no_aug_args = {
         "rotation_factor": 0.0,
@@ -32,10 +31,9 @@ class RandomRotationTest(tf.test.TestCase):
         "fill_value": 0,
         "interpolation": "bilinear",
         "bounding_box_format": "xyxy",
-        "seed": 2023,
     }
 
-    def test_output_shapes(self):
+    def test_preserves_output_shape(self):
         input_images = np.random.random((2, 8, 8, 3)).astype(np.float32)
         expected_output = input_images
         layer = augmentations.RandomAffine(**self.regular_args)
@@ -44,14 +42,107 @@ class RandomRotationTest(tf.test.TestCase):
 
         self.assertEqual(expected_output.shape, actual_output.shape)
 
+    def test_with_uint8(self):
+        image_shape = (4, 8, 8, 3)
+        image = tf.cast(
+            tf.random.uniform(shape=image_shape) * 255.0, dtype=tf.uint8
+        )
+
+        layer = augmentations.RandomAffine(**self.no_aug_args)
+        output = layer(image)
+        self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
+
+        layer = augmentations.RandomAffine(**self.regular_args)
+        output = layer(image)
+        self.assertNotAllClose(image, output)
+
     def test_independence_on_batched_images(self):
         image = tf.random.uniform((100, 100, 3))
         batched_images = tf.stack((image, image), axis=0)
-        layer = augmentations.RandomAffine(**self.regular_args)
+        layer = augmentations.RandomAffine(**self.regular_args, seed=2023)
 
         results = layer(batched_images)
 
         self.assertNotAllClose(results[0], results[1])
+
+    def test_config_with_custom_name(self):
+        layer = augmentations.RandomAffine(
+            **self.regular_args, name="image_preproc"
+        )
+
+        config = layer.get_config()
+        layer_reconstructed = augmentations.RandomAffine.from_config(config)
+
+        self.assertEqual(layer_reconstructed.name, layer.name)
+
+    def test_config(self):
+        layer = augmentations.RandomAffine(**self.regular_args)
+
+        config = layer.get_config()
+
+        self.assertEqual(
+            config["translation_height_factor"],
+            self.regular_args["translation_height_factor"],
+        )
+        self.assertEqual(
+            config["translation_width_factor"],
+            self.regular_args["translation_width_factor"],
+        )
+        self.assertEqual(
+            config["zoom_height_factor"],
+            self.regular_args["zoom_height_factor"],
+        )
+        self.assertEqual(
+            config["zoom_width_factor"], self.regular_args["zoom_width_factor"]
+        )
+        self.assertEqual(
+            config["shear_height_factor"],
+            self.regular_args["shear_height_factor"],
+        )
+        self.assertEqual(
+            config["shear_width_factor"],
+            self.regular_args["shear_width_factor"],
+        )
+        self.assertEqual(config["fill_mode"], self.regular_args["fill_mode"])
+        self.assertEqual(config["fill_value"], self.regular_args["fill_value"])
+        self.assertEqual(
+            config["interpolation"], self.regular_args["interpolation"]
+        )
+        self.assertEqual(
+            config["bounding_box_format"],
+            self.regular_args["bounding_box_format"],
+        )
+
+    def test_output_dtypes(self):
+        inputs = np.array([[[1], [2]], [[3], [4]]], dtype="float64")
+        layer = augmentations.RandomAffine(**self.regular_args)
+
+        self.assertAllEqual(layer(inputs).dtype, "float32")
+
+        layer = augmentations.RandomAffine(**self.regular_args, dtype="uint8")
+
+        self.assertAllEqual(layer(inputs).dtype, "uint8")
+
+    def test_no_adjustment(self):
+        image_shape = (4, 8, 8, 3)
+        image = tf.random.uniform(shape=image_shape) * 255.0
+
+        layer = augmentations.RandomAffine(**self.no_aug_args)
+        output = layer(image)
+        self.assertAllClose(image, output, atol=1e-5, rtol=1e-5)
+
+    def test_adjustment_for_non_rgb_value_range(self):
+        image_shape = (4, 8, 8, 3)
+        # Value range (0, 100)
+        image = tf.random.uniform(shape=image_shape) * 100.0
+
+        layer = augmentations.RandomAffine(**self.no_aug_args)
+        output = layer(image)
+        self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
+
+        layer = augmentations.RandomAffine(**self.regular_args)
+        output = layer(image)
+        self.assertNotAllClose(image, output)
 
     def test_rotation_unbatched_image(self):
         input_image = np.reshape(np.arange(0, 25), (5, 5, 1)).astype(np.float32)
@@ -391,62 +482,3 @@ class RandomRotationTest(tf.test.TestCase):
         )
 
         self.assertTrue(tf.math.reduce_all(new_area > old_area))
-
-    def test_config_with_custom_name(self):
-        layer = augmentations.RandomAffine(
-            **self.regular_args, name="image_preproc"
-        )
-
-        config = layer.get_config()
-        layer_reconstructed = augmentations.RandomAffine.from_config(config)
-
-        self.assertEqual(layer_reconstructed.name, layer.name)
-
-    def test_config(self):
-        layer = augmentations.RandomAffine(**self.regular_args)
-
-        config = layer.get_config()
-
-        self.assertEqual(
-            config["translation_height_factor"],
-            self.regular_args["translation_height_factor"],
-        )
-        self.assertEqual(
-            config["translation_width_factor"],
-            self.regular_args["translation_width_factor"],
-        )
-        self.assertEqual(
-            config["zoom_height_factor"],
-            self.regular_args["zoom_height_factor"],
-        )
-        self.assertEqual(
-            config["zoom_width_factor"], self.regular_args["zoom_width_factor"]
-        )
-        self.assertEqual(
-            config["shear_height_factor"],
-            self.regular_args["shear_height_factor"],
-        )
-        self.assertEqual(
-            config["shear_width_factor"],
-            self.regular_args["shear_width_factor"],
-        )
-        self.assertEqual(config["fill_mode"], self.regular_args["fill_mode"])
-        self.assertEqual(config["fill_value"], self.regular_args["fill_value"])
-        self.assertEqual(
-            config["interpolation"], self.regular_args["interpolation"]
-        )
-        self.assertEqual(
-            config["bounding_box_format"],
-            self.regular_args["bounding_box_format"],
-        )
-        self.assertEqual(config["seed"], self.regular_args["seed"])
-
-    def test_output_dtypes(self):
-        inputs = np.array([[[1], [2]], [[3], [4]]], dtype="float64")
-        layer = augmentations.RandomAffine(**self.regular_args)
-
-        self.assertAllEqual(layer(inputs).dtype, "float32")
-
-        layer = augmentations.RandomAffine(**self.regular_args, dtype="uint8")
-
-        self.assertAllEqual(layer(inputs).dtype, "uint8")
