@@ -29,7 +29,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
             by this value.
         position: A string specifying the padding method, defaults
             to "center".
-        value: padding value, defaults to 0.
+        padding_value: padding value, defaults to 0.
         bounding_box_format: The format of bounding boxes of input dataset.
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
@@ -44,7 +44,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         pad_height_divisor=None,
         pad_width_divisor=None,
         position="center",
-        value=0,
+        padding_value=0,
         bounding_box_format=None,
         seed=None,
         **kwargs,
@@ -64,7 +64,7 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         self.pad_height_divisor = pad_height_divisor
         self.pad_width_divisor = pad_width_divisor
         self.position = augmentation_utils.get_padding_position(position)
-        self.value = value
+        self.padding_value = padding_value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
@@ -74,14 +74,14 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         heights, widths = augmentation_utils.get_images_shape(images)
 
         if self.min_height is not None:
-            h_tops = tf.where(
+            tops = tf.where(
                 heights < self.min_height,
                 tf.cast((self.min_height - heights) / 2, heights.dtype),
                 tf.zeros_like(heights, dtype=heights.dtype),
             )
-            h_bottoms = tf.where(
+            bottoms = tf.where(
                 heights < self.min_height,
-                self.min_height - heights - h_tops,
+                self.min_height - heights - tops,
                 tf.zeros_like(heights, dtype=heights.dtype),
             )
         else:
@@ -92,19 +92,19 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
                 tf.zeros_like(pad_remaineds, dtype=pad_remaineds.dtype),
             )
             pad_rows = tf.cast(pad_rows, dtype=tf.float32)
-            h_tops = tf.round(pad_rows / 2.0)
-            h_bottoms = tf.cast(pad_rows - h_tops, dtype=tf.int32)
-            h_tops = tf.cast(h_tops, dtype=tf.int32)
+            tops = tf.round(pad_rows / 2.0)
+            bottoms = tf.cast(pad_rows - tops, dtype=tf.int32)
+            tops = tf.cast(tops, dtype=tf.int32)
 
         if self.min_width is not None:
-            w_lefts = tf.where(
+            lefts = tf.where(
                 widths < self.min_width,
                 tf.cast((self.min_width - widths) / 2, widths.dtype),
                 tf.zeros_like(widths, dtype=widths.dtype),
             )
-            w_rights = tf.where(
+            rights = tf.where(
                 widths < self.min_width,
-                self.min_width - widths - w_lefts,
+                self.min_width - widths - lefts,
                 tf.zeros_like(widths, dtype=widths.dtype),
             )
         else:
@@ -115,19 +115,19 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
                 tf.zeros_like(pad_remaineds, dtype=pad_remaineds.dtype),
             )
             pad_cols = tf.cast(pad_cols, dtype=tf.float32)
-            w_lefts = tf.round(pad_cols / 2.0)
-            w_rights = tf.cast(pad_cols - w_lefts, dtype=tf.int32)
-            w_lefts = tf.cast(w_lefts, dtype=tf.int32)
+            lefts = tf.round(pad_cols / 2.0)
+            rights = tf.cast(pad_cols - lefts, dtype=tf.int32)
+            lefts = tf.cast(lefts, dtype=tf.int32)
 
-        h_tops, h_bottoms, w_lefts, w_rights = self._get_position_params(
-            h_tops, h_bottoms, w_lefts, w_rights, self.position
+        (tops, bottoms, lefts, rights) = augmentation_utils.get_position_params(
+            tops, bottoms, lefts, rights, self.position, self._random_generator
         )
 
         return {
-            "pad_tops": h_tops,
-            "pad_bottoms": h_bottoms,
-            "pad_lefts": w_lefts,
-            "pad_rights": w_rights,
+            "pad_tops": tops,
+            "pad_bottoms": bottoms,
+            "pad_lefts": lefts,
+            "pad_rights": rights,
         }
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -153,7 +153,9 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
                 tf.zeros(shape=(2,), dtype=pad_top.dtype),
             )
         )
-        images = tf.pad(images, paddings=paddings, constant_values=self.value)
+        images = tf.pad(
+            images, paddings=paddings, constant_values=self.padding_value
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -201,59 +203,6 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
             images=images,
         )
         return bounding_boxes
-
-    def _get_position_params(
-        self, h_tops, h_bottoms, w_lefts, w_rights, position
-    ):
-        """This function supposes arguments are at `center` padding method."""
-        if position == augmentation_utils.PaddingPosition.CENTER:
-            # do nothing
-            h_bottoms = h_bottoms
-            w_rights = w_rights
-            h_tops = h_tops
-            w_lefts = w_lefts
-        elif position == augmentation_utils.PaddingPosition.TOP_LEFT:
-            h_bottoms += h_tops
-            w_rights += w_lefts
-            h_tops = tf.zeros_like(h_tops)
-            w_lefts = tf.zeros_like(w_lefts)
-        elif position == augmentation_utils.PaddingPosition.TOP_RIGHT:
-            h_bottoms += h_tops
-            w_lefts += w_rights
-            h_tops = tf.zeros_like(h_tops)
-            w_rights = tf.zeros_like(w_rights)
-        elif position == augmentation_utils.PaddingPosition.BOTTOM_LEFT:
-            h_tops += h_bottoms
-            w_rights += w_lefts
-            h_bottoms = tf.zeros_like(h_bottoms)
-            w_lefts = tf.zeros_like(w_lefts)
-        elif position == augmentation_utils.PaddingPosition.BOTTOM_RIGHT:
-            h_tops += h_bottoms
-            w_lefts += w_rights
-            h_bottoms = tf.zeros_like(h_bottoms)
-            w_rights = tf.zeros_like(w_rights)
-        elif position == augmentation_utils.PaddingPosition.RANDOM:
-            batch_size = tf.shape(h_tops)[0]
-            original_dtype = h_tops.dtype
-            h_pads = tf.cast(h_tops + h_bottoms, dtype=tf.float32)
-            w_pads = tf.cast(w_lefts + w_rights, dtype=tf.float32)
-            h_tops = self._random_generator.random_uniform(
-                shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
-            )
-            h_tops = tf.cast(tf.round(h_tops * h_pads), dtype=original_dtype)
-            h_bottoms = tf.cast(h_pads, dtype=tf.int32) - h_tops
-            w_lefts = self._random_generator.random_uniform(
-                shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
-            )
-            w_lefts = tf.cast(tf.round(w_lefts * w_pads), dtype=original_dtype)
-            w_rights = tf.cast(w_pads, dtype=tf.int32) - w_lefts
-        else:
-            raise NotImplementedError(
-                f"Value not recognized for `position`: {position}. Supported "
-                f"values are: {augmentation_utils.PADDING_POSITION}"
-            )
-
-        return h_tops, h_bottoms, w_lefts, w_rights
 
     def get_config(self):
         config = {

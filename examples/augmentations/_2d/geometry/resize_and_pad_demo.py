@@ -1,15 +1,14 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import PadIfNeeded
+from keras_aug.augmentations import ResizeAndPad
 
 
 def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
-    layer = PadIfNeeded(
-        min_height=512,
-        min_width=512,
-        position="random",
+    layer = ResizeAndPad(
+        height=512,
+        width=512,
         padding_value=114,
         bounding_box_format="xyxy",
     )

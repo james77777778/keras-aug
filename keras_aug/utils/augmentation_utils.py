@@ -61,6 +61,8 @@ PADDING_POSITION = {
 
 
 def get_padding_position(position):
+    if isinstance(position, PaddingPosition):
+        return position
     position = position.lower()
     if position not in PADDING_POSITION.keys():
         raise NotImplementedError(
@@ -68,6 +70,60 @@ def get_padding_position(position):
             f"values are: {PADDING_POSITION.keys()}"
         )
     return PADDING_POSITION[position]
+
+
+def get_position_params(
+    tops, bottoms, lefts, rights, position, random_generator
+):
+    """This function supposes arguments are at `center` padding method."""
+    if position == PaddingPosition.CENTER:
+        # do nothing
+        bottoms = bottoms
+        rights = rights
+        tops = tops
+        lefts = lefts
+    elif position == PaddingPosition.TOP_LEFT:
+        bottoms += tops
+        rights += lefts
+        tops = tf.zeros_like(tops)
+        lefts = tf.zeros_like(lefts)
+    elif position == PaddingPosition.TOP_RIGHT:
+        bottoms += tops
+        lefts += rights
+        tops = tf.zeros_like(tops)
+        rights = tf.zeros_like(rights)
+    elif position == PaddingPosition.BOTTOM_LEFT:
+        tops += bottoms
+        rights += lefts
+        bottoms = tf.zeros_like(bottoms)
+        lefts = tf.zeros_like(lefts)
+    elif position == PaddingPosition.BOTTOM_RIGHT:
+        tops += bottoms
+        lefts += rights
+        bottoms = tf.zeros_like(bottoms)
+        rights = tf.zeros_like(rights)
+    elif position == PaddingPosition.RANDOM:
+        batch_size = tf.shape(tops)[0]
+        original_dtype = tops.dtype
+        h_pads = tf.cast(tops + bottoms, dtype=tf.float32)
+        w_pads = tf.cast(lefts + rights, dtype=tf.float32)
+        tops = random_generator.random_uniform(
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+        )
+        tops = tf.cast(tf.round(tops * h_pads), dtype=original_dtype)
+        bottoms = tf.cast(h_pads, dtype=tf.int32) - tops
+        lefts = random_generator.random_uniform(
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+        )
+        lefts = tf.cast(tf.round(lefts * w_pads), dtype=original_dtype)
+        rights = tf.cast(w_pads, dtype=tf.int32) - lefts
+    else:
+        raise NotImplementedError(
+            f"Value not recognized for `position`: {position}. Supported "
+            f"values are: {PADDING_POSITION}"
+        )
+
+    return tops, bottoms, lefts, rights
 
 
 def expand_dict_dims(dicts, axis):

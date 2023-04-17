@@ -1,5 +1,9 @@
 from keras_aug.augmentations._2d.geometry.pad_if_needed import PadIfNeeded
 from keras_aug.augmentations._2d.geometry.random_affine import RandomAffine
+from keras_aug.augmentations._2d.geometry.random_crop_and_resize import (
+    RandomCropAndResize,
+)
+from keras_aug.augmentations._2d.geometry.resize_and_pad import ResizeAndPad
 from keras_aug.augmentations._2d.geometry.resize_by_longest_side import (
     ResizeByLongestSide,
 )
