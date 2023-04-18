@@ -21,6 +21,9 @@ from keras_aug.augmentations._2d.intensity.random_color_jitter import (
 )
 from keras_aug.augmentations._2d.intensity.random_gamma import RandomGamma
 from keras_aug.augmentations._2d.intensity.random_hsv import RandomHSV
+from keras_aug.augmentations._2d.intensity.random_jpeg_quality import (
+    RandomJpegQuality,
+)
 from keras_aug.augmentations._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentations._2d.regularization.channel_dropout import (
     ChannelDropout,
