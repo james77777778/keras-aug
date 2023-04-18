@@ -11,7 +11,10 @@ build/
 __pycache__/
 *.so
 
-#VS Code files and container
+# VS Code files and container
 .vscode/
 .devcontainer/
 .coverage
+
+# pytest
+htmlcov/
