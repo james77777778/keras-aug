@@ -8,11 +8,13 @@ from keras_aug.augmentations import ResizeByLongestSide
 
 
 def main():
-    dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
-    resize = ResizeByLongestSide(max_size=320, bounding_box_format="xyxy")
+    dataset = demo_utils.load_voc_dataset(
+        bounding_box_format="xyxy", batch_size=16
+    )
+    resize = ResizeByLongestSide(max_size=224, bounding_box_format="xyxy")
     mosaic = MosaicYOLOV8(
-        height=640,
-        width=640,
+        height=448,
+        width=448,
         padding_value=114,
         bounding_box_format="xyxy",
     )

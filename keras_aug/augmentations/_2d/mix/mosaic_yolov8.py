@@ -236,6 +236,8 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
         return boxes_for_mosaic
 
     def _batch_augment(self, inputs):
+        self._validate_inputs(inputs)
+
         images = inputs.get(IMAGES, None)
         raw_images = images
         labels = inputs.get(LABELS, None)
