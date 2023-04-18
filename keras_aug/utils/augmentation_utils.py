@@ -5,6 +5,7 @@ https://github.com/keras-team/keras-cv/blob/master/keras_cv/layers/preprocessing
 - IMAGES, LABELS, TARGETS, BOUNDING_BOXES, SEGMENTATION_MASKS, KEYPOINTS
 - H_AXIS, W_AXIS
 https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.py
+- parse_factor
 - get_rotation_matrix
 - get_translation_matrix
 - get_shear_matrix
@@ -13,6 +14,7 @@ https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.
 import enum
 
 import tensorflow as tf
+from keras_cv import core
 from tensorflow import keras
 
 H_AXIS = -3
@@ -135,6 +137,45 @@ def expand_dict_dims(dicts, axis):
         tensor = dicts[key]
         new_dicts[key] = tf.expand_dims(tensor, axis=axis)
     return new_dicts
+
+
+def parse_factor(
+    param,
+    min_value=0.0,
+    max_value=1.0,
+    center=0.5,
+    param_name="factor",
+    seed=None,
+):
+    if isinstance(param, dict):
+        # For all classes missing a `from_config` implementation.
+        # (RandomHue, RandomShear, etc.)
+        # To be removed with addition of `keras.__internal__` namespace support
+        param = keras.utils.deserialize_keras_object(param)
+
+    if isinstance(param, core.FactorSampler):
+        return param
+
+    if isinstance(param, float) or isinstance(param, int):
+        param = (center - param, center + param)
+
+    if param[0] > param[1]:
+        raise ValueError(
+            f"`{param_name}[0] > {param_name}[1]`, `{param_name}[0]` must be "
+            f"<= `{param_name}[1]`. Got `{param_name}={param}`"
+        )
+    if (min_value is not None and param[0] < min_value) or (
+        max_value is not None and param[1] > max_value
+    ):
+        raise ValueError(
+            f"`{param_name}` should be inside of range "
+            f"[{min_value}, {max_value}]. Got {param_name}={param}"
+        )
+
+    if param[0] == param[1]:
+        return core.ConstantFactorSampler(param[0])
+
+    return core.UniformFactorSampler(param[0], param[1], seed=seed)
 
 
 def get_rotation_matrix(

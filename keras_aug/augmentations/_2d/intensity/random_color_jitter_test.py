@@ -9,17 +9,17 @@ from keras_aug import augmentations
 class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
     regular_args = {
         "value_range": (0, 255),
-        "brightness_factor": (0.5 - 0.2, 0.5 + 0.2),  # 40%
-        "contrast_factor": (0.5 - 0.2, 0.5 + 0.2),  # 40%
-        "hue_factor": (0.5 - 0.00725, 0.5 + 0.00725),  # 1.5%
-        "saturation_factor": (0.5 - 0.2, 0.5 + 0.2),  # 40%
+        "brightness_factor": (0.6, 1.4),  # 40%
+        "contrast_factor": (0.6, 1.4),  # 40%
+        "hue_factor": (-0.015, 0.015),  # 1.5%
+        "saturation_factor": (0.6, 1.4),  # 40%
     }
     no_aug_args = {
         "value_range": (0, 255),
-        "brightness_factor": (0.5, 0.5),
-        "contrast_factor": (0.5, 0.5),
-        "hue_factor": (0.5, 0.5),
-        "saturation_factor": (0.5, 0.5),
+        "brightness_factor": (1.0, 1.0),
+        "contrast_factor": (1.0, 1.0),
+        "hue_factor": (0.0, 0.0),
+        "saturation_factor": (1.0, 1.0),
     }
 
     def test_preserves_output_shape(self):
@@ -125,7 +125,7 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
         args = self.no_aug_args.copy()
-        args.update({"brightness_factor": (1.0, 1.0)})
+        args.update({"brightness_factor": (10000.0, 10000.0)})
         layer = augmentations.RandomColorJitter(**args)
 
         output = layer(image)
@@ -136,7 +136,9 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape)
         args = self.no_aug_args.copy()
-        args.update({"value_range": (0, 1), "brightness_factor": (1.0, 1.0)})
+        args.update(
+            {"value_range": (0, 1), "brightness_factor": (10000.0, 10000.0)}
+        )
         layer = augmentations.RandomColorJitter(**args)
 
         output = layer(image)
@@ -159,7 +161,7 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
         args = self.no_aug_args.copy()
-        args.update({"hue_factor": (1.0, 1.0)})
+        args.update({"hue_factor": (0.0, 0.0)})
 
         layer = augmentations.RandomColorJitter(**args)
         output = layer(image)
@@ -204,7 +206,7 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image = tf.random.uniform(shape=image_shape) * 255.0
 
         args = self.no_aug_args.copy()
-        args.update({"saturation_factor": (1.0, 1.0)})
+        args.update({"saturation_factor": (100.0, 100.0)})
         layer = augmentations.RandomColorJitter(**args)
         output = layer(image)
 
@@ -218,7 +220,7 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image = tf.random.uniform(shape=image_shape) * 255.0
 
         args = self.no_aug_args.copy()
-        args.update({"hue_factor": (0.5 - factor, 0.5 + factor)})
+        args.update({"hue_factor": (0.0 - factor, 0.0 + factor)})
         layer = augmentations.RandomColorJitter(**args)
         output = layer(image)
         self.assertNotAllClose(image, output)
@@ -229,7 +231,7 @@ class RandomColorJitterTest(tf.test.TestCase, parameterized.TestCase):
         image = tf.random.uniform(shape=image_shape) * 255.0
 
         args = self.no_aug_args.copy()
-        args.update({"saturation_factor": (0.5 - factor, 0.5 + factor)})
+        args.update({"saturation_factor": (1.0 - factor, 1.0 + factor)})
         layer = augmentations.RandomColorJitter(**args)
         output = layer(image)
         self.assertNotAllClose(image, output)
