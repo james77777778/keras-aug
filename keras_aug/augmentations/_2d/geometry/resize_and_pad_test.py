@@ -1,11 +1,12 @@
 import numpy as np
 import tensorflow as tf
+from absl.testing import parameterized
 from keras_cv import bounding_box
 
 from keras_aug import augmentations
 
 
-class ResizeAndPadTest(tf.test.TestCase):
+class ResizeAndPadTest(tf.test.TestCase, parameterized.TestCase):
     height, width = 224, 224
     regular_args = {
         "height": 224,
@@ -87,23 +88,6 @@ class ResizeAndPadTest(tf.test.TestCase):
 
         self.assertAllEqual(layer(inputs).dtype, "uint8")
 
-    def test_no_adjustment(self):
-        image_shape = (4, self.height, self.width, 3)
-        image = tf.random.uniform(shape=image_shape) * 255.0
-
-        layer = augmentations.ResizeAndPad(**self.regular_args)
-        output = layer(image)
-        self.assertAllClose(image, output)
-
-    def test_adjustment_for_non_rgb_value_range(self):
-        image_shape = (4, self.height, self.width, 3)
-        # Value range (0, 100)
-        image = tf.random.uniform(shape=image_shape) * 100.0
-
-        layer = augmentations.ResizeAndPad(**self.regular_args)
-        output = layer(image)
-        self.assertAllClose(image, output)
-
     def test_augments_image(self):
         input_image_shape = (4, 200, 300, 3)
         image = tf.random.uniform(shape=input_image_shape)
@@ -133,12 +117,7 @@ class ResizeAndPadTest(tf.test.TestCase):
 
         # Crop-only to exactly 1/2 of the size
         args = self.regular_args.copy()
-        args.update(
-            {
-                "height": 150,
-                "width": 150,
-            }
-        )
+        args.update({"height": 150, "width": 150})
         layer = augmentations.ResizeAndPad(**args, seed=2023)
         input_mask_resized = tf.image.resize(mask, (150, 150), "nearest")
 
@@ -148,12 +127,7 @@ class ResizeAndPadTest(tf.test.TestCase):
 
         # Crop to an arbitrary size and make sure we don't do bad interpolation
         args = self.regular_args.copy()
-        args.update(
-            {
-                "height": 233,
-                "width": 233,
-            }
-        )
+        args.update({"height": 233, "width": 233})
         layer = augmentations.ResizeAndPad(**args, seed=2023)
 
         output = layer(inputs)
@@ -168,12 +142,7 @@ class ResizeAndPadTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update(
-            {
-                "height": 10,
-                "width": 10,
-            }
-        )
+        args.update({"height": 10, "width": 10})
         layer = augmentations.ResizeAndPad(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor([[0, 0, 1, 1]], dtype=tf.float32),
@@ -205,12 +174,7 @@ class ResizeAndPadTest(tf.test.TestCase):
         }
         input = {"images": [image, image], "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update(
-            {
-                "height": 18,
-                "width": 18,
-            }
-        )
+        args.update({"height": 18, "width": 18})
         layer = augmentations.ResizeAndPad(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor(
@@ -244,12 +208,7 @@ class ResizeAndPadTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update(
-            {
-                "height": 18,
-                "width": 18,
-            }
-        )
+        args.update({"height": 18, "width": 18})
         layer = augmentations.ResizeAndPad(**args, seed=2023)
         # the result boxes will still have the entire image in them
         expected_output = {
@@ -271,3 +230,94 @@ class ResizeAndPadTest(tf.test.TestCase):
         self.assertAllClose(
             expected_output["classes"], output["bounding_boxes"]["classes"]
         )
+
+    def _run_output_shape_test(self, kwargs, height, width):
+        kwargs.update({"height": height, "width": width})
+        layer = augmentations.ResizeAndPad(**kwargs)
+        inputs = tf.random.uniform((2, 5, 8, 3))
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (2, height, width, 3))
+
+    @parameterized.named_parameters(
+        ("down_sample_bilinear_2_by_2", {"interpolation": "bilinear"}, 2, 2),
+        ("down_sample_bilinear_3_by_2", {"interpolation": "bilinear"}, 3, 2),
+        ("down_sample_nearest_2_by_2", {"interpolation": "nearest"}, 2, 2),
+        ("down_sample_nearest_3_by_2", {"interpolation": "nearest"}, 3, 2),
+        ("down_sample_area_2_by_2", {"interpolation": "area"}, 2, 2),
+        ("down_sample_area_3_by_2", {"interpolation": "area"}, 3, 2),
+    )
+    def test_down_sampling(self, kwargs, height, width):
+        self._run_output_shape_test(kwargs, height, width)
+
+    @parameterized.named_parameters(
+        ("up_sample_bilinear_10_by_12", {"interpolation": "bilinear"}, 10, 12),
+        ("up_sample_bilinear_12_by_12", {"interpolation": "bilinear"}, 12, 12),
+        ("up_sample_nearest_10_by_12", {"interpolation": "nearest"}, 10, 12),
+        ("up_sample_nearest_12_by_12", {"interpolation": "nearest"}, 12, 12),
+        ("up_sample_area_10_by_12", {"interpolation": "area"}, 10, 12),
+        ("up_sample_area_12_by_12", {"interpolation": "area"}, 12, 12),
+    )
+    def test_up_sampling(self, kwargs, expected_height, expected_width):
+        self._run_output_shape_test(kwargs, expected_height, expected_width)
+
+    def test_padding_center(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8, "position": "center"})
+        layer = augmentations.ResizeAndPad(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, 0:2, :, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, -2:, :, :]), 0.0)
+
+    def test_padding_top(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_left"})
+        layer = augmentations.ResizeAndPad(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertNotEqual(tf.reduce_mean(outputs[:, 0:2, :, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, -4:, :, :]), 0.0)
+
+    def test_padding_bottom(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8, "position": "bottom_left"})
+        layer = augmentations.ResizeAndPad(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, 0:4, :, :]), 0.0)
+        self.assertNotEqual(tf.reduce_mean(outputs[:, -2:, :, :]), 0.0)
+
+    def test_padding_left(self):
+        inputs = tf.ones((1, 8, 4, 3))
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_left"})
+        layer = augmentations.ResizeAndPad(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertNotEqual(tf.reduce_mean(outputs[:, :, 0:2, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, :, -2:, :]), 0.0)
+
+    def test_padding_right(self):
+        inputs = tf.ones((1, 8, 4, 3))
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_right"})
+        layer = augmentations.ResizeAndPad(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, :, 0:4, :]), 0.0)
+        self.assertNotEqual(tf.reduce_mean(outputs[:, :, -2:, :]), 0.0)

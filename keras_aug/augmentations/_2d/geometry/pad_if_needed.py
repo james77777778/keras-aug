@@ -204,19 +204,56 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         )
         return bounding_boxes
 
-    def get_config(self):
-        config = {
-            "min_height": self.min_height,
-            "min_width": self.min_width,
-            "pad_height_divisor": self.pad_height_divisor,
-            "pad_width_divisor": self.pad_width_divisor,
-            "position": self.position,
-            "value": self.value,
-            "bounding_box_format": self.bounding_box_format,
-            "seed": self.seed,
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        inputs_for_augment_segmentation_mask_single = {
+            augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
+            "transformation": transformations,
         }
-        base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        segmentation_masks = tf.map_fn(
+            self.augment_segmentation_mask_single,
+            inputs_for_augment_segmentation_mask_single,
+            fn_output_signature=segmentation_masks.dtype,
+        )
+        return segmentation_masks
+
+    def augment_segmentation_mask_single(self, inputs):
+        segmentation_mask = inputs.get(
+            augmentation_utils.SEGMENTATION_MASKS, None
+        )
+        transformation = inputs.get("transformation", None)
+        pad_top = transformation["pad_tops"][0]
+        pad_bottom = transformation["pad_bottoms"][0]
+        pad_left = transformation["pad_lefts"][0]
+        pad_right = transformation["pad_rights"][0]
+        paddings = tf.stack(
+            (
+                tf.stack((pad_top, pad_bottom)),
+                tf.stack((pad_left, pad_right)),
+                tf.zeros(shape=(2,), dtype=pad_top.dtype),
+            )
+        )
+        segmentation_mask = tf.pad(
+            segmentation_mask, paddings=paddings, constant_values=0
+        )
+        return segmentation_mask
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(
+            {
+                "min_height": self.min_height,
+                "min_width": self.min_width,
+                "pad_height_divisor": self.pad_height_divisor,
+                "pad_width_divisor": self.pad_width_divisor,
+                "position": self.position,
+                "padding_value": self.padding_value,
+                "bounding_box_format": self.bounding_box_format,
+                "seed": self.seed,
+            }
+        )
+        return config
 
     @classmethod
     def from_config(cls, config):
