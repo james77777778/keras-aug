@@ -1,13 +1,16 @@
 import tensorflow as tf
 from keras_cv import bounding_box
 from keras_cv import core
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
+
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomCropAndResize(VectorizedBaseImageAugmentationLayer):
+class RandomCropAndResize(VectorizedBaseRandomLayer):
     """Randomly crops a part of an image and resizes it to provided size.
 
     This implementation takes an intuitive approach, where we crop the images to

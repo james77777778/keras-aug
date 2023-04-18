@@ -1,10 +1,13 @@
 import tensorflow as tf
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from tensorflow import keras
+
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class Normalize(VectorizedBaseImageAugmentationLayer):
+class Normalize(VectorizedBaseRandomLayer):
     """Normalizes the mean and std on given images.
 
     Args:

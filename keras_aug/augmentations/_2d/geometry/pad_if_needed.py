@@ -1,13 +1,15 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
+class PadIfNeeded(VectorizedBaseRandomLayer):
     """Pad the images with constant value to ensure that all images within the
     same batch are of the same size.
 

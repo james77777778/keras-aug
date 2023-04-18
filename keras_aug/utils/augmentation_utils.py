@@ -15,15 +15,18 @@ import enum
 import tensorflow as tf
 from tensorflow import keras
 
-BATCHED = "batched"
-BOUNDING_BOXES = "bounding_boxes"
-IMAGES = "images"
-KEYPOINTS = "keypoints"
-LABELS = "labels"
-SEGMENTATION_MASKS = "segmentation_masks"
-TARGETS = "targets"
 H_AXIS = -3
 W_AXIS = -2
+
+IMAGES = "images"
+LABELS = "labels"
+TARGETS = "targets"
+BOUNDING_BOXES = "bounding_boxes"
+KEYPOINTS = "keypoints"
+SEGMENTATION_MASKS = "segmentation_masks"
+CUSTOM_ANNOTATIONS = "custom_annotations"
+
+BATCHED = "batched"
 
 
 def get_images_shape(images, dtype=tf.int32):

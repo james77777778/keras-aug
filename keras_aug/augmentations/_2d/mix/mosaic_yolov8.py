@@ -1,12 +1,15 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 from keras_aug.utils.augmentation_utils import BATCHED
 from keras_aug.utils.augmentation_utils import BOUNDING_BOXES
+from keras_aug.utils.augmentation_utils import CUSTOM_ANNOTATIONS
 from keras_aug.utils.augmentation_utils import IMAGES
 from keras_aug.utils.augmentation_utils import KEYPOINTS
 from keras_aug.utils.augmentation_utils import LABELS
@@ -14,7 +17,7 @@ from keras_aug.utils.augmentation_utils import SEGMENTATION_MASKS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
+class MosaicYOLOV8(VectorizedBaseRandomLayer):
     """MosaicYOLOV8 implements the mosaic data augmentation technique used by
     YOLOV8.
 
@@ -244,6 +247,7 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
         bounding_boxes = inputs.get(BOUNDING_BOXES, None)
         keypoints = inputs.get(KEYPOINTS, None)
         segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
+        custom_annotations = inputs.get(CUSTOM_ANNOTATIONS, None)
         batch_size = tf.shape(images)[0]
         transformations = self.get_random_transformation_batch(
             batch_size,
@@ -252,6 +256,7 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
             bounding_boxes=bounding_boxes,
             keypoints=keypoints,
             segmentation_masks=segmentation_masks,
+            custom_annotations=custom_annotations,
         )
 
         images = self.augment_images(
@@ -263,7 +268,7 @@ class MosaicYOLOV8(VectorizedBaseImageAugmentationLayer):
         result = {IMAGES: images}
 
         if labels is not None:
-            labels = self.augment_targets(
+            labels = self.augment_labels(
                 labels,
                 transformations=transformations,
                 bounding_boxes=bounding_boxes,

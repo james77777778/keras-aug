@@ -29,3 +29,6 @@ from keras_aug.augmentations._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentations._2d.regularization.channel_dropout import (
     ChannelDropout,
 )
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)

@@ -1,11 +1,14 @@
 import tensorflow as tf
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
+
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomBlur(VectorizedBaseImageAugmentationLayer):
+class RandomBlur(VectorizedBaseRandomLayer):
     """Blur the images using random-sized kernels.
 
     This layer applies a mean filter with varying kernel sizes to blur the

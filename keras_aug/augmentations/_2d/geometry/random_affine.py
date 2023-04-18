@@ -2,15 +2,17 @@ import math
 
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomAffine(VectorizedBaseImageAugmentationLayer):
+class RandomAffine(VectorizedBaseRandomLayer):
     """A preprocessing layer which randomly affines transformation of the images
     keeping center invariant.
 

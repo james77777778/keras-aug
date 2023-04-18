@@ -1,13 +1,15 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class CenterCrop(VectorizedBaseImageAugmentationLayer):
+class CenterCrop(VectorizedBaseRandomLayer):
     """A preprocessing layer which center crops images.
 
     This layers crops the central portion of the images to a target size. If an

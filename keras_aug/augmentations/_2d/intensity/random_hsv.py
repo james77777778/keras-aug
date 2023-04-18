@@ -1,13 +1,15 @@
 import tensorflow as tf
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomHSV(VectorizedBaseImageAugmentationLayer):
+class RandomHSV(VectorizedBaseRandomLayer):
     """Randomly adjusts the hue, saturation and value on given images.
 
     This layer will randomly increase/reduce the hue, saturation and value for

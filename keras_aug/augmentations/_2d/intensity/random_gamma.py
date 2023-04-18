@@ -1,11 +1,14 @@
 import tensorflow as tf
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
+
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomGamma(VectorizedBaseImageAugmentationLayer):
+class RandomGamma(VectorizedBaseRandomLayer):
     """Randomly adjusts gamma of the input images.
 
     This layer will randomly increase/reduce the gamma for the input images.

@@ -1,12 +1,15 @@
 import tensorflow as tf
 from keras_cv import core
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
+
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandomJpegQuality(VectorizedBaseImageAugmentationLayer):
+class RandomJpegQuality(VectorizedBaseRandomLayer):
     """Applies Random Jpeg compression artifacts to an image.
 
     Performs the jpeg compression algorithm on the image. This layer can be used

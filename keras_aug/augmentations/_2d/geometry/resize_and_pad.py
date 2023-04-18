@@ -1,14 +1,16 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.layers import VectorizedBaseImageAugmentationLayer
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ResizeAndPad(VectorizedBaseImageAugmentationLayer):
+class ResizeAndPad(VectorizedBaseRandomLayer):
     """Resize and pad images to (`height`, `width`), keeping the aspect ratio
     of the initial images.
 
