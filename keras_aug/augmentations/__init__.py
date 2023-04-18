@@ -1,3 +1,4 @@
+from keras_aug.augmentations._2d.geometry.center_crop import CenterCrop
 from keras_aug.augmentations._2d.geometry.pad_if_needed import PadIfNeeded
 from keras_aug.augmentations._2d.geometry.random_affine import RandomAffine
 from keras_aug.augmentations._2d.geometry.random_crop_and_resize import (

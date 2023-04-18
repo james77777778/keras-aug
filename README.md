@@ -14,8 +14,3 @@ pip install git+https://github.com/keras-team/keras-cv.git tensorflow --upgrade
 ```
 
 ## Usage
-
-```bash
-# run unit tests
-pytest --cov=./ --cov-report=html:htmlcov --cov-report=term
-```

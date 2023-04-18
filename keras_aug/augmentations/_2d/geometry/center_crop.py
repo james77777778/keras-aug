@@ -7,11 +7,11 @@ from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
-    """Pad the images with constant value to ensure that all images within the
-    same batch are of the same size.
+class CenterCrop(VectorizedBaseImageAugmentationLayer):
+    """A preprocessing layer which center crops images.
 
-    This layer can be configured by specifying the fixed sizes or the divisors.
+    This layers crops the central portion of the images to a target size. If an
+    image is smaller than the target size, it will be padded and then cropped.
 
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
@@ -21,12 +21,8 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         `(..., target_height, target_width, channels)`.
 
     Args:
-        min_height: A integer specifying the height of result image.
-        min_width: A integer specifying the width of result image.
-        height_divisor: A integer that ensures image height is dividable
-            by this value.
-        width_divisor: A integer that ensures image width is dividable
-            by this value.
+        height: A integer specifying the height of result image.
+        width: A integer specifying the width of result image.
         position: A string specifying the padding method, defaults
             to "center".
         padding_value: padding value, defaults to 0.
@@ -39,10 +35,8 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
 
     def __init__(
         self,
-        min_height=None,
-        min_width=None,
-        pad_height_divisor=None,
-        pad_width_divisor=None,
+        height,
+        width,
         position="center",
         padding_value=0,
         bounding_box_format=None,
@@ -50,19 +44,8 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        if (min_height is None or min_width is None) and (
-            pad_height_divisor is None or pad_width_divisor is None
-        ):
-            raise ValueError(
-                "`PadIfNeeded()` expects at most one of "
-                "(`min_height`, `min_width`) or "
-                "(`pad_height_divisor`, `pad_width_divisor`) to be set."
-            )
-
-        self.min_height = min_height
-        self.min_width = min_width
-        self.pad_height_divisor = pad_height_divisor
-        self.pad_width_divisor = pad_width_divisor
+        self.height = height
+        self.width = width
         self.position = augmentation_utils.get_padding_position(position)
         self.padding_value = padding_value
         self.bounding_box_format = bounding_box_format
@@ -73,51 +56,26 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
     ):
         heights, widths = augmentation_utils.get_images_shape(images)
 
-        if self.min_height is not None:
-            tops = tf.where(
-                heights < self.min_height,
-                tf.cast((self.min_height - heights) / 2, heights.dtype),
-                tf.zeros_like(heights, dtype=heights.dtype),
-            )
-            bottoms = tf.where(
-                heights < self.min_height,
-                self.min_height - heights - tops,
-                tf.zeros_like(heights, dtype=heights.dtype),
-            )
-        else:
-            pad_remaineds = heights % self.pad_height_divisor
-            pad_rows = tf.where(
-                tf.math.greater(pad_remaineds, 0),
-                self.pad_height_divisor - pad_remaineds,
-                tf.zeros_like(pad_remaineds, dtype=pad_remaineds.dtype),
-            )
-            pad_rows = tf.cast(pad_rows, dtype=tf.float32)
-            tops = tf.round(pad_rows / 2.0)
-            bottoms = tf.cast(pad_rows - tops, dtype=tf.int32)
-            tops = tf.cast(tops, dtype=tf.int32)
-
-        if self.min_width is not None:
-            lefts = tf.where(
-                widths < self.min_width,
-                tf.cast((self.min_width - widths) / 2, widths.dtype),
-                tf.zeros_like(widths, dtype=widths.dtype),
-            )
-            rights = tf.where(
-                widths < self.min_width,
-                self.min_width - widths - lefts,
-                tf.zeros_like(widths, dtype=widths.dtype),
-            )
-        else:
-            pad_remaineds = widths % self.pad_width_divisor
-            pad_cols = tf.where(
-                tf.math.greater(pad_remaineds, 0),
-                self.pad_width_divisor - pad_remaineds,
-                tf.zeros_like(pad_remaineds, dtype=pad_remaineds.dtype),
-            )
-            pad_cols = tf.cast(pad_cols, dtype=tf.float32)
-            lefts = tf.round(pad_cols / 2.0)
-            rights = tf.cast(pad_cols - lefts, dtype=tf.int32)
-            lefts = tf.cast(lefts, dtype=tf.int32)
+        tops = tf.where(
+            heights < self.height,
+            tf.cast((self.height - heights) / 2, heights.dtype),
+            tf.zeros_like(heights, dtype=heights.dtype),
+        )
+        bottoms = tf.where(
+            heights < self.height,
+            self.height - heights - tops,
+            tf.zeros_like(heights, dtype=heights.dtype),
+        )
+        lefts = tf.where(
+            widths < self.width,
+            tf.cast((self.width - widths) / 2, widths.dtype),
+            tf.zeros_like(widths, dtype=widths.dtype),
+        )
+        rights = tf.where(
+            widths < self.width,
+            self.width - widths - lefts,
+            tf.zeros_like(widths, dtype=widths.dtype),
+        )
 
         (tops, bottoms, lefts, rights) = augmentation_utils.get_position_params(
             tops, bottoms, lefts, rights, self.position, self._random_generator
@@ -141,6 +99,9 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
+        ori_height = tf.shape(images)[augmentation_utils.H_AXIS]
+        ori_width = tf.shape(images)[augmentation_utils.W_AXIS]
+
         pad_top = transformations["pad_tops"][0][0]
         pad_bottom = transformations["pad_bottoms"][0][0]
         pad_left = transformations["pad_lefts"][0][0]
@@ -155,6 +116,17 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         )
         images = tf.pad(
             images, paddings=paddings, constant_values=self.padding_value
+        )
+
+        # center crop
+        offset_height = (ori_height + pad_top + pad_bottom - self.height) // 2
+        offset_width = (ori_width + pad_left + pad_right - self.width) // 2
+        images = tf.image.crop_to_bounding_box(
+            images,
+            offset_height,
+            offset_width,
+            self.height,
+            self.width,
         )
         return images
 
@@ -184,17 +156,30 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
             images=raw_images,
         )
 
+        x1s, y1s, x2s, y2s = tf.split(bounding_boxes["boxes"], 4, axis=-1)
         pad_tops = tf.cast(transformations["pad_tops"], dtype=tf.float32)
         pad_lefts = tf.cast(transformations["pad_lefts"], dtype=tf.float32)
-        x1s, y1s, x2s, y2s = tf.split(bounding_boxes["boxes"], 4, axis=-1)
-        x1s += tf.expand_dims(pad_lefts, axis=1)
-        y1s += tf.expand_dims(pad_tops, axis=1)
-        x2s += tf.expand_dims(pad_lefts, axis=1)
-        y2s += tf.expand_dims(pad_tops, axis=1)
+        pad_bottoms = tf.cast(transformations["pad_bottoms"], dtype=tf.float32)
+        pad_rights = tf.cast(transformations["pad_rights"], dtype=tf.float32)
+        heights, widths = augmentation_utils.get_images_shape(
+            raw_images, dtype=tf.float32
+        )
+        offset_heights = (heights + pad_tops + pad_bottoms - self.height) // 2
+        offset_widths = (widths + pad_lefts + pad_rights - self.width) // 2
+
+        x1s += tf.expand_dims(pad_lefts - offset_widths, axis=1)
+        y1s += tf.expand_dims(pad_tops - offset_heights, axis=1)
+        x2s += tf.expand_dims(pad_lefts - offset_widths, axis=1)
+        y2s += tf.expand_dims(pad_tops - offset_heights, axis=1)
         outputs = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = outputs
+        bounding_boxes = bounding_box.clip_to_image(
+            bounding_boxes,
+            bounding_box_format="xyxy",
+            images=images,
+        )
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source="xyxy",
@@ -208,13 +193,13 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         if isinstance(segmentation_masks, tf.RaggedTensor):
-            inputs_for_augment_segmentation_mask_single = {
+            inputs = {
                 augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
                 "transformation": transformations,
             }
             segmentation_masks = tf.map_fn(
                 self.augment_segmentation_mask_single,
-                inputs_for_augment_segmentation_mask_single,
+                inputs,
                 fn_output_signature=segmentation_masks.dtype,
             )
         else:
@@ -260,10 +245,8 @@ class PadIfNeeded(VectorizedBaseImageAugmentationLayer):
         config = super().get_config()
         config.update(
             {
-                "min_height": self.min_height,
-                "min_width": self.min_width,
-                "pad_height_divisor": self.pad_height_divisor,
-                "pad_width_divisor": self.pad_width_divisor,
+                "height": self.height,
+                "width": self.width,
                 "position": self.position,
                 "padding_value": self.padding_value,
                 "bounding_box_format": self.bounding_box_format,

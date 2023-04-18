@@ -214,16 +214,50 @@ class ResizeAndPad(VectorizedBaseImageAugmentationLayer):
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
-        inputs = {
-            augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
-            "transformations": transformations,
-        }
-        return tf.vectorized_map(
-            self.augment_single_segmentation_mask,
-            inputs,
-        )
+        if isinstance(segmentation_masks, tf.RaggedTensor):
+            inputs = {
+                augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
+                "transformations": transformations,
+            }
+            segmentation_masks = tf.vectorized_map(
+                self.augment_segmentation_mask_single,
+                inputs,
+            )
+        else:
+            # resize
+            scaled_size = transformations["scaled_sizes"]
+            new_height = scaled_size[0][0]
+            new_width = scaled_size[0][1]
+            segmentation_masks = tf.image.resize(
+                segmentation_masks,
+                size=(new_height, new_width),
+                method="nearest",
+                antialias=self.antialias,
+            )
+            # pad
+            pad_top = transformations["pad_tops"][0][0]
+            pad_bottom = transformations["pad_bottoms"][0][0]
+            pad_left = transformations["pad_lefts"][0][0]
+            pad_right = transformations["pad_rights"][0][0]
+            paddings = tf.stack(
+                (
+                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
+                    tf.stack((pad_top, pad_bottom)),
+                    tf.stack((pad_left, pad_right)),
+                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
+                )
+            )
+            segmentation_masks = tf.pad(
+                segmentation_masks,
+                paddings=paddings,
+                constant_values=0,
+            )
+            segmentation_masks = tf.cast(
+                segmentation_masks, dtype=self.compute_dtype
+            )
+        return segmentation_masks
 
-    def augment_single_segmentation_mask(self, inputs):
+    def augment_segmentation_mask_single(self, inputs):
         segmentation_mask = inputs.get(
             augmentation_utils.SEGMENTATION_MASKS, None
         )
