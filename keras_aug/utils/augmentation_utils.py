@@ -12,6 +12,7 @@ https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.
 """  # noqa: E501
 
 import enum
+from typing import Sequence
 
 import tensorflow as tf
 from keras_cv import core
@@ -56,6 +57,11 @@ def get_position_params(
     tops, bottoms, lefts, rights, position, random_generator
 ):
     """This function supposes arguments are at `center` padding method."""
+    tops = tf.convert_to_tensor(tops)
+    bottoms = tf.convert_to_tensor(bottoms)
+    lefts = tf.convert_to_tensor(lefts)
+    rights = tf.convert_to_tensor(rights)
+
     if position == PaddingPosition.CENTER:
         # do nothing
         bottoms = bottoms
@@ -107,15 +113,25 @@ def get_position_params(
 
 
 def is_factor_working(factor, not_working_value=0.0):
-    if isinstance(factor, core.ConstantFactorSampler):
+    if isinstance(factor, (int, float)):
+        if factor == not_working_value:
+            return False
+    elif isinstance(factor, Sequence):
+        if factor[0] == factor[1] and factor[0] == not_working_value:
+            return False
+    elif isinstance(factor, core.ConstantFactorSampler):
         if factor.value == not_working_value:
             return False
-    if isinstance(factor, core.UniformFactorSampler):
+    elif isinstance(factor, core.UniformFactorSampler):
         if (
             factor.lower == not_working_value
             and factor.upper == not_working_value
         ):
             return False
+    else:
+        raise ValueError(
+            f"Cannot recognize factor type: {factor} with type {type(factor)}"
+        )
     return True
 
 
@@ -150,12 +166,6 @@ def parse_factor(
     param_name="factor",
     seed=None,
 ):
-    if isinstance(param, dict):
-        # For all classes missing a `from_config` implementation.
-        # (RandomHue, RandomShear, etc.)
-        # To be removed with addition of `keras.__internal__` namespace support
-        param = keras.utils.deserialize_keras_object(param)
-
     if isinstance(param, core.FactorSampler):
         return param
 
