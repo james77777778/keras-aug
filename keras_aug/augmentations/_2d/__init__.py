@@ -1,3 +1,6 @@
+from keras_aug.augmentations._2d.base.vectorized_base_random_layer import (
+    VectorizedBaseRandomLayer,
+)
 from keras_aug.augmentations._2d.geometry.center_crop import CenterCrop
 from keras_aug.augmentations._2d.geometry.pad_if_needed import PadIfNeeded
 from keras_aug.augmentations._2d.geometry.random_affine import RandomAffine
@@ -28,7 +31,4 @@ from keras_aug.augmentations._2d.intensity.random_jpeg_quality import (
 from keras_aug.augmentations._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentations._2d.regularization.channel_dropout import (
     ChannelDropout,
-)
-from keras_aug.augmentations._2d.vectorized_base_random_layer import (
-    VectorizedBaseRandomLayer,
 )

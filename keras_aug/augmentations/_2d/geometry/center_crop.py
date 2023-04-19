@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras_cv import bounding_box
 from tensorflow import keras
 
-from keras_aug.augmentations._2d.vectorized_base_random_layer import (
+from keras_aug.augmentations._2d.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation_utils
