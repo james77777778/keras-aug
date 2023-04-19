@@ -1,3 +1,5 @@
+from functools import partial
+
 import tensorflow as tf
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
@@ -25,17 +27,18 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
             Represented as a two number tuple written [low, high].
             This is typically either `[0, 1]` or `[0, 255]` depending
             on how your preprocessing pipeline is set up.
-        brightness_factor:  positive float represented as fraction of value,
-            or a tuple of size 2 representing lower and upper bound. When
-            represented as a single float, lower = upper. The brightness factor
-            will be randomly picked between `[0.5 - lower, 0.5 + upper]`. When
-            0.0 is chosen, the output image will be black, and when 1.0 is
-            chosen, the image will be fully white.
-        contrast_factor: A positive float represented as fraction of value,
-            or a tuple of size 2 representing lower and upper bound. When
-            represented as a single float, lower = upper. The contrast factor
-            will be randomly picked between `[0.5 - lower, 0.5 + upper]`.
-        seed: Integer. Used to create a random seed.
+        brightness_factor:  A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The brightness factor will be randomly picked between
+            `[1.0 - lower, 1.0 + upper]`. 0.0 will make image be black. 1.0 will
+            make image be white.
+        contrast_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The contrast factor will be randomly picked between
+            `[1.0 - lower, 1.0 + upper]`. 0.0 gives solid gray image, 1.0 gives
+            the original image while 2.0 increases the contrast by a factor of
+            2.
+        seed: Used to create a random seed, defaults to None.
     """
 
     def __init__(
@@ -46,34 +49,44 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs
     ):
-        super().__init__(seed=seed, **kwargs)
-        self.brightness_factor = preprocessing_utils.parse_factor(
-            brightness_factor, seed=seed
+        super().__init__(seed=seed, force_generator=True, **kwargs)
+        self.brightness_factor = augmentation_utils.parse_factor(
+            brightness_factor, max_value=None, center_value=1, seed=seed
         )
-        self.contrast_factor = preprocessing_utils.parse_factor(
-            contrast_factor, seed=seed
+        self.contrast_factor = augmentation_utils.parse_factor(
+            contrast_factor, max_value=None, center_value=1, seed=seed
         )
         self.value_range = value_range
         self.seed = seed
 
+        # decide whether to enable the augmentation
+        self._enable_brightness = augmentation_utils.is_factor_working(
+            self.brightness_factor, not_working_value=1.0
+        )
+        self._enable_contrast = augmentation_utils.is_factor_working(
+            self.contrast_factor, not_working_value=1.0
+        )
+
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        # scale self.brightness_factors() from [0, 1] to [-1, 1]
+        # orders determine the augmentation order which is the same across
+        # single batch
+        seed = self._random_generator.make_seed_for_stateless_op()
+        orders = tf.random.experimental.stateless_shuffle(
+            tf.range(2), seed=seed
+        )
+        orders = tf.reshape(
+            tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 2)
+        )
+
         brightness_factors = self.brightness_factor(
             shape=(batch_size, 1), dtype=self.compute_dtype
         )
-        brightness_factors = brightness_factors * 2.0 - 1.0
-
-        # scale self.contrast_factors() from [0, 1] to [0, +inf]
-        # This will ensure:
-        #   y = +inf when x = 1 (max contrast)
-        #   y = 1 when x = 0.5 (no augmentation)
-        #   y = 0 when x = 0 (min contrast)
         contrast_factors = self.contrast_factor(
             shape=(batch_size, 1), dtype=self.compute_dtype
         )
-        contrast_factors = contrast_factors / (1.0 - contrast_factors)
 
         return {
+            "orders": orders,
             "brightness_factors": brightness_factors,
             "contrast_factors": contrast_factors,
         }
@@ -89,24 +102,21 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        # adjust contrast (must be first augmentation due to mean operation)
-        contrast_factors = transformations["contrast_factors"]
-        contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
-        means = tf.reduce_mean(images, axis=(1, 2), keepdims=True)
-        images = (images - means) * contrast_factors + means
-        images = tf.clip_by_value(
-            images, self.value_range[0], self.value_range[1]
+        images = preprocessing_utils.transform_value_range(
+            images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-
-        # adjust brightness
-        brightness_factors = transformations["brightness_factors"]
-        brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
-        brightness_factors *= self.value_range[1] - self.value_range[0]
-        images += brightness_factors
-        images = tf.clip_by_value(
-            images, self.value_range[0], self.value_range[1]
+        orders = transformations["orders"][0]
+        for order in orders:
+            images = tf.switch_case(
+                order,
+                branch_fns={
+                    0: partial(self.adjust_brightness, images, transformations),
+                    1: partial(self.adjust_contrast, images, transformations),
+                },
+            )
+        images = preprocessing_utils.transform_value_range(
+            images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
-
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -122,6 +132,29 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
 
     def augment_keypoints(self, keypoints, transformations, **kwargs):
         return keypoints
+
+    def blend(self, images_1, images_2, ratios):
+        return ratios * images_1 + (1.0 - ratios) * images_2
+
+    def adjust_brightness(self, images, transformations):
+        if not self._enable_brightness:
+            return images
+        brightness_factors = transformations["brightness_factors"]
+        brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
+        images = self.blend(images, tf.zeros_like(images), brightness_factors)
+        images = tf.clip_by_value(images, 0, 255)
+        return images
+
+    def adjust_contrast(self, images, transformations):
+        if not self._enable_contrast:
+            return images
+        contrast_factors = transformations["contrast_factors"]
+        contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
+        means = tf.image.rgb_to_grayscale(images)
+        means = tf.image.grayscale_to_rgb(means)
+        images = self.blend(images, means, contrast_factors)
+        images = tf.clip_by_value(images, 0, 255)
+        return images
 
     def get_config(self):
         config = super().get_config()

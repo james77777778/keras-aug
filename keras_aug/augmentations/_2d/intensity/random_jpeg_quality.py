@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import tensorflow as tf
 from keras_cv import core
 from keras_cv.utils import preprocessing as preprocessing_utils
@@ -6,6 +8,7 @@ from tensorflow import keras
 from keras_aug.augmentations._2d.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -21,14 +24,13 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
             Represented as a two number tuple written [low, high]. This is
             typically either `[0, 1]` or `[0, 255]` depending on how your
             preprocessing pipeline is set up.
-        factor: positive float represented as fraction of value,
-            or a tuple of size 2 representing lower and upper bound. When
-            represented as a single float, the factor will be randomly picked
-            between `[1.0 - factor, 1.0]`. When 0.5 is chosen, the output image
-            will be compressed 50% with JPEG, and when 1.0 is chosen, it is
-            still lossy compresson. This value is passed to
-            `tf.image.adjust_jpeg_quality()`.
-        seed: Integer. Used to create a random seed.
+        factor: A tuple of two ints, a single int or
+            `keras_cv.FactorSampler`. When represented as a single int, the
+            factor will be randomly picked between `[100 - factor, 100]`.
+            When 50 is chosen, the output image will be compressed 50% with
+            JPEG, and when 100 is chosen, it is still lossy compresson. This
+            value is passed to `tf.image.adjust_jpeg_quality()`.
+        seed: Used to create a random seed, defaults to None.
     """
 
     def __init__(
@@ -39,28 +41,28 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        if isinstance(factor, float):
-            factor = (1.0 - factor, 1.0)
-        elif isinstance(factor, list) or isinstance(factor, tuple):
-            factor = sorted(factor)
-            factor = (factor[0], factor[1])
-        elif isinstance(factor, core.UniformFactorSampler):
+        if isinstance(factor, (int, float)):
+            lower = 101 - int(factor)
+            upper = 101
+            factor = (lower, upper)
+        elif isinstance(factor, Sequence):
+            factor = (factor[0], factor[1] + 1)
+        elif isinstance(factor, core.FactorSampler):
             factor = factor
         else:
             raise ValueError(
-                "RandomJpeqQuality expects `factor` to be a list, a tuple of "
-                f"ints or an int. Got `factor`: {factor}"
+                "RandomJpegQuality expects factor to be a list or a tuple of "
+                f"ints. Got factor = {factor}"
             )
-        self.factor = preprocessing_utils.parse_factor(
-            factor, min_value=0, max_value=1, seed=seed
+        self.factor = augmentation_utils.parse_factor(
+            factor, min_value=0, max_value=100 + 1, seed=seed
         )
         self.value_range = value_range
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # scale from [0, 1] to [0, 100]
-        factors = self.factor(shape=(batch_size, 1), dtype=tf.float32)
-        factors = tf.cast(tf.round(factors * 100), dtype=tf.int32)
+        factors = self.factor(shape=(batch_size, 1), dtype=tf.int32)
         return factors
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -73,28 +75,20 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         images = preprocessing_utils.transform_value_range(
-            images,
-            self.value_range,
-            target_range=(0, 1),
-            dtype=tf.float32,
+            images, self.value_range, target_range=(0, 1)
         )
-
         inputs_for_adjust_jpeg_qualitye = {
             "images": images,
             "factors": transformations,
         }
-        jpeq_compressed_images = tf.vectorized_map(
+        images = tf.vectorized_map(
             self.adjust_jpeg_quality,
             inputs_for_adjust_jpeg_qualitye,
         )
-
-        jpeq_compressed_images = preprocessing_utils.transform_value_range(
-            jpeq_compressed_images,
-            (0, 1),
-            target_range=self.value_range,
-            dtype=self.compute_dtype,
+        images = preprocessing_utils.transform_value_range(
+            images, (0, 1), self.value_range, dtype=self.compute_dtype
         )
-        return jpeq_compressed_images
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels

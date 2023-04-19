@@ -9,11 +9,8 @@ from keras_aug.augmentations._2d.vectorized_base_random_layer import (
 from keras_aug.utils import augmentation_utils
 from keras_aug.utils.augmentation_utils import BATCHED
 from keras_aug.utils.augmentation_utils import BOUNDING_BOXES
-from keras_aug.utils.augmentation_utils import CUSTOM_ANNOTATIONS
 from keras_aug.utils.augmentation_utils import IMAGES
-from keras_aug.utils.augmentation_utils import KEYPOINTS
 from keras_aug.utils.augmentation_utils import LABELS
-from keras_aug.utils.augmentation_utils import SEGMENTATION_MASKS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -47,7 +44,8 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             For detailed information on the supported formats, see the
             [KerasCV bounding box documentation](https://keras.io/api/keras_cv/bounding_box/formats/).
             Defaults to None.
-        seed: integer, used to create a random seed.
+        seed: Used to create a random seed, defaults to None.
+
     References:
         - [Yolov4 paper](https://arxiv.org/pdf/2004.10934).
         - [Yolov5 implementation](https://github.com/ultralytics/yolov5).
@@ -65,7 +63,9 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        super().__init__(seed=seed, **kwargs)
+        super().__init__(
+            force_no_unwrap_ragged_image_call=True, seed=seed, **kwargs
+        )
         single_image_max_size = max((height, width)) // 2
         offset = sorted(offset)
 
@@ -127,8 +127,9 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         return images
 
     def augment_labels(self, labels, transformations, images=None, **kwargs):
+        labels = tf.cast(labels, dtype=self.compute_dtype)
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
+            images, dtype=self.compute_dtype
         )
         # updates labels for one output mosaic
         permutation_order = transformations["permutation_order"]
@@ -160,7 +161,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
     ):
         batch_size = tf.shape(raw_images)[0]
         heights, widths = augmentation_utils.get_images_shape(
-            raw_images, dtype=tf.float32
+            raw_images, dtype=self.compute_dtype
         )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
@@ -240,58 +241,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
 
     def _batch_augment(self, inputs):
         self._validate_inputs(inputs)
-
-        images = inputs.get(IMAGES, None)
-        raw_images = images
-        labels = inputs.get(LABELS, None)
-        bounding_boxes = inputs.get(BOUNDING_BOXES, None)
-        keypoints = inputs.get(KEYPOINTS, None)
-        segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
-        custom_annotations = inputs.get(CUSTOM_ANNOTATIONS, None)
-        batch_size = tf.shape(images)[0]
-        transformations = self.get_random_transformation_batch(
-            batch_size,
-            images=images,
-            labels=labels,
-            bounding_boxes=bounding_boxes,
-            keypoints=keypoints,
-            segmentation_masks=segmentation_masks,
-            custom_annotations=custom_annotations,
-        )
-
-        images = self.augment_images(
-            images,
-            transformations=transformations,
-            bounding_boxes=bounding_boxes,
-            labels=labels,
-        )
-        result = {IMAGES: images}
-
-        if labels is not None:
-            labels = self.augment_labels(
-                labels,
-                transformations=transformations,
-                bounding_boxes=bounding_boxes,
-                images=images,
-                raw_images=raw_images,
-            )
-            result[LABELS] = labels
-
-        if bounding_boxes is not None:
-            bounding_boxes = self.augment_bounding_boxes(
-                bounding_boxes,
-                transformations=transformations,
-                labels=labels,
-                images=images,
-                raw_images=raw_images,
-            )
-            bounding_boxes = bounding_box.to_ragged(bounding_boxes)
-            result[BOUNDING_BOXES] = bounding_boxes
-
-        # preserve any additional inputs unmodified by this layer.
-        for key in inputs.keys() - result.keys():
-            result[key] = inputs[key]
-        return result
+        return super()._batch_augment(inputs)
 
     def call(self, inputs):
         _, metadata = self._format_inputs(inputs)
@@ -315,11 +265,6 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
                 '{"images": images, "bounding_boxes": bounding_boxes}'
                 f"Got: inputs = {inputs}"
             )
-        if labels is not None and not labels.dtype.is_floating:
-            raise ValueError(
-                f"MosaicYOLOV8 received labels with type {labels.dtype}. "
-                "Labels must be of type float."
-            )
         if bounding_boxes is not None and self.bounding_box_format is None:
             raise ValueError(
                 "MosaicYOLOV8 received bounding boxes but no "
@@ -327,7 +272,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
                 "the supported list."
             )
 
-    def _pad_and_crop_single_patch(
+    def pad_and_crop_image_patch_single(
         self, image, height, width, target_height, target_width, mosaic_index
     ):
         if mosaic_index not in (0, 1, 2, 3):
@@ -383,13 +328,16 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         mosaic_images = inputs.get(IMAGES, None)
         transformation = inputs.get("transformations")
         mosaic_centers = transformation["mosaic_centers"]
+        # must be tf.int32 for following tf.image.crop_to_bounding_box
         mosaic_centers_x = tf.cast(
-            mosaic_centers[0] * self.width, dtype=tf.int32
+            tf.round(mosaic_centers[0] * self.width), dtype=tf.int32
         )
         mosaic_centers_y = tf.cast(
-            mosaic_centers[1] * self.height, dtype=tf.int32
+            tf.round(mosaic_centers[1] * self.height), dtype=tf.int32
         )
-        heights, widths = augmentation_utils.get_images_shape(mosaic_images)
+        heights, widths = augmentation_utils.get_images_shape(
+            mosaic_images, dtype=tf.int32
+        )
 
         # get images
         top_left_image = mosaic_images[0]
@@ -403,7 +351,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             bottom_right_image = bottom_right_image.to_tensor()
 
         # top_left
-        top_left_image = self._pad_and_crop_single_patch(
+        top_left_image = self.pad_and_crop_image_patch_single(
             top_left_image,
             heights[0][0],
             widths[0][0],
@@ -412,7 +360,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             mosaic_index=0,
         )
         # top_right
-        top_right_image = self._pad_and_crop_single_patch(
+        top_right_image = self.pad_and_crop_image_patch_single(
             top_right_image,
             heights[1][0],
             widths[1][0],
@@ -421,7 +369,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             mosaic_index=1,
         )
         # bottom_left
-        bottom_left_image = self._pad_and_crop_single_patch(
+        bottom_left_image = self.pad_and_crop_image_patch_single(
             bottom_left_image,
             heights[2][0],
             widths[2][0],
@@ -430,7 +378,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             mosaic_index=2,
         )
         # bottom_right
-        bottom_right_image = self._pad_and_crop_single_patch(
+        bottom_right_image = self.pad_and_crop_image_patch_single(
             bottom_right_image,
             heights[3][0],
             widths[3][0],

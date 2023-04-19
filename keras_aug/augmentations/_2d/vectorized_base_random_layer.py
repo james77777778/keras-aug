@@ -77,8 +77,13 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     `self._random_generator` attribute.
     """
 
-    def __init__(self, seed=None, **kwargs):
+    def __init__(
+        self, force_no_unwrap_ragged_image_call=False, seed=None, **kwargs
+    ):
         super().__init__(seed=seed, **kwargs)
+        self.force_no_unwrap_ragged_image_call = (
+            force_no_unwrap_ragged_image_call
+        )
 
     def get_random_transformation_batch(
         self,
@@ -267,7 +272,10 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
             custom_annotations=custom_annotations,
         )
 
-        if isinstance(images, tf.RaggedTensor):
+        if (
+            isinstance(images, tf.RaggedTensor)
+            and not self.force_no_unwrap_ragged_image_call
+        ):
             inputs_for_raggeds = {"transformations": transformations, **inputs}
             images = tf.map_fn(
                 self._unwrap_ragged_image_call,

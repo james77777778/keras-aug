@@ -7,7 +7,7 @@ from keras_aug import augmentations
 
 class RandomRotationTest(tf.test.TestCase):
     regular_args = {
-        "rotation_factor": 10 / 360,
+        "rotation_factor": 10,
         "translation_height_factor": 0.1,
         "translation_width_factor": 0.1,
         "zoom_height_factor": 0.1,
@@ -32,96 +32,6 @@ class RandomRotationTest(tf.test.TestCase):
         "interpolation": "bilinear",
         "bounding_box_format": "xyxy",
     }
-
-    def test_preserves_output_shape(self):
-        input_images = np.random.random((2, 8, 8, 3)).astype(np.float32)
-        expected_output = input_images
-        layer = augmentations.RandomAffine(**self.regular_args)
-
-        actual_output = layer(input_images)
-
-        self.assertEqual(expected_output.shape, actual_output.shape)
-
-    def test_with_uint8(self):
-        image_shape = (4, 8, 8, 3)
-        image = tf.cast(
-            tf.random.uniform(shape=image_shape) * 255.0, dtype=tf.uint8
-        )
-
-        layer = augmentations.RandomAffine(**self.no_aug_args)
-        output = layer(image)
-        self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
-
-        layer = augmentations.RandomAffine(**self.regular_args)
-        output = layer(image)
-        self.assertNotAllClose(image, output)
-
-    def test_independence_on_batched_images(self):
-        image = tf.random.uniform((100, 100, 3))
-        batched_images = tf.stack((image, image), axis=0)
-        layer = augmentations.RandomAffine(**self.regular_args, seed=2023)
-
-        results = layer(batched_images)
-
-        self.assertNotAllClose(results[0], results[1])
-
-    def test_config_with_custom_name(self):
-        layer = augmentations.RandomAffine(
-            **self.regular_args, name="image_preproc"
-        )
-
-        config = layer.get_config()
-        layer_reconstructed = augmentations.RandomAffine.from_config(config)
-
-        self.assertEqual(layer_reconstructed.name, layer.name)
-
-    def test_config(self):
-        layer = augmentations.RandomAffine(**self.regular_args)
-
-        config = layer.get_config()
-
-        self.assertEqual(
-            config["translation_height_factor"],
-            self.regular_args["translation_height_factor"],
-        )
-        self.assertEqual(
-            config["translation_width_factor"],
-            self.regular_args["translation_width_factor"],
-        )
-        self.assertEqual(
-            config["zoom_height_factor"],
-            self.regular_args["zoom_height_factor"],
-        )
-        self.assertEqual(
-            config["zoom_width_factor"], self.regular_args["zoom_width_factor"]
-        )
-        self.assertEqual(
-            config["shear_height_factor"],
-            self.regular_args["shear_height_factor"],
-        )
-        self.assertEqual(
-            config["shear_width_factor"],
-            self.regular_args["shear_width_factor"],
-        )
-        self.assertEqual(config["fill_mode"], self.regular_args["fill_mode"])
-        self.assertEqual(config["fill_value"], self.regular_args["fill_value"])
-        self.assertEqual(
-            config["interpolation"], self.regular_args["interpolation"]
-        )
-        self.assertEqual(
-            config["bounding_box_format"],
-            self.regular_args["bounding_box_format"],
-        )
-
-    def test_output_dtypes(self):
-        inputs = np.array([[[1], [2]], [[3], [4]]], dtype="float64")
-        layer = augmentations.RandomAffine(**self.regular_args)
-
-        self.assertAllEqual(layer(inputs).dtype, "float32")
-
-        layer = augmentations.RandomAffine(**self.regular_args, dtype="uint8")
-
-        self.assertAllEqual(layer(inputs).dtype, "uint8")
 
     def test_no_adjustment(self):
         image_shape = (4, 8, 8, 3)
@@ -148,7 +58,7 @@ class RandomRotationTest(tf.test.TestCase):
         input_image = np.reshape(np.arange(0, 25), (5, 5, 1)).astype(np.float32)
         # 180 rotation
         args = self.no_aug_args.copy()
-        args.update({"rotation_factor": (0.5, 0.5)})
+        args.update({"rotation_factor": (180, 180)})
         layer = augmentations.RandomAffine(**args)
         expected_output = np.asarray(
             [
@@ -183,7 +93,7 @@ class RandomRotationTest(tf.test.TestCase):
         }
         # 180 rotation
         args = self.no_aug_args.copy()
-        args.update({"rotation_factor": (0.5, 0.5)})
+        args.update({"rotation_factor": (180, 180)})
         layer = augmentations.RandomAffine(**args)
 
         output = layer(input)
@@ -227,7 +137,7 @@ class RandomRotationTest(tf.test.TestCase):
         }
         # 180 rotation
         args = self.no_aug_args.copy()
-        args.update({"rotation_factor": (0.5, 0.5)})
+        args.update({"rotation_factor": (180, 180)})
         layer = augmentations.RandomAffine(**args)
 
         output = layer(input)
@@ -256,7 +166,7 @@ class RandomRotationTest(tf.test.TestCase):
 
         # 90 rotation
         args = self.no_aug_args.copy()
-        args.update({"rotation_factor": (0.25, 0.25)})
+        args.update({"rotation_factor": (90, 90)})
         layer = augmentations.RandomAffine(**args)
         outputs = layer(inputs)
         expected_masks = np.rot90(masks, axes=(1, 2))
@@ -383,8 +293,8 @@ class RandomRotationTest(tf.test.TestCase):
             args = self.no_aug_args.copy()
             args.update(
                 {
-                    "zoom_height_factor": (-0.5, -0.5),
-                    "zoom_width_factor": (-0.5, -0.5),
+                    "zoom_height_factor": (0.5, 0.5),
+                    "zoom_width_factor": (0.5, 0.5),
                     "interpolation": "nearest",
                 }
             )
@@ -413,8 +323,8 @@ class RandomRotationTest(tf.test.TestCase):
             args = self.no_aug_args.copy()
             args.update(
                 {
-                    "zoom_height_factor": (0.5, 0.5),
-                    "zoom_width_factor": (0.8, 0.8),
+                    "zoom_height_factor": (1.5, 1.5),
+                    "zoom_width_factor": (1.8, 1.8),
                     "interpolation": "nearest",
                 }
             )

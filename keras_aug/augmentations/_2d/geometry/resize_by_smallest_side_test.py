@@ -15,60 +15,6 @@ class ResizeBySmallestSideTest(tf.test.TestCase):
         "bounding_box_format": "rel_xyxy",
     }
 
-    def test_with_uint8(self):
-        image_shape = (4, self.min_size, self.min_size, 3)
-        image = tf.cast(
-            tf.random.uniform(shape=image_shape) * 255.0, dtype=tf.uint8
-        )
-
-        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
-        output = layer(image)
-        self.assertAllClose(image, output, rtol=1e-5, atol=1e-5)
-
-    def test_config_with_custom_name(self):
-        layer = augmentations.ResizeBySmallestSide(
-            **self.regular_args, name="image_preproc"
-        )
-
-        config = layer.get_config()
-        layer_reconstructed = augmentations.ResizeBySmallestSide.from_config(
-            config
-        )
-
-        self.assertEqual(layer_reconstructed.name, layer.name)
-
-    def test_config(self):
-        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
-
-        config = layer.get_config()
-
-        self.assertEqual(
-            config["min_size"],
-            self.regular_args["min_size"],
-        )
-        self.assertEqual(
-            config["interpolation"], self.regular_args["interpolation"]
-        )
-        self.assertEqual(config["antialias"], self.regular_args["antialias"])
-        self.assertEqual(
-            config["bounding_box_format"],
-            self.regular_args["bounding_box_format"],
-        )
-
-    def test_output_dtypes(self):
-        inputs = tf.random.uniform(
-            (self.height, self.width, 3), dtype=tf.float64
-        )
-        layer = augmentations.ResizeBySmallestSide(**self.regular_args)
-
-        self.assertAllEqual(layer(inputs).dtype, "float32")
-
-        layer = augmentations.ResizeBySmallestSide(
-            **self.regular_args, dtype="uint8"
-        )
-
-        self.assertAllEqual(layer(inputs).dtype, "uint8")
-
     def test_no_adjustment(self):
         image_shape = (4, self.min_size, self.min_size, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0

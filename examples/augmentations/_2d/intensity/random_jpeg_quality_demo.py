@@ -8,7 +8,7 @@ def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
     layer = RandomJpegQuality(
         value_range=(0, 255),
-        factor=(0.50, 1.0),  # compressed 50~100%
+        factor=(50, 100),  # compressed 50~100%
     )
     result = dataset.map(layer, num_parallel_calls=tf.data.AUTOTUNE)
     demo_utils.visualize_data(

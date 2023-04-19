@@ -11,9 +11,9 @@ def main():
 
     # The bounding boxes after rotation augmentation is not optimal,
     # so you should not augment rotation by large value.
-    # 10 degrees (`10 / 360`) should be fine.
+    # 10 degrees should be fine.
     layer = RandomAffine(
-        rotation_factor=10 / 360,  # 10 degrees
+        rotation_factor=10,  # 10 degrees
         translation_height_factor=0.2,  # 20%
         translation_width_factor=0.2,
         zoom_height_factor=0.2,  # 20%

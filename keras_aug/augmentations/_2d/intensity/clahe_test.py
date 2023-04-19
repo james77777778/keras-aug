@@ -1,6 +1,5 @@
 from functools import partial
 
-import numpy as np
 import tensorflow as tf
 
 from keras_aug import augmentations
@@ -68,43 +67,6 @@ class CLAHETest(tf.test.TestCase):
         "tile_grid_size": (8, 8),
         "gpu_optimized": True,
     }
-
-    def test_preserves_output_shape(self):
-        image_shape = (4, 8, 8, 3)
-        image = tf.random.uniform(shape=image_shape) * 255.0
-
-        layer = augmentations.CLAHE(**self.regular_args)
-        output = layer(image)
-
-        self.assertEqual(image.shape, output.shape)
-        self.assertNotAllClose(image, output)
-
-    def test_config_with_custom_name(self):
-        layer = augmentations.CLAHE(
-            **self.regular_args,
-            name="image_preproc",
-        )
-        config = layer.get_config()
-        layer_1 = augmentations.CLAHE.from_config(config)
-        self.assertEqual(layer_1.name, layer.name)
-
-    def test_config(self):
-        layer = augmentations.CLAHE(**self.regular_args)
-        config = layer.get_config()
-        self.assertEqual(config["factor"], self.regular_args["factor"])
-        self.assertEqual(
-            config["tile_grid_size"], self.regular_args["tile_grid_size"]
-        )
-        self.assertEqual(
-            config["gpu_optimized"], self.regular_args["gpu_optimized"]
-        )
-
-    def test_output_dtypes(self):
-        inputs = np.array(
-            [[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]]], dtype="float64"
-        )
-        layer = augmentations.CLAHE(**self.regular_args)
-        self.assertAllEqual(layer(inputs).dtype, "float32")
 
     def test_adjustment_for_non_rgb_value_range(self):
         image_shape = (4, 8, 8, 3)

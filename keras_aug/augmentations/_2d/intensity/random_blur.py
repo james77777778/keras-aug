@@ -68,12 +68,12 @@ class RandomBlur(VectorizedBaseRandomLayer):
             "images": images,
             "blur_kernel_sizes": transformations,
         }
-        blurred_images = tf.map_fn(
+        images = tf.map_fn(
             self.blur_single_image,
             inputs_for_blur_single_image,
             fn_output_signature=tf.float32,
         )
-        return tf.cast(blurred_images, self.compute_dtype)
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels

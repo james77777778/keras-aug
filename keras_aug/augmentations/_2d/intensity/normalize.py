@@ -16,10 +16,10 @@ class Normalize(VectorizedBaseRandomLayer):
             typically either `[0, 1]` or `[0, 255]` depending on how your
             preprocessing pipeline is set up.
         mean: A tuple of int represents the mean values, defaults to
-            `(0.485, 0.456, 0.406)` which is the mean values of ImageNet
+            `(0.485, 0.456, 0.406)` which is the mean values from ImageNet
         std: A tuple of int represents the std values, defaults to
-            `(0.229, 0.224, 0.225)` which is the std values of ImageNet
-        seed: Integer. Used to create a random seed.
+            `(0.229, 0.224, 0.225)` which is the std values from ImageNet
+        seed: Used to create a random seed, defaults to None.
     """
 
     def __init__(
@@ -31,8 +31,14 @@ class Normalize(VectorizedBaseRandomLayer):
     ):
         super().__init__(**kwargs)
         self.value_range = value_range
-        self.mean = mean
-        self.std = std
+        self.mean_input = mean
+        self.std_input = std
+
+        num_channel = len(mean)
+        self.mean = tf.convert_to_tensor(mean, dtype=self.compute_dtype)
+        self.mean = tf.reshape(self.mean, shape=(1, 1, 1, num_channel))
+        self.std = tf.convert_to_tensor(std, dtype=self.compute_dtype)
+        self.std = tf.reshape(self.std, shape=(1, 1, 1, num_channel))
 
     def augment_ragged_image(self, image, transformation, **kwargs):
         images = tf.expand_dims(image, axis=0)
@@ -42,20 +48,12 @@ class Normalize(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        channel = tf.shape(images)[-1]
         max_pixel_value = self.value_range[1]
-        results = tf.cast(images, dtype=self.compute_dtype)
-
-        # broadcast
-        mean = tf.convert_to_tensor(self.mean, dtype=self.compute_dtype)
-        mean = tf.reshape(mean, shape=(1, 1, 1, channel))
-        std = tf.convert_to_tensor(self.std, dtype=self.compute_dtype)
-        std = tf.reshape(std, shape=(1, 1, 1, channel))
-
-        # images = (images - mean * max_pixel_value) / (std * max_pixel_value)
-        # max_pixel_value = value_range[1]
-        results = (results - mean * max_pixel_value) / (std * max_pixel_value)
-        return tf.cast(results, dtype=images.dtype)
+        images = tf.cast(images, dtype=self.compute_dtype)
+        images = (images - self.mean * max_pixel_value) / (
+            self.std * max_pixel_value
+        )
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -76,8 +74,8 @@ class Normalize(VectorizedBaseRandomLayer):
         config.update(
             {
                 "value_range": self.value_range,
-                "mean": self.mean,
-                "std": self.std,
+                "mean": self.mean_input,
+                "std": self.std_input,
             }
         )
         return config

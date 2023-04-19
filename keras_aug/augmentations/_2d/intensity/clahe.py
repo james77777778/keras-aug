@@ -66,29 +66,20 @@ class CLAHE(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         images = preprocessing_utils.transform_value_range(
-            images,
-            original_range=self.value_range,
-            target_range=(0, 255),
-            dtype=tf.float32,
+            images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-
         inputs_for_clahe_single_image = {
             "images": images,
             "clip_limits": transformations,
         }
-        clahed_images = tf.vectorized_map(
+        images = tf.vectorized_map(
             self.clahe_single_image,
             inputs_for_clahe_single_image,
         )
-
-        clahed_images = preprocessing_utils.transform_value_range(
-            clahed_images,
-            original_range=(0, 255),
-            target_range=self.value_range,
-            dtype=tf.float32,
+        images = preprocessing_utils.transform_value_range(
+            images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
-
-        return tf.cast(clahed_images, dtype=self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels

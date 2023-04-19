@@ -84,16 +84,6 @@ class MosaicYOLOV8Test(tf.test.TestCase):
         ):
             _ = layer(inputs)
 
-    def test_int_labels(self):
-        xs = tf.ones((2, 32, 32, 3))
-        ys = tf.one_hot(tf.constant([1, 0]), 2, dtype=tf.int32)
-        inputs = {"images": xs, "labels": ys}
-        layer = augmentations.MosaicYOLOV8(height=32, width=32)
-        with self.assertRaisesRegexp(
-            ValueError, "MosaicYOLOV8 received labels with type"
-        ):
-            _ = layer(inputs)
-
     def test_image_input(self):
         xs = tf.ones((2, 32, 32, 3))
         layer = augmentations.MosaicYOLOV8(height=32, width=32)

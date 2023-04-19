@@ -31,21 +31,6 @@ CUSTOM_ANNOTATIONS = "custom_annotations"
 BATCHED = "batched"
 
 
-def get_images_shape(images, dtype=tf.int32):
-    if isinstance(images, tf.RaggedTensor):
-        heights = tf.reshape(images.row_lengths(), (-1, 1))
-        widths = tf.reshape(
-            tf.reduce_max(images.row_lengths(axis=2), 1), (-1, 1)
-        )
-    else:
-        batch_size = tf.shape(images)[0]
-        heights = tf.repeat(tf.shape(images)[H_AXIS], repeats=[batch_size])
-        heights = tf.reshape(heights, shape=(-1, 1))
-        widths = tf.repeat(tf.shape(images)[W_AXIS], repeats=[batch_size])
-        widths = tf.reshape(widths, shape=(-1, 1))
-    return tf.cast(heights, dtype=dtype), tf.cast(widths, dtype=dtype)
-
-
 class PaddingPosition(enum.Enum):
     CENTER = "center"
     TOP_LEFT = "top_left"
@@ -55,26 +40,16 @@ class PaddingPosition(enum.Enum):
     RANDOM = "random"
 
 
-PADDING_POSITION = {
-    "center": PaddingPosition.CENTER,
-    "top_left": PaddingPosition.TOP_LEFT,
-    "top_right": PaddingPosition.TOP_RIGHT,
-    "bottom_left": PaddingPosition.BOTTOM_LEFT,
-    "bottom_right": PaddingPosition.BOTTOM_RIGHT,
-    "random": PaddingPosition.RANDOM,
-}
-
-
 def get_padding_position(position):
     if isinstance(position, PaddingPosition):
         return position
     position = position.lower()
-    if position not in PADDING_POSITION.keys():
+    if position not in PaddingPosition._value2member_map_.keys():
         raise NotImplementedError(
             f"Value not recognized for `position`: {position}. Supported "
-            f"values are: {PADDING_POSITION.keys()}"
+            f"values are: {PaddingPosition._value2member_map_.keys()}"
         )
-    return PADDING_POSITION[position]
+    return PaddingPosition._value2member_map_[position]
 
 
 def get_position_params(
@@ -125,10 +100,38 @@ def get_position_params(
     else:
         raise NotImplementedError(
             f"Value not recognized for `position`: {position}. Supported "
-            f"values are: {PADDING_POSITION}"
+            f"values are: {PaddingPosition._value2member_map_.keys()}"
         )
 
     return tops, bottoms, lefts, rights
+
+
+def is_factor_working(factor, not_working_value=0.0):
+    if isinstance(factor, core.ConstantFactorSampler):
+        if factor.value == not_working_value:
+            return False
+    if isinstance(factor, core.UniformFactorSampler):
+        if (
+            factor.lower == not_working_value
+            and factor.upper == not_working_value
+        ):
+            return False
+    return True
+
+
+def get_images_shape(images, dtype=tf.int32):
+    if isinstance(images, tf.RaggedTensor):
+        heights = tf.reshape(images.row_lengths(), (-1, 1))
+        widths = tf.reshape(
+            tf.reduce_max(images.row_lengths(axis=2), 1), (-1, 1)
+        )
+    else:
+        batch_size = tf.shape(images)[0]
+        heights = tf.repeat(tf.shape(images)[H_AXIS], repeats=[batch_size])
+        heights = tf.reshape(heights, shape=(-1, 1))
+        widths = tf.repeat(tf.shape(images)[W_AXIS], repeats=[batch_size])
+        widths = tf.reshape(widths, shape=(-1, 1))
+    return tf.cast(heights, dtype=dtype), tf.cast(widths, dtype=dtype)
 
 
 def expand_dict_dims(dicts, axis):
@@ -143,7 +146,7 @@ def parse_factor(
     param,
     min_value=0.0,
     max_value=1.0,
-    center=0.5,
+    center_value=0.5,
     param_name="factor",
     seed=None,
 ):
@@ -157,7 +160,7 @@ def parse_factor(
         return param
 
     if isinstance(param, float) or isinstance(param, int):
-        param = (center - param, center + param)
+        param = (center_value - param, center_value + param)
 
     if param[0] > param[1]:
         raise ValueError(
@@ -176,6 +179,11 @@ def parse_factor(
         return core.ConstantFactorSampler(param[0])
 
     return core.UniformFactorSampler(param[0], param[1], seed=seed)
+
+
+def blend(images_1, images_2, ratios):
+    """Blend the images by `ratios * images_1 + (1 - ratios) * images_2`"""
+    return ratios * images_1 + (1.0 - ratios) * images_2
 
 
 def get_rotation_matrix(

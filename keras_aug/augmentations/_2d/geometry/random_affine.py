@@ -24,63 +24,64 @@ class RandomAffine(VectorizedBaseRandomLayer):
         `(..., height, width, channels)`, in `"channels_last"` format
 
     Args:
-        rotation_factor: a float represented as fraction of 2 Pi, or a tuple of
-            size 2 representing lower and upper bound for rotating clockwise and
-            counter-clockwise. A positive values means rotating counter
-            clock-wise, while a negative value means clock-wise. When
-            represented as a single float, this value is used for both the upper
-            and lower bound. For instance, `factor=(-0.2, 0.3)` results in an
-            output rotation by a random amount in the range
-            `[-20% * 2pi, 30% * 2pi]`. `factor=0.2` results in an output
-            rotating by a random amount in the range `[-20% * 2pi, 20% * 2pi]`.
-        translation_height_factor: a float represented as fraction of value, or
-            a tuple of size 2 representing lower and upper bound for shifting
-            vertically. A negative value means shifting image up, while a
-            positive value means shifting image down. When represented as a
-            single positive float, this value is used for both the upper and
-            lower bound. For instance, `height_factor=(-0.2, 0.3)` results in an
-            output shifted by a random amount in the range `[-20%, +30%]`.
-            `height_factor=0.2` results in an output height shifted by a random
-            amount in the range `[-20%, +20%]`.
-        translation_width_factor: a float represented as fraction of value, or a
-            tuple of size 2 representing lower and upper bound for shifting
-            horizontally. A negative value means shifting image left, while a
-            positive value means shifting image right. When represented as a
-            single positive float, this value is used for both the upper and
-            lower bound. For instance, `width_factor=(-0.2, 0.3)` results in an
+        rotation_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The rotation factor will be randomly picked between
+            `[0.0 - lower, 0.0 + upper]`. A positive values means rotating
+            counter clock-wise, while a negative value means clock-wise. For
+            instance, `factor=(-20, 30)` results in an output rotation by a
+            random amount in the range `[-20, 30]` degrees. `factor=20`
+            results in an output rotating by a random amount in the range
+            `[-20, 20]` degrees.
+        translation_height_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[0.0 - lower, 0.0 + upper]`. A negative value means shifting image
+            up, while a positive value means shifting image down. For instance,
+            `translation_height_factor=(-0.2, 0.3)` results in an output shifted
+            by a random amount in the range `[-20%, +30%]`.
+            `translation_height_factor=0.2` results in an output height shifted
+            by a random amount in the range `[-20%, +20%]`.
+        translation_width_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[0.0 - lower, 0.0 + upper]`. A negative value means shifting image
+            left, while a positive value means shifting image right. For
+            instance, `translation_width_factor=(-0.2, 0.3)` results in an
             output shifted left by 20%, and shifted right by 30%.
-            `width_factor=0.2` results in an output height shifted left or right
-            by 20%.
-        zoom_height_factor: a float represented as fraction of value, or a tuple
-            of size 2 representing lower and upper bound for zooming vertically.
-            When represented as a single float, this value is used for both the
-            upper and lower bound. A positive value means zooming out, while a
-            negative value means zooming in. For instance,
-            `height_factor=(0.2, 0.3)` result in an output zoomed out by a
+            `translation_width_factor=0.2` results in an output height shifted
+            left or right by 20%.
+        zoom_height_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[1.0 - lower, 1.0 + upper]`. When factor > 1 means zooming out,
+            while factor < 1 means zooming in. For instance,
+            `zoom_height_factor=(1.2, 1.3)` result in an output zoomed out by a
             random amount in the range `[+20%, +30%]`.
-            `height_factor=(-0.3, -0.2)` result in an output zoomed in by a
+            `zoom_height_factor=(0.7, 0.8)` result in an output zoomed in by a
             random amount in the range `[-30%, -20%]`.
-        zoom_width_factor: a float represented as fraction of value, or a tuple
-            of size 2 representing lower and upper bound for zooming
-            horizontally. When represented as a single float, this value is used
-            for both the upper and lower bound. For instance,
-            `width_factor=(0.2, 0.3)` result in an output zooming out between
-            20% to 30%. `width_factor=(-0.3, -0.2)` result in an output zooming
-            in between 20% to 30%.
-        shear_height_factor: a float represented as fraction of value, or a tuple
-            of size 2 representing lower and upper bound for shearing
-            vertically. When represented as a single float, this value is used
-            for both the upper and lower bound. For instance,
-            `width_factor=(0.2, 0.3)` result in an output shearing between
-            20% to 30%. `width_factor=(-0.3, -0.2)` result in an output shearing
-            between 20% to 30%.
-        shear_width_factor: a float represented as fraction of value, or a tuple
-            of size 2 representing lower and upper bound for shearing
-            horizontally. When represented as a single float, this value is used
-            for both the upper and lower bound. For instance,
-            `width_factor=(0.2, 0.3)` result in an output zooming out between
-            20% to 30%. `width_factor=(-0.3, -0.2)` result in an output shearing
-            between 20% to 30%.
+        zoom_width_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[1.0 - lower, 1.0 + upper]`. When factor > 1 means zooming out,
+            while factor < 1 means zooming in. For instance,
+            `zoom_width_factor=(1.2, 1.3)` result in an output zooming out
+            between 20% to 30%. `zoom_width_factor=(0.7, 0.8)` result in an
+            output zooming in between 20% to 30%.
+        shear_height_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[0.0 - lower, 0.0 + upper]`. For instance,
+            `shear_height_factor=(0.2, 0.3)` result in an output shearing between
+            20% to 30%. `shear_height_factor=(-0.3, -0.2)` result in an output
+            shearing between 20% to 30%.
+        shear_width_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[0.0 - lower, 0.0 + upper]`. For instance,
+            `shear_width_factor=(0.2, 0.3)` result in an output shearing between
+            20% to 30%. `shear_width_factor=(-0.3, -0.2)` result in an output
+            shearing between 20% to 30%.
         interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
             values: `"nearest"`, `"bilinear"`.
         fill_mode: Points outside the boundaries of the input are filled
@@ -102,7 +103,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Integer. Used to create a random seed.
+        seed: Used to create a random seed, defaults to None.
     """  # noqa: E501
 
     def __init__(
@@ -123,78 +124,57 @@ class RandomAffine(VectorizedBaseRandomLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         # rotation
-        if isinstance(rotation_factor, (tuple, list)):
-            lower = rotation_factor[0] * 2.0 * math.pi
-            upper = rotation_factor[1] * 2.0 * math.pi
-        else:
-            lower = -rotation_factor * 2.0 * math.pi
-            upper = rotation_factor * 2.0 * math.pi
-        self.rotation_factor_input = rotation_factor
-        self.rotation_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=-2.0 * math.pi, max_value=2.0 * math.pi
+        self.rotation_factor = augmentation_utils.parse_factor(
+            rotation_factor,
+            min_value=-180,
+            max_value=180,
+            center_value=0,
+            seed=seed,
         )
         # translation
-        if isinstance(translation_height_factor, (tuple, list)):
-            lower = translation_height_factor[0]
-            upper = translation_height_factor[1]
-        else:
-            lower = -translation_height_factor
-            upper = translation_height_factor
-        self.translation_height_factor_input = translation_height_factor
-        self.translation_height_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=-1, max_value=1
+        self.translation_height_factor = augmentation_utils.parse_factor(
+            translation_height_factor,
+            min_value=-1,
+            max_value=1,
+            center_value=0.0,
+            seed=seed,
         )
-        if isinstance(translation_width_factor, (tuple, list)):
-            lower = translation_width_factor[0]
-            upper = translation_width_factor[1]
-        else:
-            lower = -translation_width_factor
-            upper = translation_width_factor
-        self.translation_width_factor_input = translation_width_factor
-        self.translation_width_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=-1, max_value=1
+        self.translation_width_factor = augmentation_utils.parse_factor(
+            translation_width_factor,
+            min_value=-1,
+            max_value=1,
+            center_value=0.0,
+            seed=seed,
         )
         # zoom
-        if isinstance(zoom_height_factor, (tuple, list)):
-            lower = 1.0 + zoom_height_factor[0]
-            upper = 1.0 + zoom_height_factor[1]
-        else:
-            lower = 1.0 - zoom_height_factor
-            upper = 1.0 + zoom_height_factor
-        self.zoom_height_factor_input = zoom_height_factor
-        self.zoom_height_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=0, max_value=None
+        self.zoom_height_factor = augmentation_utils.parse_factor(
+            zoom_height_factor,
+            min_value=0,
+            max_value=None,
+            center_value=1.0,
+            seed=seed,
         )
-        if isinstance(zoom_width_factor, (tuple, list)):
-            lower = 1.0 + zoom_width_factor[0]
-            upper = 1.0 + zoom_width_factor[1]
-        else:
-            lower = 1.0 - zoom_width_factor
-            upper = 1.0 + zoom_width_factor
-        self.zoom_width_factor_input = zoom_width_factor
-        self.zoom_width_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=0, max_value=None
+        self.zoom_width_factor = augmentation_utils.parse_factor(
+            zoom_width_factor,
+            min_value=0,
+            max_value=None,
+            center_value=1.0,
+            seed=seed,
         )
         # shear
-        if isinstance(shear_height_factor, (tuple, list)):
-            lower = shear_height_factor[0]
-            upper = shear_height_factor[1]
-        else:
-            lower = -shear_height_factor
-            upper = shear_height_factor
-        self.shear_height_factor_input = shear_height_factor
-        self.shear_height_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=-1, max_value=1
+        self.shear_height_factor = augmentation_utils.parse_factor(
+            shear_height_factor,
+            min_value=-1,
+            max_value=1,
+            center_value=0.0,
+            seed=seed,
         )
-        if isinstance(shear_width_factor, (tuple, list)):
-            lower = shear_width_factor[0]
-            upper = shear_width_factor[1]
-        else:
-            lower = -shear_width_factor
-            upper = shear_width_factor
-        self.shear_width_factor_input = shear_width_factor
-        self.shear_width_factor = preprocessing_utils.parse_factor(
-            (lower, upper), min_value=-1, max_value=1
+        self.shear_width_factor = augmentation_utils.parse_factor(
+            shear_width_factor,
+            min_value=-1,
+            max_value=1,
+            center_value=0.0,
+            seed=seed,
         )
 
         preprocessing_utils.check_fill_mode_and_interpolation(
@@ -214,6 +194,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         )
 
         angles = self.rotation_factor(shape=(batch_size, 1))
+        angles = angles / 360.0 * 2.0 * math.pi
         translation_heights = self.translation_height_factor(
             shape=(batch_size, 1)
         )
@@ -424,13 +405,13 @@ class RandomAffine(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update(
             {
-                "rotation_factor": self.rotation_factor_input,
-                "translation_height_factor": self.translation_height_factor_input,  # noqa: E501
-                "translation_width_factor": self.translation_width_factor_input,
-                "zoom_height_factor": self.zoom_height_factor_input,
-                "zoom_width_factor": self.zoom_width_factor_input,
-                "shear_height_factor": self.shear_height_factor_input,
-                "shear_width_factor": self.shear_width_factor_input,
+                "rotation_factor": self.rotation_factor,
+                "translation_height_factor": self.translation_height_factor,
+                "translation_width_factor": self.translation_width_factor,
+                "zoom_height_factor": self.zoom_height_factor,
+                "zoom_width_factor": self.zoom_width_factor,
+                "shear_height_factor": self.shear_height_factor,
+                "shear_width_factor": self.shear_width_factor,
                 "fill_mode": self.fill_mode,
                 "fill_value": self.fill_value,
                 "interpolation": self.interpolation,

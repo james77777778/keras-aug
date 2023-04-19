@@ -17,13 +17,13 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
     Args:
         height: A integer specifying the height of result image.
         width: A integer specifying the width of result image.
-        interpolation: A string specifying the sampling method for
-            resizing, defaults to "bilinear".
+        interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
+            values: `"nearest"`, `"bilinear"`.
         antialias: A bool specifying whether to use antialias,
             defaults to False.
         position: A string specifying the padding method, defaults
             to "center".
-        value: padding value, defaults to 0.
+        padding_value: padding value, defaults to 0.
         bounding_box_format: The format of bounding boxes of input dataset.
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py

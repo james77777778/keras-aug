@@ -11,8 +11,8 @@ def main():
     layer = RandomCropAndResize(
         height=256,
         width=256,
-        crop_area_factor=(0.5, 0.5),
-        aspect_ratio_factor=(0.5, 0.5),
+        crop_area_factor=(0.8, 1.0),
+        aspect_ratio_factor=(3 / 4, 4 / 3),
         bounding_box_format="xyxy",
     )
     result = dataset.map(layer, num_parallel_calls=tf.data.AUTOTUNE)

@@ -5,6 +5,7 @@ from tensorflow import keras
 from keras_aug.augmentations._2d.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -19,11 +20,12 @@ class RandomGamma(VectorizedBaseRandomLayer):
             of the values of the input data. The gamma adjustment will be
             scaled to this range, and the output values will be clipped to this
             range.
-        factor: A positive float represented as fraction of value, or a tuple of
-            size 2 representing lower and upper bound. When represented as a
-            single float, lower = upper. The gamma factor will be randomly
-            picked between `[1.0 - lower, 1.0 + upper]`. For any pixel x in the
-            image, the output will be `x ** factor`.
+        factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. When represented as a single float,
+            lower = upper. The factor will be randomly picked between
+            `[1.0 - lower, 1.0 + upper]`. 1.0 will give the original
+            image. For any pixel x in the image, the output will be
+            `x ** factor`.
         seed: Used to create a random seed, defaults to None.
     """
 
@@ -35,22 +37,14 @@ class RandomGamma(VectorizedBaseRandomLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        if isinstance(factor, (tuple, list)):
-            min = factor[0]
-            max = factor[1]
-        else:
-            min = 1.0 - factor
-            max = 1.0 + factor
-        self.factor_input = factor
-
-        self.factor = preprocessing_utils.parse_factor(
-            (min, max), min_value=0, max_value=None, seed=seed
+        self.factor = augmentation_utils.parse_factor(
+            factor, max_value=None, center_value=1.0, seed=seed
         )
         self.value_range = value_range
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        factors = self.factor(shape=(batch_size, 1), dtype=tf.float32)
+        factors = self.factor(shape=(batch_size, 1), dtype=self.compute_dtype)
         return factors
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -63,22 +57,14 @@ class RandomGamma(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         images = preprocessing_utils.transform_value_range(
-            images,
-            original_range=self.value_range,
-            target_range=(0.0, 1.0),
-            dtype=tf.float32,
+            images, self.value_range, (0.0, 1.0), dtype=self.compute_dtype
         )
-
         factors = transformations
         images = tf.pow(images, factors[:, :, tf.newaxis, tf.newaxis])
-
         images = preprocessing_utils.transform_value_range(
-            images,
-            original_range=(0.0, 1.0),
-            target_range=self.value_range,
-            dtype=tf.float32,
+            images, (0.0, 1.0), self.value_range, dtype=self.compute_dtype
         )
-        return tf.cast(images, dtype=self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -99,7 +85,7 @@ class RandomGamma(VectorizedBaseRandomLayer):
         config.update(
             {
                 "value_range": self.value_range,
-                "factor": self.factor_input,
+                "factor": self.factor,
                 "seed": self.seed,
             }
         )

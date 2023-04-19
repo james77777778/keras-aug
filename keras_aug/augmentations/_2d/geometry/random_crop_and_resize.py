@@ -1,12 +1,12 @@
 import tensorflow as tf
 from keras_cv import bounding_box
 from keras_cv import core
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.augmentations._2d.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -25,29 +25,30 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
     Args:
         height: Integer, the height of the output shape.
         width: Integer, the width of the output shape.
-        crop_area_factor: A tuple of two floats, ConstantFactorSampler or
-            UniformFactorSampler. The ratio of area of the cropped part to that
-            of original image is sampled using this factor. Represents the lower
-            and upper bounds for the area relative to the original image of the
-            cropped image before resizing it to (`height`, `width`). For
+        crop_area_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. The ratio of area of the cropped part to
+            that of original image is sampled using this factor. Represents the
+            lower and upper bounds for the area relative to the original image
+            of the cropped image before resizing it to (`height`, `width`). For
             self-supervised pretraining a common value for this parameter is
             `(0.08, 1.0)`. For fine tuning and classification a common value for
             this is `0.8, 1.0`.
-        aspect_ratio_factor: A tuple of two floats, ConstantFactorSampler or
-            UniformFactorSampler. Aspect ratio means the ratio of width to
-            height of the cropped image. In the context of this layer, the
-            aspect ratio sampled represents a value to distort the aspect ratio
-            by. Represents the lower and upper bound for the aspect ratio of the
-            cropped image before resizing it to (`height`, `width`). For most
-            tasks, this should be `(3/4, 4/3)`. To perform a no-op provide the
-            value `(1.0, 1.0)`.
-        interpolation: (Optional) A string specifying the sampling method for
-            resizing, defaults to "bilinear".
+        aspect_ratio_factor: A tuple of two floats, a single float or
+            `keras_cv.FactorSampler`. Aspect ratio means the ratio of width to
+            height of the cropped image. When represented as a single float,
+            The factor will be randomly picked between `[1.0 - factor, 1.0]`. In
+            the context of this layer, the aspect ratio sampled represents a
+            value to distort the aspect ratio by. Represents the lower and upper
+            bound for the aspect ratio of the cropped image before resizing it
+            to (`height`, `width`). For most tasks, this should be `(3/4, 4/3)`.
+            To perform a no-op provide the value `(1.0, 1.0)`.
+        interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
+            values: `"nearest"`, `"bilinear"`.
         bounding_box_format: The format of bounding boxes of input dataset.
             Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: (Optional) Used to create a random seed, defaults to None.
+        seed: Used to create a random seed, defaults to None.
     """  # noqa: E501
 
     def __init__(
@@ -67,17 +68,21 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         )
         self.height = height
         self.width = width
-        self.aspect_ratio_factor = preprocessing_utils.parse_factor(
+        self.aspect_ratio_factor = augmentation_utils.parse_factor(
             aspect_ratio_factor,
             min_value=0.0,
             max_value=None,
-            param_name="aspect_ratio_factor",
+            center_value=1.0,
             seed=seed,
         )
-        self.crop_area_factor = preprocessing_utils.parse_factor(
+        if isinstance(crop_area_factor, float):
+            lower = 1.0 - crop_area_factor
+            upper = 1.0
+            crop_area_factor = (lower, upper)
+        self.crop_area_factor = augmentation_utils.parse_factor(
             crop_area_factor,
+            min_value=0.0,
             max_value=1.0,
-            param_name="crop_area_factor",
             seed=seed,
         )
 
