@@ -56,6 +56,13 @@ class ChannelDropout(VectorizedBaseRandomLayer):
         images = tf.cast(images, dtype=self.compute_dtype)
         channel = tf.shape(images)[-1]
         indices = transformations
+        max_indice = tf.reduce_max(indices)
+
+        if max_indice > channel:
+            raise ValueError(
+                f"Got max indice: {max_indice} but the number of "
+                f"channel: {channel}"
+            )
 
         drop_matrix = tf.one_hot(
             indices,
