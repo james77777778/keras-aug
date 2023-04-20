@@ -200,6 +200,7 @@ def get_rotation_matrix(
     angles, image_height, image_width, to_square=False, name=None
 ):
     """Returns projective transform(s) for the given angle(s).
+
     Args:
         angles: A scalar angle to rotate all images by, or
             (for batches of images) a vector with an angle to rotate each image
@@ -210,6 +211,7 @@ def get_rotation_matrix(
         to_square: Whether to append ones to last dimension and reshape to
             (batch_size, 3, 3), defaults to False.
         name: The name of the op.
+
     Returns:
         A tensor of shape (num_images, 8). Projective transforms which can be
             given to operation `image_projective_transform_v2`. If one row of

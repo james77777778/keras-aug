@@ -28,18 +28,18 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     boxes. The subclasses could avoid making certain mistakes and reduce code
     duplications.
 
-    This layer requires you to implement one method: `augment_images()`, which
+    This layer requires you to implement one method `augment_images()`, which
     augments one single image during the training. There are a few additional
-    methods that you can implement for added functionality on the layer:
+    methods that you can implement for added functionality on the layer.
 
     `augment_ragged_image()` and `compute_ragged_image_signature()`, which
     handles ragged images augmentation if the layer supports that.
 
-    `augment_labels()`, which handles label augmentation if the layer supports
-    that.
+    `augment_labels()`, which handles label augmentation if the layer
+    supports that.
 
-    `augment_bounding_boxes()`, which handles the bounding box augmentation, if
-    the layer supports that.
+    `augment_bounding_boxes()`, which handles the bounding box
+    augmentation, if the layer supports that.
 
     `augment_keypoints()`, which handles the keypoints augmentation, if the
     layer supports that.
@@ -52,18 +52,19 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     augmentation for special annotatinos.
 
     `get_random_transformations()`, which should produce a batch of random
-    transformation settings. The transformation object, which must be a batched
-    Tensor or a dictionary where each input is a batched Tensor, will be passed
-    to `augment_images`, `augment_labels` and `augment_bounding_boxes`, to
-    coordinate the randomness behavior, eg, in the RandomFlip layer, the image
-    and bounding_boxes should be changed in the same way.
+    transformation settings. The transformation object, which must be a
+    batched Tensor or a dictionary where each input is a batched Tensor,
+    will be passed to `augment_images`, `augment_labels` and
+    `augment_bounding_boxes`, to coordinate the randomness behavior, eg, in
+    the RandomFlip layer, the image and bounding_boxes should be changed in
+    the same way.
 
     The `call()` method support two formats of inputs:
-    1. Single image tensor with 3D (HWC) or 4D (NHWC) format.
-    2. A dict of tensors with stable keys. The supported keys are:
-      `"images"`, `"labels"`, `"bounding_boxes"`, `segmentation_masks`,
-      `keypoints` and `custom_annotations` at the moment. We might add more
-      keys in future when we support more types of augmentation.
+        1. Single image tensor with 3D (HWC) or 4D (NHWC) format.
+        2. A dict of tensors with stable keys. The supported keys are:
+            `"images"`, `"labels"`, `"bounding_boxes"`, `segmentation_masks`,
+            `keypoints` and `custom_annotations` at the moment. We might add
+            more keys in future when we support more types of augmentation.
 
     The output of the `call()` will be in two formats, which will be the same
     structure as the inputs.
@@ -97,20 +98,22 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     ):
         """Produce random transformations config for a batch of inputs.
 
-        This is used to produce same randomness between
-        image/label/bounding_box.
+        This is used to produce same randomness between image / label /
+        bounding_box.
 
         Args:
-          batch_size: the batch size of transformations configuration to sample.
-          images: 3D image tensor from inputs.
-          labels: optional 1D label tensor from inputs.
-          bounding_boxes: optional 2D bounding boxes tensor from inputs.
-          segmentation_masks: optional 3D segmentation mask tensor from inputs.
+            batch_size: the batch size of transformations configuration to
+                sample.
+            images: 3D image tensor from inputs.
+            labels: optional 1D label tensor from inputs.
+            bounding_boxes: optional 2D bounding boxes tensor from inputs.
+            segmentation_masks: optional 3D segmentation mask tensor from
+                inputs.
 
         Returns:
-          Any type of object, which will be forwarded to `augment_images`,
-          `augment_labels` and `augment_bounding_boxes` as the `transformations`
-          parameter.
+            Any type of object, which will be forwarded to `augment_images`,
+            `augment_labels` and `augment_bounding_boxes` as the
+            `transformations` parameter.
         """
         # Required to work with map_fn in the ragged cast.
         return tf.zeros((batch_size))
@@ -135,16 +138,16 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment a batch of images.
 
         Args:
-          images: 4D image input tensor to the layer. Forwarded from
-            `layer.call()`. This should generally have the shape [B, H, W, C].
-            Forwarded from `layer.call()`.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            images: 4D image input tensor to the layer. Forwarded from
+                `layer.call()`. This should generally have the shape
+                [B, H, W, C]. Forwarded from `layer.call()`.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 4D tensor, which will be forward to `layer.call()`.
+            output 4D tensor, which will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
@@ -152,14 +155,14 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment a batch of labels.
 
         Args:
-          labels: 2D label to the layer. Forwarded from `layer.call()`.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            labels: 2D label to the layer. Forwarded from `layer.call()`.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 2D tensor, which will be forward to `layer.call()`.
+            output 2D tensor, which will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
@@ -167,15 +170,15 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment bounding boxes for one image.
 
         Args:
-          bounding_boxes: 3D bounding boxes to the layer. Forwarded from
-            `call()`.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            bounding_boxes: 3D bounding boxes to the layer. Forwarded from
+                `call()`.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 3D tensor, which will be forward to `layer.call()`.
+            output 3D tensor, which will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
@@ -183,16 +186,16 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment a batch of keypoints for one image.
 
         Args:
-          keypoints: 3D keypoints input tensor to the layer. Forwarded from
-            `layer.call()`. Shape should be [batch, num_keypoints, 2] in the
-            specified keypoint format.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            keypoints: 3D keypoints input tensor to the layer. Forwarded from
+                `layer.call()`. Shape should be [batch, num_keypoints, 2] in the
+                specified keypoint format.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 3D tensor, which will be forward to `layer.call()`.
+            output 3D tensor, which will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
@@ -202,17 +205,18 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment a batch of images' segmentation masks.
 
         Args:
-          segmentation_masks: 4D segmentation mask input tensor to the layer.
-            This should generally have the shape [B, H, W, 1], or in some cases
-            [B, H, W, C] for multilabeled data. Forwarded from `layer.call()`.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            segmentation_masks: 4D segmentation mask input tensor to the layer.
+                This should generally have the shape [B, H, W, 1], or in some
+                cases [B, H, W, C] for multilabeled data. Forwarded from
+                `layer.call()`.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 4D tensor containing the augmented segmentation mask, which
-          will be forward to `layer.call()`.
+            output 4D tensor containing the augmented segmentation mask, which
+            will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
@@ -222,15 +226,15 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         """Augment a batch of images' custom_annotations.
 
         Args:
-          custom_annotations: 4D custom annotations input tensor to the layer.
-          transformations: The transformations object produced by
-            `get_random_transformations`. Used to coordinate the randomness
-            between image, label, bounding box, keypoints, and segmentation
-            mask.
+            custom_annotations: 4D custom annotations input tensor to the layer.
+            transformations: The transformations object produced by
+                `get_random_transformations`. Used to coordinate the randomness
+                between image, label, bounding box, keypoints, and segmentation
+                mask.
 
         Returns:
-          output 4D tensor containing the augmented segmentation mask, which
-          will be forward to `layer.call()`.
+            output 4D tensor containing the augmented segmentation mask, which
+            will be forward to `layer.call()`.
         """
         raise NotImplementedError()
 
