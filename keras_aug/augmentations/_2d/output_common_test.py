@@ -119,6 +119,11 @@ TEST_CONFIGURATIONS = [
         augmentations.ChannelDropout,
         {},
     ),
+    (
+        "RandomApply",
+        augmentations.RandomApply,
+        {"layer": augmentations.ChannelDropout()},
+    ),
 ]
 
 
@@ -148,6 +153,11 @@ NO_UINT8_DTYPE_LAYERS = [
     augmentations.MosaicYOLOV8,
 ]
 
+SKIP_DTYPE_LAYERS = [
+    # it is impossible to change dtype in runtime for RandomApply
+    augmentations.RandomApply,
+]
+
 ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentations.CenterCrop,
     augmentations.PadIfNeeded,
@@ -156,6 +166,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentations.ResizeBySmallestSide,
     augmentations.Normalize,
     augmentations.MixUp,
+    augmentations.RandomApply,
 ]
 
 
@@ -212,6 +223,8 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_layer_dtypes(self, layer_cls, args):
+        if layer_cls in SKIP_DTYPE_LAYERS:
+            return
         images = tf.cast(
             tf.random.uniform(shape=(4, 16, 16, 3), seed=SEED) * 255.0,
             dtype=tf.float64,

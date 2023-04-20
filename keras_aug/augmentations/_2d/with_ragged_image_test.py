@@ -119,6 +119,11 @@ TEST_CONFIGURATIONS = [
         augmentations.ChannelDropout,
         {},
     ),
+    (
+        "RandomApply",
+        augmentations.RandomApply,
+        {"layer": augmentations.ChannelDropout()},
+    ),
 ]
 
 
