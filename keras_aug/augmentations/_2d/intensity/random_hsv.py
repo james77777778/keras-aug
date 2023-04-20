@@ -56,7 +56,7 @@ class RandomHSV(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs
     ):
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.hue_factor = augmentation_utils.parse_factor(
             hue_factor, min_value=-0.5, max_value=0.5, center_value=0, seed=seed
         )
@@ -83,9 +83,8 @@ class RandomHSV(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # orders determine the augmentation order which is the same across
         # single batch
-        seed = self._random_generator.make_seed_for_stateless_op()
-        orders = tf.random.experimental.stateless_shuffle(
-            tf.range(3), seed=seed
+        orders = tf.argsort(
+            self._random_generator.random_uniform((3,)), axis=-1
         )
         orders = tf.reshape(
             tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 3)

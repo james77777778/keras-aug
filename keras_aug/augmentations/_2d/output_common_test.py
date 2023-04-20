@@ -17,7 +17,7 @@ TEST_CONFIGURATIONS = [
     (
         "PadIfNeeded",
         augmentations.PadIfNeeded,
-        {"min_height": 2, "min_width": 2},
+        {"min_height": 20, "min_width": 20},
     ),
     (
         "RandomAffine",
@@ -60,7 +60,7 @@ TEST_CONFIGURATIONS = [
     (
         "CLAHE",
         augmentations.CLAHE,
-        {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
+        {"value_range": (0, 255), "factor": (2, 20), "tile_grid_size": (4, 4)},
     ),
     ("Normalize", augmentations.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentations.RandomBlur, {"factor": (3, 7)}),
@@ -102,18 +102,17 @@ TEST_CONFIGURATIONS = [
     (
         "RandomJpegQuality",
         augmentations.RandomJpegQuality,
-        {
-            "value_range": (0, 255),
-            "factor": (75, 100),
-        },
+        {"value_range": (0, 255), "factor": (75, 100)},
+    ),
+    (
+        "MixUp",
+        augmentations.MixUp,
+        {},
     ),
     (
         "MosaicYOLOV8",
         augmentations.MosaicYOLOV8,
-        {
-            "height": 100,
-            "width": 100,
-        },
+        {"height": 20, "width": 20},
     ),
     (
         "ChannelDropout",
@@ -133,8 +132,6 @@ NO_PRESERVED_SHAPE_LAYERS = [
     augmentations.ResizeBySmallestSide,
 ]
 
-ALWAYS_SAME_OUTPUT_LAYERS = [augmentations.PadIfNeeded]
-
 NO_BFLOAT16_DTYPE_LAYERS = [
     augmentations.RandomAffine,
     augmentations.RandomCropAndResize,
@@ -147,6 +144,7 @@ NO_UINT8_DTYPE_LAYERS = [
     augmentations.RandomGamma,
     augmentations.RandomHSV,
     augmentations.RandomJpegQuality,
+    augmentations.MixUp,
     augmentations.MosaicYOLOV8,
 ]
 
@@ -157,6 +155,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentations.ResizeByLongestSide,
     augmentations.ResizeBySmallestSide,
     augmentations.Normalize,
+    augmentations.MixUp,
 ]
 
 
@@ -184,22 +183,22 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_preserves_output_shape(self, layer_cls, args):
-        if layer_cls in NO_PRESERVED_SHAPE_LAYERS:
-            return
-        image = tf.random.uniform(shape=(4, 32, 32, 3), seed=SEED) * 255.0
+        images = tf.random.uniform(shape=(4, 16, 16, 3), seed=SEED) * 255.0
+        labels = tf.random.uniform(shape=(4, 1), seed=SEED) * 10.0
         layer = layer_cls(**args, seed=SEED)
 
-        output = layer(image)
+        outputs = layer({IMAGES: images, LABELS: labels})
 
-        self.assertEqual(image.shape, output.shape)
-        self.assertNotAllClose(image, output)
+        if layer_cls not in NO_PRESERVED_SHAPE_LAYERS:
+            self.assertEqual(images.shape, outputs[IMAGES].shape)
+            self.assertNotAllClose(images, outputs[IMAGES])
+        else:
+            self.assertNotEqual(images.shape, outputs[IMAGES].shape)
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_uint8_input(self, layer_cls, args):
-        if layer_cls in ALWAYS_SAME_OUTPUT_LAYERS:
-            return
         images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3), seed=SEED) * 255.0,
+            tf.random.uniform(shape=(4, 16, 16, 3), seed=SEED) * 255.0,
             dtype=tf.uint8,
         )
         labels = tf.cast(
@@ -214,7 +213,7 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_layer_dtypes(self, layer_cls, args):
         images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3), seed=SEED) * 255.0,
+            tf.random.uniform(shape=(4, 16, 16, 3), seed=SEED) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
@@ -236,23 +235,36 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
             layer = layer_cls(**args, seed=SEED, dtype="bfloat16")
             results = layer({IMAGES: images, LABELS: labels})
             self.assertAllEqual(results[IMAGES].dtype, "bfloat16")
+        else:
+            with self.assertRaises(
+                (TypeError, ValueError, tf.errors.InvalidArgumentError)
+            ):
+                layer = layer_cls(**args, seed=SEED, dtype="bfloat16")
+                results = layer({IMAGES: images, LABELS: labels})
 
         # uint8
         if layer_cls not in NO_UINT8_DTYPE_LAYERS:
             layer = layer_cls(**args, seed=SEED, dtype="uint8")
             results = layer({IMAGES: images, LABELS: labels})
             self.assertAllEqual(results[IMAGES].dtype, "uint8")
+        else:
+            with self.assertRaises(
+                (TypeError, ValueError, tf.errors.InvalidArgumentError)
+            ):
+                layer = layer_cls(**args, seed=SEED, dtype="uint8")
+                results = layer({IMAGES: images, LABELS: labels})
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_independence_on_batched_images(self, layer_cls, args):
-        if layer_cls in ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS:
-            return
-        image = tf.random.uniform((100, 100, 3), seed=SEED) * 255.0
+        image = tf.random.uniform((16, 16, 3), seed=SEED) * 255.0
         label = tf.random.uniform((1,), seed=SEED) * 255.0
-        batched_images = tf.stack((image, image, image, image), axis=0)
-        batched_labels = tf.stack((label, label, label, label), axis=0)
+        batched_images = tf.stack((image, image, image, image, image), axis=0)
+        batched_labels = tf.stack((label, label, label, label, label), axis=0)
         layer = layer_cls(**args, seed=SEED)
 
         results = layer({IMAGES: batched_images, LABELS: batched_labels})
 
-        self.assertNotAllClose(results[IMAGES][0], results[IMAGES][1])
+        if layer_cls not in ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS:
+            self.assertNotAllClose(results[IMAGES][0], results[IMAGES][1])
+        else:
+            self.assertAllClose(results[IMAGES][0], results[IMAGES][1])

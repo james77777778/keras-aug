@@ -127,6 +127,9 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         return images
 
     def augment_labels(self, labels, transformations, images=None, **kwargs):
+        is_ragged_labels = isinstance(labels, tf.RaggedTensor)
+        if is_ragged_labels:
+            labels = labels.to_tensor()
         labels = tf.cast(labels, dtype=self.compute_dtype)
         heights, widths = augmentation_utils.get_images_shape(
             images, dtype=self.compute_dtype
@@ -154,6 +157,8 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             + labels_for_mosaic[:, 2] * bottom_left_ratio
             + labels_for_mosaic[:, 3] * bottom_right_ratio
         )
+        if is_ragged_labels:
+            labels = tf.RaggedTensor.from_tensor(labels)
         return labels
 
     def augment_bounding_boxes(

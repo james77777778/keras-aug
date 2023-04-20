@@ -40,6 +40,8 @@ class ChannelDropout(VectorizedBaseRandomLayer):
         self.fill_value = fill_value
         self.seed = seed
 
+        self.upper = upper
+
     def get_random_transformation_batch(self, batch_size, **kwargs):
         channels_to_drop = self.factor(shape=(batch_size, 1), dtype=tf.int32)
         return channels_to_drop
@@ -54,14 +56,13 @@ class ChannelDropout(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         images = tf.cast(images, dtype=self.compute_dtype)
-        channel = tf.shape(images)[-1]
+        channel = images.shape[-1]
         indices = transformations
-        max_indice = tf.reduce_max(indices)
 
-        if max_indice > channel:
+        if self.upper > channel:
             raise ValueError(
-                f"Got max indice: {max_indice} but the number of "
-                f"channel: {channel}"
+                f"The number of the channel: {channel} must <= the upper "
+                f"bound: {self.upper}."
             )
 
         drop_matrix = tf.one_hot(

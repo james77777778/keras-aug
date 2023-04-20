@@ -63,7 +63,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs
     ):
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.brightness_factor = augmentation_utils.parse_factor(
             brightness_factor, max_value=None, center_value=1, seed=seed
         )
@@ -96,9 +96,8 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # orders determine the augmentation order which is the same across
         # single batch
-        seed = self._random_generator.make_seed_for_stateless_op()
-        orders = tf.random.experimental.stateless_shuffle(
-            tf.range(4), seed=seed
+        orders = tf.argsort(
+            self._random_generator.random_uniform((4,)), axis=-1
         )
         orders = tf.reshape(
             tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 4)

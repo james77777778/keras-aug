@@ -2,9 +2,11 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
-from keras_cv import core
+from tensorflow import keras
 
 from keras_aug.augmentations import _2d as augmentations
+from keras_aug.utils.augmentation_utils import IMAGES
+from keras_aug.utils.augmentation_utils import LABELS
 
 TEST_CONFIGURATIONS = [
     (
@@ -55,7 +57,11 @@ TEST_CONFIGURATIONS = [
         augmentations.ResizeBySmallestSide,
         {"min_size": [2]},
     ),
-    ("CLAHE", augmentations.CLAHE, {"value_range": (0, 255)}),
+    (
+        "CLAHE",
+        augmentations.CLAHE,
+        {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
+    ),
     ("Normalize", augmentations.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentations.RandomBlur, {"factor": (3, 7)}),
     (
@@ -102,11 +108,16 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "MixUp",
+        augmentations.MixUp,
+        {},
+    ),
+    (
         "MosaicYOLOV8",
         augmentations.MosaicYOLOV8,
         {
-            "height": 2,
-            "width": 2,
+            "height": 100,
+            "width": 100,
         },
     ),
     (
@@ -117,7 +128,7 @@ TEST_CONFIGURATIONS = [
 ]
 
 
-class ConfigTest(tf.test.TestCase, parameterized.TestCase):
+class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = augmentations.VectorizedBaseRandomLayer
         all_2d_aug_layers = inspect.getmembers(
@@ -140,24 +151,19 @@ class ConfigTest(tf.test.TestCase, parameterized.TestCase):
             )
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_config(self, layer_cls, args):
+    def test_can_run_in_mixed_precision(self, layer_cls, args):
+        keras.mixed_precision.set_global_policy("mixed_float16")
+        images = tf.cast(
+            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
+        )
         layer = layer_cls(**args)
+        layer({IMAGES: images, LABELS: labels})
 
-        config = layer.get_config()
-
-        for key in args.keys():
-            if isinstance(config[key], core.UniformFactorSampler):
-                self.assertTrue(
-                    isinstance(config[key], core.UniformFactorSampler)
-                )
-            else:
-                self.assertEqual(config[key], args[key])
-
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_config_with_custom_name(self, layer_cls, args):
-        layer = layer_cls(**args, name="image_preproc")
-        config = layer.get_config()
-
-        layer_1 = layer_cls.from_config(config)
-
-        self.assertEqual(layer_1.name, layer.name)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Do not affect other tests
+        keras.mixed_precision.set_global_policy("float32")

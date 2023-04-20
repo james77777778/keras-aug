@@ -2,13 +2,10 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
-from tensorflow import keras
 
 from keras_aug.augmentations import _2d as augmentations
-from keras_aug.utils.augmentation_utils import IMAGES
-from keras_aug.utils.augmentation_utils import LABELS
+from keras_aug.utils import augmentation_utils
 
-SEED = 2025
 TEST_CONFIGURATIONS = [
     (
         "CenterCrop",
@@ -58,11 +55,7 @@ TEST_CONFIGURATIONS = [
         augmentations.ResizeBySmallestSide,
         {"min_size": [2]},
     ),
-    (
-        "CLAHE",
-        augmentations.CLAHE,
-        {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
-    ),
+    ("CLAHE", augmentations.CLAHE, {"value_range": (0, 255)}),
     ("Normalize", augmentations.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentations.RandomBlur, {"factor": (3, 7)}),
     (
@@ -109,11 +102,16 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "MixUp",
+        augmentations.MixUp,
+        {},
+    ),
+    (
         "MosaicYOLOV8",
         augmentations.MosaicYOLOV8,
         {
-            "height": 100,
-            "width": 100,
+            "height": 2,
+            "width": 2,
         },
     ),
     (
@@ -124,7 +122,7 @@ TEST_CONFIGURATIONS = [
 ]
 
 
-class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
+class RaggedImageTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = augmentations.VectorizedBaseRandomLayer
         all_2d_aug_layers = inspect.getmembers(
@@ -147,19 +145,36 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
             )
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_mixed_precision(self, layer_cls, args):
-        keras.mixed_precision.set_global_policy("mixed_float16")
-        images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3), seed=SEED) * 255.0,
-            dtype=tf.float64,
-        )
-        labels = tf.cast(
-            tf.random.uniform(shape=(4, 1), seed=SEED) * 10.0, dtype=tf.float64
-        )
+    def test_preserves_ragged_status(self, layer_cls, args):
         layer = layer_cls(**args)
-        layer({IMAGES: images, LABELS: labels})
+        # MixUp needs two same shape image
+        if layer_cls == augmentations.MixUp:
+            images = tf.ragged.stack(
+                [
+                    tf.ones((8, 8, 3)),
+                    tf.ones((8, 8, 3)),
+                ]
+            )
+        else:
+            images = tf.ragged.stack(
+                [
+                    tf.ones((5, 5, 3)),
+                    tf.ones((8, 8, 3)),
+                ]
+            )
+        labels = tf.ragged.stack(
+            [
+                tf.ones((1,)),
+                tf.ones((1,)),
+            ]
+        )
+        inputs = {
+            augmentation_utils.IMAGES: images,
+            augmentation_utils.LABELS: labels,
+        }
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        # Do not affect other tests
-        keras.mixed_precision.set_global_policy("float32")
+        outputs = layer(inputs)
+
+        self.assertTrue(
+            isinstance(outputs[augmentation_utils.IMAGES], tf.RaggedTensor)
+        )

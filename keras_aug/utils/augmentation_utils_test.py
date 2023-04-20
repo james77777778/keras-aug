@@ -148,3 +148,13 @@ class AugmentationUtilsTest(tf.test.TestCase, parameterized.TestCase):
         result = augmentation_utils.expand_dict_dims(transformation, axis=0)
 
         self.assertEqual(result[key].shape, [1] + [3, 3])
+
+    def test_blend(self):
+        ones = tf.ones(shape=(2, 4, 4, 3))
+        twos = tf.ones(shape=(2, 4, 4, 3)) * 2
+        ratios = tf.ones(shape=(2, 1, 1, 1)) * 0.5
+        expected_result = ratios * ones + (1.0 - ratios) * twos
+
+        result = augmentation_utils.blend(ones, twos, ratios)
+
+        self.assertAllEqual(result, expected_result)

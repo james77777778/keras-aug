@@ -49,7 +49,7 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs
     ):
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.brightness_factor = augmentation_utils.parse_factor(
             brightness_factor, max_value=None, center_value=1, seed=seed
         )
@@ -70,9 +70,8 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # orders determine the augmentation order which is the same across
         # single batch
-        seed = self._random_generator.make_seed_for_stateless_op()
-        orders = tf.random.experimental.stateless_shuffle(
-            tf.range(2), seed=seed
+        orders = tf.argsort(
+            self._random_generator.random_uniform((2,)), axis=-1
         )
         orders = tf.reshape(
             tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 2)
@@ -133,15 +132,14 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
     def augment_keypoints(self, keypoints, transformations, **kwargs):
         return keypoints
 
-    def blend(self, images_1, images_2, ratios):
-        return ratios * images_1 + (1.0 - ratios) * images_2
-
     def adjust_brightness(self, images, transformations):
         if not self._enable_brightness:
             return images
         brightness_factors = transformations["brightness_factors"]
         brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
-        images = self.blend(images, tf.zeros_like(images), brightness_factors)
+        images = augmentation_utils.blend(
+            images, tf.zeros_like(images), brightness_factors
+        )
         images = tf.clip_by_value(images, 0, 255)
         return images
 
@@ -152,7 +150,7 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         means = tf.image.rgb_to_grayscale(images)
         means = tf.image.grayscale_to_rgb(means)
-        images = self.blend(images, means, contrast_factors)
+        images = augmentation_utils.blend(images, means, contrast_factors)
         images = tf.clip_by_value(images, 0, 255)
         return images
 
