@@ -43,7 +43,9 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        super().__init__(seed=seed, **kwargs)
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        super().__init__(force_output_dense_images=True, seed=seed, **kwargs)
         if not isinstance(height, int) or not isinstance(width, int):
             raise ValueError(
                 "`height` and `width` must be integer. Received: "

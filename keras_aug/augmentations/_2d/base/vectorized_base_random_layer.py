@@ -79,12 +79,17 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     """
 
     def __init__(
-        self, force_no_unwrap_ragged_image_call=False, seed=None, **kwargs
+        self,
+        force_no_unwrap_ragged_image_call=False,
+        force_output_dense_images=False,
+        seed=None,
+        **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
         self.force_no_unwrap_ragged_image_call = (
             force_no_unwrap_ragged_image_call
         )
+        self.force_output_dense_images = force_output_dense_images
 
     def get_random_transformation_batch(
         self,
@@ -293,6 +298,11 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
                 bounding_boxes=bounding_boxes,
                 labels=labels,
             )
+        if (
+            isinstance(images, tf.RaggedTensor)
+            and self.force_output_dense_images
+        ):
+            images = images.to_tensor()
         result = {IMAGES: images}
 
         if labels is not None:

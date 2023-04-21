@@ -45,7 +45,9 @@ class CenterCrop(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        super().__init__(seed=seed, **kwargs)
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        super().__init__(force_output_dense_images=True, seed=seed, **kwargs)
         self.height = height
         self.width = width
         self.position = augmentation_utils.get_padding_position(position)

@@ -63,8 +63,15 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
+        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
+        # to process images in batch.
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
         super().__init__(
-            force_no_unwrap_ragged_image_call=True, seed=seed, **kwargs
+            force_no_unwrap_ragged_image_call=True,
+            force_output_dense_images=True,
+            seed=seed,
+            **kwargs,
         )
         single_image_max_size = max((height, width)) // 2
         offset = sorted(offset)
