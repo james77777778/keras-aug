@@ -13,25 +13,26 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class ResizeByLongestSide(VectorizedBaseRandomLayer):
-    """Resize images so that longest side is equal to max_size, keeping the
+    """Resize images so that longest side is equal to ``max_size``, keeping the
     aspect ratio of the initial images.
 
-    This layer produces outputs of the same max_size within a batch but may
-    varying max_size across different batches if max_size is a list.
+    This layer produces outputs of the same ``max_size`` within a batch but may
+    varying ``max_size`` across different batches if ``max_size`` is a list.
 
     Args:
-        max_size: A list of int, tuple of int or a int. Represents longest size
-            of the image after the transformation. When using a list, max size
-            will be randomly selected from the values in the list.
-        interpolation: A string specifying the sampling method for
-            resizing, defaults to "bilinear".
-        antialias: A bool specifying whether to use antialias,
-            defaults to False.
-        bounding_box_format: The format of bounding boxes of input dataset.
-            Refer
+        max_size (int|list(int)): The size of the longest side of result image.
+            When using a list, the ``max_size`` will be randomly selected from
+            the list.
+        interpolation (str, optional): The interpolation mode. Supported values:
+            ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
+        antialias (bool, optional): Whether to use antialias. Defaults to
+            ``False``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Used to create a random seed, defaults to None.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """  # noqa: E501
 
     def __init__(

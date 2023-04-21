@@ -10,33 +10,32 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class PadIfNeeded(VectorizedBaseRandomLayer):
-    """Pad the images with constant value to ensure that all images within the
-    same batch are of the same size.
+    """Pads the images if needed.
 
-    This layer can be configured by specifying the fixed sizes or the divisors.
-
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format.
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., target_height, target_width, channels)`.
+    PadIfNeeded can be configured by specifying the height/width or the
+    divisors. The images will be padded to ``(min_height, min_width)`` or the
+    size of the both sides to be divisible by ``height_divisor`` and
+    ``width_divisor``. PadIfNeeded is required to specify
+    ``min_height`` or ``height_divisor`` and ``min_width`` or
+    ``width_divisor``, respectively.
 
     Args:
-        min_height: A integer specifying the height of result image.
-        min_width: A integer specifying the width of result image.
-        height_divisor: A integer that ensures image height is dividable
-            by this value.
-        width_divisor: A integer that ensures image width is dividable
-            by this value.
-        position: A string specifying the padding method, defaults
-            to "center".
-        padding_value: padding value, defaults to 0.
-        bounding_box_format: The format of bounding boxes of input dataset.
-            Refer
+        min_height (int, optional): The height of result image.
+        min_width (int, optional): The width of result image.
+        height_divisor (int, optional): The divisor that ensures image height is
+            divisible by.
+        width_divisor (int, optional): The divisor that ensures image width is
+            divisible by.
+        position (str, optional): The padding method. Defaults to
+            ``"center"``.
+        padding_value (int|float, optional): The padding value.
+            Defaults to ``0``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Used to create a random seed, defaults to None.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """
 
     def __init__(

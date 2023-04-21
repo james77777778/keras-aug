@@ -10,29 +10,25 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class CenterCrop(VectorizedBaseRandomLayer):
-    """A preprocessing layer which center crops images.
+    """Center crops the images.
 
-    This layers crops the central portion of the images to a target size. If an
-    image is smaller than the target size, it will be padded and then cropped.
-
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format.
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., target_height, target_width, channels)`.
+    CenterCrop crops the central portion of the images to a specified
+    ``(height, width)``. If an image is smaller than the target size, it will be
+    padded and then cropped.
 
     Args:
-        height: A integer specifying the height of result image.
-        width: A integer specifying the width of result image.
-        position: A string specifying the padding method, defaults
-            to "center".
-        padding_value: padding value, defaults to 0.
-        bounding_box_format: The format of bounding boxes of input dataset.
-            Refer
+        height (int): The height of result image.
+        width (int): The width of result image.
+        position (str, optional): The padding method. Defaults to
+            ``"center"``.
+        padding_value (int|float, optional): The padding value.
+            Defaults to ``0``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Used to create a random seed, defaults to None.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """
 
     def __init__(

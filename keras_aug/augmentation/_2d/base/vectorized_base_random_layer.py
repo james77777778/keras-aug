@@ -59,9 +59,10 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     the RandomFlip layer, the image and bounding_boxes should be changed in
     the same way.
 
-    The `call()` method support two formats of inputs:
+    The `call()` method support two formats of inputs::
+
         1. Single image tensor with 3D (HWC) or 4D (NHWC) format.
-        2. A dict of tensors with stable keys. The supported keys are:
+        2. A dict of tensors with stable keys. The supported keys are
             `"images"`, `"labels"`, `"bounding_boxes"`, `segmentation_masks`,
             `keypoints` and `custom_annotations` at the moment. We might add
             more keys in future when we support more types of augmentation.

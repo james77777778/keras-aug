@@ -13,97 +13,58 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomAffine(VectorizedBaseRandomLayer):
-    """A preprocessing layer which randomly affines transformation of the images
-    keeping center invariant.
+    """Randomly affines transformation of the images keeping center invariant.
 
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format
+    Randomly affines by rotation, translation, zoom and shear. RandomAffine
+    processes the images by combined transformation matrix, so it is fast.
 
     Args:
-        rotation_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The rotation factor will be randomly picked between
-            `[0.0 - lower, 0.0 + upper]`. A positive values means rotating
-            counter clock-wise, while a negative value means clock-wise. For
-            instance, `factor=(-20, 30)` results in an output rotation by a
-            random amount in the range `[-20, 30]` degrees. `factor=20`
-            results in an output rotating by a random amount in the range
-            `[-20, 20]` degrees.
-        translation_height_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[0.0 - lower, 0.0 + upper]`. A negative value means shifting image
-            up, while a positive value means shifting image down. For instance,
-            `translation_height_factor=(-0.2, 0.3)` results in an output shifted
-            by a random amount in the range `[-20%, +30%]`.
-            `translation_height_factor=0.2` results in an output height shifted
-            by a random amount in the range `[-20%, +20%]`.
-        translation_width_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[0.0 - lower, 0.0 + upper]`. A negative value means shifting image
-            left, while a positive value means shifting image right. For
-            instance, `translation_width_factor=(-0.2, 0.3)` results in an
-            output shifted left by 20%, and shifted right by 30%.
-            `translation_width_factor=0.2` results in an output height shifted
-            left or right by 20%.
-        zoom_height_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. When factor > 1 means zooming out,
-            while factor < 1 means zooming in. For instance,
-            `zoom_height_factor=(1.2, 1.3)` result in an output zoomed out by a
-            random amount in the range `[+20%, +30%]`.
-            `zoom_height_factor=(0.7, 0.8)` result in an output zoomed in by a
-            random amount in the range `[-30%, -20%]`.
-        zoom_width_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. When factor > 1 means zooming out,
-            while factor < 1 means zooming in. For instance,
-            `zoom_width_factor=(1.2, 1.3)` result in an output zooming out
-            between 20% to 30%. `zoom_width_factor=(0.7, 0.8)` result in an
-            output zooming in between 20% to 30%.
-        shear_height_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[0.0 - lower, 0.0 + upper]`. For instance,
-            `shear_height_factor=(0.2, 0.3)` result in an output shearing between
-            20% to 30%. `shear_height_factor=(-0.3, -0.2)` result in an output
-            shearing between 20% to 30%.
-        shear_width_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[0.0 - lower, 0.0 + upper]`. For instance,
-            `shear_width_factor=(0.2, 0.3)` result in an output shearing between
-            20% to 30%. `shear_width_factor=(-0.3, -0.2)` result in an output
-            shearing between 20% to 30%.
-        interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
-            values: `"nearest"`, `"bilinear"`.
-        fill_mode: Points outside the boundaries of the input are filled
-            according to the given mode
-            (one of `{"constant", "reflect", "wrap", "nearest"}`), defaults to
-            `"constant"`.
-            - *reflect*: `(d c b a | a b c d | d c b a)` The input is extended
-            by reflecting about the edge of the last pixel.
-            - *constant*: `(k k k k | a b c d | k k k k)` The input is extended
-            by filling all values beyond the edge with the same constant value
-            k = 0.
-            - *wrap*: `(a b c d | a b c d | a b c d)` The input is extended by
-            wrapping around to the opposite edge.
-            - *nearest*: `(a a a a | a b c d | d d d d)` The input is extended
-            by the nearest pixel.
-        fill_value: a float represents the value to be filled outside the
-            boundaries when `fill_mode="constant"`.
-        bounding_box_format: The format of bounding boxes of input dataset.
-            Refer
+        rotation_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range of the degree for random rotation. When represented as a
+            single float, the factor will be picked between
+            ``[0.0 - lower, 0.0 + upper]``. A positive value means rotating
+            counter clock-wise, while a negative value means clock-wise.
+        translation_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range for random vertical translation. When represented as a single
+            float, the factor will be picked between
+            ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting image
+            up, while a positive value means shifting image down.
+        translation_width_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range for random horizontal translation. When represented as a
+            single float, the factor will be picked between
+            ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting
+            image left, while a positive value means shifting image right.
+        zoom_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range for random vertical zoom. When represented as a
+            single float, the factor will be picked between
+            ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
+            while a positive value means zooming out.
+        zoom_width_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range for random horizontal zoom. When represented as a
+            single float, the factor will be picked between
+            ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
+            while a positive value means zooming out.
+        shear_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range for random vertical shear. When represented as a
+            single float, the factor will be picked between
+            ``[0.0 - lower, 0.0 + upper]``.
+        shear_width_factor: (float|(float, float)|keras_cv.FactorSampler): The
+            range for random horizontal shear. When represented as a
+            single float, the factor will be picked between
+            ``[0.0 - lower, 0.0 + upper]``.
+        interpolation (str, optional): The interpolation mode. Supported values:
+            ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
+        fill_mode (str, optional): The fill mode. Supported values:
+            ``"constant", "reflect", "wrap", "nearest"``. Defaults to
+            ``"constant"``.
+        fill_value (int|float, optional): The value to be filled outside the
+            boundaries when ``fill_mode="constant"``. Defaults to ``0``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Used to create a random seed, defaults to None.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """  # noqa: E501
 
     def __init__(

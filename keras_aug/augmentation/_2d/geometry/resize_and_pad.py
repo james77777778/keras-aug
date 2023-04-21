@@ -11,24 +11,29 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class ResizeAndPad(VectorizedBaseRandomLayer):
-    """Resize and pad images to (`height`, `width`), keeping the aspect ratio
-    of the initial images.
+    """Resizes and pads the images.
+
+    ResizeAndPad will firstly resize the images to fit in ``(height, width)``
+    while keeping the aspect ratio of the initial images and then pad to
+    exactly ``(height, width)``.
 
     Args:
-        height: A integer specifying the height of result image.
-        width: A integer specifying the width of result image.
-        interpolation: Interpolation mode, defaults to `"bilinear"`. Supported
-            values: `"nearest"`, `"bilinear"`.
-        antialias: A bool specifying whether to use antialias,
-            defaults to False.
-        position: A string specifying the padding method, defaults
-            to "center".
-        padding_value: padding value, defaults to 0.
-        bounding_box_format: The format of bounding boxes of input dataset.
-            Refer
+        height (int): The height of result image.
+        width (int): The width of result image.
+        interpolation (str, optional): The interpolation mode. Supported values:
+            ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
+        antialias (bool, optional): Whether to use antialias. Defaults to
+            ``False``.
+        position (str, optional): The padding method. Defaults to
+            ``"center"``.
+        padding_value (int|float, optional): The padding value.
+            Defaults to ``0``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed: Used to create a random seed, defaults to None.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """  # noqa: E501
 
     def __init__(
