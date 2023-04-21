@@ -83,6 +83,11 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "Rescaling",
+        augmentation.Rescaling,
+        {"scale": 1.0 / 255.0},
+    ),
+    (
         "MixUp",
         augmentation.MixUp,
         {},

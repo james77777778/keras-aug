@@ -105,6 +105,11 @@ TEST_CONFIGURATIONS = [
         {"value_range": (0, 255), "factor": (75, 100)},
     ),
     (
+        "Rescaling",
+        augmentation.Rescaling,
+        {"scale": 1.0 / 255.0},
+    ),
+    (
         "MixUp",
         augmentation.MixUp,
         {},
@@ -165,6 +170,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentation.ResizeByLongestSide,
     augmentation.ResizeBySmallestSide,
     augmentation.Normalize,
+    augmentation.Rescaling,
     augmentation.MixUp,
     augmentation.RandomApply,
 ]

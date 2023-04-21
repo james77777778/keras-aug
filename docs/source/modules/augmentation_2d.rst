@@ -21,6 +21,7 @@ API - Augmentations - 2D
     RandomGamma
     RandomHSV
     RandomJpegQuality
+    Rescaling
 
     MixUp
     MosaicYOLOV8
@@ -61,6 +62,7 @@ Intensity
 .. autoclass:: RandomGamma
 .. autoclass:: RandomHSV
 .. autoclass:: RandomJpegQuality
+.. autoclass:: Rescaling(scale, offset=0.0)
 
 .. -----------------------------------------------------------
 ..                        Mix
