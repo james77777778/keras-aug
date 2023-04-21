@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import RandomBrightnessContrast
+from keras_aug.augmentation import RandomBrightnessContrast
 
 
 def main():

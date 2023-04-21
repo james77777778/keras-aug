@@ -3,9 +3,9 @@ import time
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import RandomApply
-from keras_aug.augmentations import RandomColorJitter
-from keras_aug.augmentations import ResizeAndPad
+from keras_aug.augmentation import RandomApply
+from keras_aug.augmentation import RandomColorJitter
+from keras_aug.augmentation import ResizeAndPad
 
 
 def main():

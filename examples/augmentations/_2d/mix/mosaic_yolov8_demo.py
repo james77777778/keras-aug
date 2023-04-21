@@ -3,8 +3,8 @@ import time
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import MosaicYOLOV8
-from keras_aug.augmentations import ResizeByLongestSide
+from keras_aug.augmentation import MosaicYOLOV8
+from keras_aug.augmentation import ResizeByLongestSide
 
 
 def main():

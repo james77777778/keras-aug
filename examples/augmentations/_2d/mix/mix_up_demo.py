@@ -3,8 +3,8 @@ import time
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import MixUp
-from keras_aug.augmentations import ResizeAndPad
+from keras_aug.augmentation import MixUp
+from keras_aug.augmentation import ResizeAndPad
 
 
 def main():

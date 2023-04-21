@@ -1,8 +1,8 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import ResizeBySmallestSide
-from keras_aug.utils import augmentation_utils
+from keras_aug.augmentation import ResizeBySmallestSide
+from keras_aug.utils import augmentation
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     demo_utils.visualize_data(result, bounding_box_format="xyxy")
 
     data = next(iter(result))
-    heights, widths = augmentation_utils.get_images_shape(data["images"])
+    heights, widths = augmentation.get_images_shape(data["images"])
     shapes = tf.concat([heights, widths], axis=-1)
     smaller_sides = tf.reduce_min(shapes, axis=-1)
     print("smaller_sides", smaller_sides)

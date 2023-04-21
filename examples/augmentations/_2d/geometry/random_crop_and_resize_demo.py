@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import RandomCropAndResize
+from keras_aug.augmentation import RandomCropAndResize
 
 
 def main():

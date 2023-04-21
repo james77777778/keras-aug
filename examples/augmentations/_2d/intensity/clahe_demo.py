@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentations import CLAHE
+from keras_aug.augmentation import CLAHE
 
 
 def main():
