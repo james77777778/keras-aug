@@ -31,16 +31,13 @@ class MixUp(VectorizedBaseRandomLayer):
     """  # noqa: E501
 
     def __init__(self, alpha=0.2, seed=None, **kwargs):
-        super().__init__(
-            seed=seed,
-            force_no_unwrap_ragged_image_call=True,
-            force_generator=True,
-            **kwargs,
-        )
+        super().__init__(seed=seed, force_generator=True, **kwargs)
         # MixUp layer uses stateless rng generator for following random
         # operations
         self.alpha = alpha
         self.seed = seed
+
+        self.force_no_unwrap_ragged_image_call = True
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         permutation_order = tf.argsort(

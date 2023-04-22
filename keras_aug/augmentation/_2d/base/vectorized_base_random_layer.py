@@ -28,50 +28,66 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     boxes. The subclasses could avoid making certain mistakes and reduce code
     duplications.
 
-    This layer requires you to implement one method `augment_images()`, which
+    This layer requires you to implement one method ``augment_images()``, which
     augments one single image during the training. There are a few additional
     methods that you can implement for added functionality on the layer.
 
-    `augment_ragged_image()` and `compute_ragged_image_signature()`, which
+    ``augment_ragged_image()`` and ``compute_ragged_image_signature()``, which
     handles ragged images augmentation if the layer supports that.
 
-    `augment_labels()`, which handles label augmentation if the layer
+    ``augment_labels()``, which handles label augmentation if the layer
     supports that.
 
-    `augment_bounding_boxes()`, which handles the bounding box
+    ``augment_bounding_boxes()``, which handles the bounding box
     augmentation, if the layer supports that.
 
-    `augment_keypoints()`, which handles the keypoints augmentation, if the
+    ``augment_keypoints()``, which handles the keypoints augmentation, if the
     layer supports that.
 
-    `augment_segmentation_masks()`, which handles the segmentation masks
+    ``augment_segmentation_masks()``, which handles the segmentation masks
     augmentation, if the layer supports that.
 
-    `augment_custom_annotations()`, which handles the custom annotations
+    ``augment_custom_annotations()``, which handles the custom annotations
     augmentation, if the layer supports that. This is useful to implement
     augmentation for special annotatinos.
 
-    `get_random_transformations()`, which should produce a batch of random
+    ``get_random_transformations()``, which should produce a batch of random
     transformation settings. The transformation object, which must be a
     batched Tensor or a dictionary where each input is a batched Tensor,
-    will be passed to `augment_images`, `augment_labels` and
+    will be passed to ``augment_images``, ``augment_labels`` and
     `augment_bounding_boxes`, to coordinate the randomness behavior, eg, in
     the RandomFlip layer, the image and bounding_boxes should be changed in
     the same way.
 
-    The `call()` method support two formats of inputs::
+    The ``call()`` method support two formats of inputs::
 
         1. Single image tensor with 3D (HWC) or 4D (NHWC) format.
         2. A dict of tensors with stable keys. The supported keys are
-            `"images"`, `"labels"`, `"bounding_boxes"`, `segmentation_masks`,
-            `keypoints` and `custom_annotations` at the moment. We might add
-            more keys in future when we support more types of augmentation.
+            ``"images"``, ``"labels"``, ``"bounding_boxes"``,
+            ``segmentation_masks``, ``keypoints`` and ``custom_annotations`` at
+            the moment. We might add more keys in future when we support more
+            types of augmentation.
 
-    The output of the `call()` will be in two formats, which will be the same
+    The output of the ``call()`` will be in two formats, which will be the same
     structure as the inputs.
 
-    The `call()` will unpack the inputs, forward to the correct function, and
+    The ``call()`` will unpack the inputs, forward to the correct function, and
     pack the output back to the same structure as the inputs.
+
+    By default, the dense or ragged status of the output will be preserved.
+    However, you can override this behavior by setting
+    ``self.force_output_dense_images = True``,
+    ``self.force_output_dense_segmentation_masks = True`` in your ``__init__()``
+    method. When enabled, images and segmentation masks will be converted to
+    dense tensor by ``to_tensor()`` if ragged.
+
+    .. code-block:: python
+
+        class SubclassLayer(VectorizedBaseImageAugmentationLayer):
+            def __init__(self):
+                super().__init__()
+                self.force_output_dense_images = True
+                self.force_output_dense_segmentation_masks = True
 
     Note that since the randomness is also a common functionality, this layer
     also includes a keras.backend.RandomGenerator, which can be used to
@@ -79,18 +95,43 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     `self._random_generator` attribute.
     """
 
-    def __init__(
-        self,
-        force_no_unwrap_ragged_image_call=False,
-        force_output_dense_images=False,
-        seed=None,
-        **kwargs,
-    ):
+    def __init__(self, seed=None, **kwargs):
         super().__init__(seed=seed, **kwargs)
-        self.force_no_unwrap_ragged_image_call = (
+
+    @property
+    def force_no_unwrap_ragged_image_call(self):
+        """Control whether to force not to unwrap ragged image call."""
+        return getattr(self, "_force_no_unwrap_ragged_image_call", False)
+
+    @force_no_unwrap_ragged_image_call.setter
+    def force_no_unwrap_ragged_image_call(
+        self, force_no_unwrap_ragged_image_call
+    ):
+        self._force_no_unwrap_ragged_image_call = (
             force_no_unwrap_ragged_image_call
         )
-        self.force_output_dense_images = force_output_dense_images
+
+    @property
+    def force_output_dense_images(self):
+        """Control whether to force outputting of dense images."""
+        return getattr(self, "_force_output_dense_images", False)
+
+    @force_output_dense_images.setter
+    def force_output_dense_images(self, force_output_dense_images):
+        self._force_output_dense_images = force_output_dense_images
+
+    @property
+    def force_output_dense_segmentation_masks(self):
+        """Control whether to force outputting of dense segmentation masks."""
+        return getattr(self, "_force_output_dense_segmentation_masks", False)
+
+    @force_output_dense_segmentation_masks.setter
+    def force_output_dense_segmentation_masks(
+        self, force_output_dense_segmentation_masks
+    ):
+        self._force_output_dense_segmentation_masks = (
+            force_output_dense_segmentation_masks
+        )
 
     def get_random_transformation_batch(
         self,
@@ -347,6 +388,11 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
                 images=images,
                 raw_images=raw_images,
             )
+            if (
+                isinstance(images, tf.RaggedTensor)
+                and self.force_output_dense_segmentation_masks
+            ):
+                segmentation_masks = segmentation_masks.to_tensor()
             result[SEGMENTATION_MASKS] = segmentation_masks
 
         if custom_annotations is not None:

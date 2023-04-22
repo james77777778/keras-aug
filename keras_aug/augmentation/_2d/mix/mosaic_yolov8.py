@@ -63,16 +63,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
-        # to process images in batch.
-        # set force_output_dense_images=True because the output images must
-        # have same shape (B, height, width, C)
-        super().__init__(
-            force_no_unwrap_ragged_image_call=True,
-            force_output_dense_images=True,
-            seed=seed,
-            **kwargs,
-        )
+        super().__init__(seed=seed, **kwargs)
         single_image_max_size = max((height, width)) // 2
         offset = sorted(offset)
 
@@ -87,6 +78,14 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             offset, param_name="offset", seed=seed
         )
         self.single_image_max_size = single_image_max_size  # for padding
+
+        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
+        # to process images in batch.
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        self.force_no_unwrap_ragged_image_call = True
+        self.force_output_dense_images = True
+        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # pick 3 indices for every batch to create the mosaic output with.

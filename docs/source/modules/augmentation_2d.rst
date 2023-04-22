@@ -1,4 +1,4 @@
-API - Augmentations - 2D
+API - Augmentation - 2D
 =========================
 
 .. automodule:: keras_aug.augmentation

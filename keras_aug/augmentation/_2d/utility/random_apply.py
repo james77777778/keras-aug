@@ -12,18 +12,20 @@ class RandomApply(VectorizedBaseRandomLayer):
     """Apply randomly an augmentation or a list of augmentations with a given
     probability.
 
-    Currently, RandomApply applies augmentation(s) defined by `layer` in batch.
-    For example, if sampled probability=0.6 and `rate=0.5` then no operation for
-    this batch.
+    RandomApply applies augmentation(s) defined by ``layer`` in batch. For
+    example, if the sampled probability=0.6 and ``rate=0.5`` then no op for
+    this entire batch. The inputs must be dense tensor and the ``layer`` should
+    not modify the size of the inputs.
 
     Args:
-        layer: a keras `Layer` or `VectorizedBaseRandomLayer`. This layer will
-            be applied to randomly chosen samples in a batch. Layer should not
-            modify the size of provided inputs.
-        rate: controls the frequency of applying the layer. 1.0 means all
-            elements in a batch will be modified. 0.0 means no elements will be
-            modified. Defaults to 0.5.
-        seed: Used to create a random seed, defaults to None.
+        layer (VectorizedBaseRandomLayer|keras.Layer|keras.Sequential): This
+            layer will be applied to the batch when the sampled
+            ``prob < rate``. Layer should not modify the size of the inputs.
+        rate (float, optional): The value that controls the frequency of
+            applying the layer. ``1.0`` means the ``layer`` will always apply.
+            ``0.0`` means no op. Defaults to 0.5.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """
 
     def __init__(self, layer, rate=0.5, seed=None, **kwargs):
@@ -37,14 +39,14 @@ class RandomApply(VectorizedBaseRandomLayer):
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        probs = self._random_generator.random_uniform(shape=(1,))
-        return probs
+        prob = self._random_generator.random_uniform(shape=(1,))
+        return prob
 
     def _batch_augment(self, inputs):
         images = inputs.get(IMAGES, None)
         batch_size = tf.shape(images)[0]
-        probs = self.get_random_transformation_batch(batch_size)
-        if probs < self.rate:
+        prob = self.get_random_transformation_batch(batch_size)
+        if prob < self.rate:
             result = self.layer(inputs)
         else:
             result = inputs

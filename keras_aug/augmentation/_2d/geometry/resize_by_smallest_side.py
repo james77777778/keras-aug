@@ -64,8 +64,8 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
             interpolation
         )
         self.antialias = antialias
-        self.seed = seed
         self.bounding_box_format = bounding_box_format
+        self.seed = seed
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs

@@ -56,9 +56,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        # set force_output_dense_images=True because the output images must
-        # have same shape (B, height, width, C)
-        super().__init__(force_output_dense_images=True, seed=seed, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self._check_arguments(
             height, width, crop_area_factor, aspect_ratio_factor
         )
@@ -81,10 +79,14 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             max_value=1.0,
             seed=seed,
         )
-
         self.interpolation = interpolation
         self.bounding_box_format = bounding_box_format
         self.seed = seed
+
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        self.force_output_dense_images = True
+        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs

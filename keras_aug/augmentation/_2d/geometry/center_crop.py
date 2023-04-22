@@ -41,15 +41,18 @@ class CenterCrop(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        # set force_output_dense_images=True because the output images must
-        # have same shape (B, height, width, C)
-        super().__init__(force_output_dense_images=True, seed=seed, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.height = height
         self.width = width
         self.position = augmentation_utils.get_padding_position(position)
         self.padding_value = padding_value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
+
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        self.force_output_dense_images = True
+        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs

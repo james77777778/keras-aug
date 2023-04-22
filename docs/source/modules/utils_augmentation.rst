@@ -1,4 +1,4 @@
-API - Utils - Augmentation Utils
+API - Utils - Augmentation
 ================================
 
 .. automodule:: keras_aug.utils.augmentation

@@ -48,9 +48,7 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        # set force_output_dense_images=True because the output images must
-        # have same shape (B, height, width, C)
-        super().__init__(force_output_dense_images=True, seed=seed, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         if not isinstance(height, int) or not isinstance(width, int):
             raise ValueError(
                 "`height` and `width` must be integer. Received: "
@@ -66,6 +64,11 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
         self.padding_value = padding_value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
+
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        self.force_output_dense_images = True
+        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
