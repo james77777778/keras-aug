@@ -47,10 +47,10 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         seed: Used to create a random seed, defaults to None.
 
     References:
-        - [Yolov4 paper](https://arxiv.org/pdf/2004.10934).
-        - [Yolov5 implementation](https://github.com/ultralytics/yolov5).
-        - [YoloX implementation](https://github.com/Megvii-BaseDetection/YOLOX)
-        - [Yolov8 implementation](https://github.com/ultralytics/ultralytics)
+        - `YOLOV4 paper <https://arxiv.org/pdf/2004.10934>`_
+        - `YOLOV5 implementation <https://github.com/ultralytics/yolov5>`_
+        - `YOLOX implementation <https://github.com/Megvii-BaseDetection/YOLOX>`_
+        - `YOLOV8 implementation <https://github.com/ultralytics/ultralytics>`_
     """  # noqa: E501
 
     def __init__(

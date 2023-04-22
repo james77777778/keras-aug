@@ -15,13 +15,6 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
     """RandomBrightnessContrast class randomly apply brightness and contrast
     image processing operation sequentially and randomly on the input.
 
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `channels_last` format
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `channels_last` format
-
     Args:
         value_range: the range of values the incoming images will have.
             Represented as a two number tuple written [low, high].
@@ -39,6 +32,9 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
             the original image while 2.0 increases the contrast by a factor of
             2.
         seed: Used to create a random seed, defaults to None.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(

@@ -11,19 +11,15 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 class ChannelDropout(VectorizedBaseRandomLayer):
     """Randomly drop channels of the input images.
 
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format
-
     Args:
         factor: A tuple or list of int represents the range from
             which we choose the number of channels to drop, defaults to (0, 2).
         fill_value: The pixel value for the dropped channel, defauls to 0.
         seed: Used to create a random seed, defaults to None.
-    """
+
+    References:
+        - `Albumentations <https://github.com/albumentations-team/albumentations>`_
+    """  # noqa: E501
 
     def __init__(self, factor=(0, 2), fill_value=0, seed=None, **kwargs):
         super().__init__(seed=seed, **kwargs)

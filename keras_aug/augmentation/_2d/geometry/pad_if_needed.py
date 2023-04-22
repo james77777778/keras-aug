@@ -36,7 +36,10 @@ class PadIfNeeded(VectorizedBaseRandomLayer):
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to
             ``None``.
-    """
+
+    References:
+        - `Albumentations <https://github.com/albumentations-team/albumentations>`_
+    """  # noqa: E501
 
     def __init__(
         self,

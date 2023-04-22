@@ -65,7 +65,6 @@ class CLAHETest(tf.test.TestCase):
         "value_range": (0, 255),
         "factor": (2, 4),
         "tile_grid_size": (8, 8),
-        "gpu_optimized": True,
     }
 
     def test_adjustment_for_non_rgb_value_range(self):

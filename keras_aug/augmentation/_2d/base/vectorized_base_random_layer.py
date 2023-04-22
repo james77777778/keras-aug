@@ -93,6 +93,9 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
     also includes a keras.backend.RandomGenerator, which can be used to
     produce the random numbers. The random number generator is stored in the
     `self._random_generator` attribute.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(self, seed=None, **kwargs):

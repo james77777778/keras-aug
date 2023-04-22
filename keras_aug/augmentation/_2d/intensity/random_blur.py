@@ -21,7 +21,10 @@ class RandomBlur(VectorizedBaseRandomLayer):
             (1, inf). When kernel size=1 is sampled, there is no blur
             effect.
         seed: Used to create a random seed, defaults to None.
-    """
+
+    References:
+        - `Albumentations <https://github.com/albumentations-team/albumentations>`_
+    """  # noqa: E501
 
     def __init__(
         self,

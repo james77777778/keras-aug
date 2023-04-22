@@ -65,6 +65,9 @@ class RandomAffine(VectorizedBaseRandomLayer):
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to
             ``None``.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(

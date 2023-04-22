@@ -22,9 +22,10 @@ class CLAHE(VectorizedBaseRandomLayer):
             will be (1, clip_limit), defaults to (1, 4).
         tile_grid_size: A tuple of int representing the size of grid for
             histogram equalization, defaults to (8, 8).
-        gpu_optimized: A bool specifying whether or not to use functions that
-            perform better when XLA-compiled on the GPU, but worse on the CPU.
         seed: Used to create a random seed, defaults to None.
+
+    References:
+        - `isears/tf_clahe <https://github.com/isears/tf_clahe>`_
     """
 
     def __init__(
@@ -32,7 +33,6 @@ class CLAHE(VectorizedBaseRandomLayer):
         value_range,
         factor=(1, 4),
         tile_grid_size=(8, 8),
-        gpu_optimized=True,
         seed=None,
         **kwargs,
     ):
@@ -49,7 +49,6 @@ class CLAHE(VectorizedBaseRandomLayer):
             (min, max), min_value=1, max_value=None, seed=seed
         )
         self.tile_grid_size = tuple(tile_grid_size)
-        self.gpu_optimized = gpu_optimized
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
@@ -110,10 +109,6 @@ class CLAHE(VectorizedBaseRandomLayer):
         return clipped_hists
 
     def clahe_single_image(self, inputs):
-        """Hardly borrow from:
-        https://github.com/isears/tf_clahe
-        This function is modified to use tf.vectorized_map.
-        """
         image = inputs.get("images", None)
         clip_limit = inputs.get("clip_limits", None)
 
@@ -150,39 +145,10 @@ class CLAHE(VectorizedBaseRandomLayer):
         )
 
         # Compute per-tile histogram
-        if self.gpu_optimized:
-            hists = tf.math.reduce_sum(
-                tf.one_hot(
-                    all_tiles, depth=256, on_value=1, off_value=0, axis=0
-                ),
-                axis=1,
-            )
-        else:
-            single_dimension_tiles = tf.reshape(
-                all_tiles,
-                (
-                    tile_shape[0] * tile_shape[1],
-                    self.tile_grid_size[0]
-                    * self.tile_grid_size[1]
-                    * tf.shape(image)[-1],
-                ),
-            )
-
-            single_dimension_tiles = tf.transpose(single_dimension_tiles)
-            hists = tf.math.bincount(
-                single_dimension_tiles, minlength=256, maxlength=256, axis=-1
-            )
-
-            hists = tf.transpose(hists)
-            hists = tf.reshape(
-                hists,
-                (
-                    256,
-                    self.tile_grid_size[0],
-                    self.tile_grid_size[1],
-                    tf.shape(image)[-1],
-                ),
-            )
+        hists = tf.math.reduce_sum(
+            tf.one_hot(all_tiles, depth=256, on_value=1, off_value=0, axis=0),
+            axis=1,
+        )
 
         clipped_hists = tf.cond(
             tf.math.greater(clip_limit, 0),
@@ -275,7 +241,6 @@ class CLAHE(VectorizedBaseRandomLayer):
                 "value_range": self.value_range,
                 "factor": self.factor_input,
                 "tile_grid_size": self.tile_grid_size,
-                "gpu_optimized": self.gpu_optimized,
                 "seed": self.seed,
             }
         )

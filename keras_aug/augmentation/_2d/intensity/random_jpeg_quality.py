@@ -31,6 +31,9 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
             JPEG, and when 100 is chosen, it is still lossy compresson. This
             value is passed to `tf.image.adjust_jpeg_quality()`.
         seed: Used to create a random seed, defaults to None.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(

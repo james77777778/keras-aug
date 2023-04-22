@@ -17,6 +17,9 @@ class Rescaling(VectorizedBaseRandomLayer):
         scale (int|float): The scale to apply to the inputs.
         offset (int|float, optional): The offset to apply to the inputs.
             Defaults to ``0.0``
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(self, scale, offset=0.0, **kwargs):

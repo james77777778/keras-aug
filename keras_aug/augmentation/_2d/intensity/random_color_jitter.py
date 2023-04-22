@@ -51,6 +51,9 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             `[0.5 - lower, 0.5 + upper]`. 0.0 means no shift, while a value of
             -0.5 or +0.5 gives an image with complementary colors.
         seed: Used to create a random seed, defaults to None.
+
+    References:
+        - `torchvision <https://github.com/pytorch/vision>`_
     """
 
     def __init__(

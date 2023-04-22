@@ -45,6 +45,9 @@ class RandomHSV(VectorizedBaseRandomLayer):
             image, 0.0 makes the image to be zero values while 2.0 will
             enhance the value by a factor of 2.
         seed: Used to create a random seed, defaults to None.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(

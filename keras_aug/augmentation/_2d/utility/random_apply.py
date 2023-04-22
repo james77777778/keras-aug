@@ -26,6 +26,9 @@ class RandomApply(VectorizedBaseRandomLayer):
             ``0.0`` means no op. Defaults to 0.5.
         seed (int|float, optional): The random seed. Defaults to
             ``None``.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(self, layer, rate=0.5, seed=None, **kwargs):
