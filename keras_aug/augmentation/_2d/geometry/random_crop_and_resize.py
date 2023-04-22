@@ -32,8 +32,8 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             is ``(0.8, 1.0)``.
         aspect_ratio_factor (float|(float, float)|keras_cv.FactorSampler): The
             ratio of width to height of the cropped image. When represented as
-            a single float, The factor will be picked between
-            `[1.0 - factor, 1.0]`. For most tasks, this should be
+            a single float, the factor will be picked between
+            ``[1.0 - factor, 1.0]``. For most tasks, this should be
             ``(3/4, 4/3)``.
         interpolation (str, optional): The interpolation mode. Supported values:
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.

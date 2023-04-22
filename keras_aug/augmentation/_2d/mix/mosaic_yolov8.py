@@ -1,6 +1,5 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
@@ -15,8 +14,7 @@ from keras_aug.utils.augmentation import LABELS
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class MosaicYOLOV8(VectorizedBaseRandomLayer):
-    """MosaicYOLOV8 implements the mosaic data augmentation technique used by
-    YOLOV8.
+    """The mosaic data augmentation technique used by YOLO series.
 
     Mosaic data augmentation first takes 4 images from the batch and makes a
     grid. After that based on the offset, a crop is taken to form the mosaic
@@ -25,32 +23,26 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
     4 images.
 
     Args:
-        height: Integer, the height of the output shape.
-        width: Integer, the width of the output shape.
-        offset: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. `offset` is used to determine the offset
+        height (int): The height of result image.
+        width (int): The width of result image.
+        offset (float|(float, float)|keras_cv.FactorSampler): The offset
             of the mosaic center from the top-left corner of the mosaic. If a
             tuple is used, the x and y coordinates of the mosaic center are
-            sampled between the two values for every image augmented. If a
-            single float is used, a value between `0.0` and the passed float is
-            sampled. In order to ensure the value is always the same, please
-            pass a tuple with two identical floats: `(0.5, 0.5)`. Defaults to
-            (0.25, 0.75).
-        bounding_box_format: a case-insensitive string (for example, "xyxy") to
-            be passed if bounding boxes are being augmented by this layer. Each
-            bounding box is defined by at least these 4 values. The inputs may
-            contain additional information such as classes and confidence after
-            these 4 values but these values will be ignored and returned as is.
-            For detailed information on the supported formats, see the
-            [KerasCV bounding box documentation](https://keras.io/api/keras_cv/bounding_box/formats/).
-            Defaults to None.
-        seed: Used to create a random seed, defaults to None.
+            sampled between the two values for every image augmented. When
+            represented as a single float, the values will be picked between
+            ``[0.5 - offset, 0.5 + offset]``. Defaults to ``(0.25, 0.75)``.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
+            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            for more details on supported bounding box formats.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
-        - `YOLOV4 paper <https://arxiv.org/pdf/2004.10934>`_
-        - `YOLOV5 implementation <https://github.com/ultralytics/yolov5>`_
-        - `YOLOX implementation <https://github.com/Megvii-BaseDetection/YOLOX>`_
-        - `YOLOV8 implementation <https://github.com/ultralytics/ultralytics>`_
+        - `YOLOV4 <https://arxiv.org/pdf/2004.10934>`_
+        - `YOLOV5 <https://github.com/ultralytics/yolov5>`_
+        - `YOLOX <https://github.com/Megvii-BaseDetection/YOLOX>`_
+        - `YOLOV8 <https://github.com/ultralytics/ultralytics>`_
     """  # noqa: E501
 
     def __init__(
@@ -65,7 +57,6 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         single_image_max_size = max((height, width)) // 2
-        offset = sorted(offset)
 
         self.height = height
         self.width = width
@@ -74,8 +65,12 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
-        self.center_sampler = preprocessing_utils.parse_factor(
-            offset, param_name="offset", seed=seed
+        self.center_sampler = augmentation_utils.parse_factor(
+            offset,
+            min_value=0.0,
+            max_value=1.0,
+            center_value=0.5,
+            seed=seed,
         )
         self.single_image_max_size = single_image_max_size  # for padding
 
