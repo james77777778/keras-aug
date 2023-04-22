@@ -10,16 +10,19 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 class Normalize(VectorizedBaseRandomLayer):
     """Normalizes the mean and std on given images.
 
+    Normalize applies following equation to the input images:
+    ``y = (x - mean * max_pixel_value) / (std * max_pixel_value)``
+
     Args:
-        value_range: the range of values the incoming images will have.
-            Represented as a two number tuple written [low, high]. This is
-            typically either `[0, 1]` or `[0, 255]` depending on how your
-            preprocessing pipeline is set up.
-        mean: A tuple of int represents the mean values, defaults to
-            `(0.485, 0.456, 0.406)` which is the mean values from ImageNet
-        std: A tuple of int represents the std values, defaults to
-            `(0.229, 0.224, 0.225)` which is the std values from ImageNet
-        seed: Used to create a random seed, defaults to None.
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        mean (list(float)): The mean values. Defaults to
+            ``(0.485, 0.456, 0.406)`` which is the mean values from ImageNet.
+        std (list(float)): The std values. Defaults to
+            ``(0.229, 0.224, 0.225)`` which is the std values from ImageNet
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """
 
     def __init__(

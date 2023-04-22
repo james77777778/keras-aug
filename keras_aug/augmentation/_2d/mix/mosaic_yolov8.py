@@ -16,7 +16,7 @@ from keras_aug.utils.augmentation import LABELS
 class MosaicYOLOV8(VectorizedBaseRandomLayer):
     """The mosaic data augmentation technique used by YOLO series.
 
-    Mosaic data augmentation first takes 4 images from the batch and makes a
+    The Mosaic data augmentation first takes 4 images from the batch and makes a
     grid. After that based on the offset, a crop is taken to form the mosaic
     image. Labels are in the same ratio as the area of their images in the
     output image. Bounding boxes are translated according to the position of the

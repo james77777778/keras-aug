@@ -15,12 +15,12 @@ class RandomApply(VectorizedBaseRandomLayer):
     RandomApply applies augmentation(s) defined by ``layer`` in batch. For
     example, if the sampled probability=0.6 and ``rate=0.5`` then no op for
     this entire batch. The inputs must be dense tensor and the ``layer`` should
-    not modify the size of the inputs.
+    not modify the shape of the inputs.
 
     Args:
         layer (VectorizedBaseRandomLayer|keras.Layer|keras.Sequential): This
             layer will be applied to the batch when the sampled
-            ``prob < rate``. Layer should not modify the size of the inputs.
+            ``prob < rate``. Layer should not modify the shape of the inputs.
         rate (float, optional): The value that controls the frequency of
             applying the layer. ``1.0`` means the ``layer`` will always apply.
             ``0.0`` means no op. Defaults to 0.5.

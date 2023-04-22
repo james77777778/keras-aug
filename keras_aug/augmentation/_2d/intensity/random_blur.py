@@ -9,18 +9,19 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomBlur(VectorizedBaseRandomLayer):
-    """Blur the images using random-sized kernels.
+    """Blurs the images using random-sized kernels.
 
     This layer applies a mean filter with varying kernel sizes to blur the
     images. The sampled kernel sizes are always odd numbers.
 
     Args:
-        factor: A tuple of ints or an int represents kernel size range for
-            blurring the input image. If factor is a single value, the range
-            will be (1, factor). The value range of the factor should be in
-            (1, inf). When kernel size=1 is sampled, there is no blur
-            effect.
-        seed: Used to create a random seed, defaults to None.
+        factor (int|(int, int)|keras_cv.FactorSampler): The kernel size range
+            for blurring the input image. If the factor is a single value, the
+            range will be ``(1, factor)``. The value range of the factor should
+            be in ``(1, +inf)``. When sampled kernel size=``1``, there is no
+            blur effect.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `Albumentations <https://github.com/albumentations-team/albumentations>`_

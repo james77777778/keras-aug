@@ -10,7 +10,7 @@ from keras_aug.utils.augmentation import BATCHED
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class MixUp(VectorizedBaseRandomLayer):
-    """MixUp implements the MixUp data augmentation technique.
+    """The MixUp data augmentation technique.
 
     The MixUp data augmentation technique involves taking 2 images from a given
     batch and fusing them together using a ratio sampled from a beta
@@ -18,12 +18,14 @@ class MixUp(VectorizedBaseRandomLayer):
     concated according to the position of the 2 images.
 
     Args:
-        alpha: Float between 0 and +inf. Inverse scale parameter for the gamma
-            distribution. This controls the shape of the distribution from which
-            the smoothing values are sampled. Defaults to 0.2, which is a
-            recommended value when training an ImageNet classification model.
-            In YOLOV8, the authors use 32.0.
-        seed: Used to create a random seed, defaults to None.
+        alpha (float, optional): The inverse scale parameter between 0 to +inf
+            for the gamma distribution. This controls the shape of the
+            distribution from which the smoothing values are sampled. Defaults
+            to ``0.2``, which is a recommended value when training an ImageNet
+            classification model. For object detection, it is recommended to use
+            a larger value. For example YOLOV8 uses ``32.0``.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `mixup: Beyond Empirical Risk Minimization <https://arxiv.org/abs/1710.09412>`_
@@ -31,9 +33,9 @@ class MixUp(VectorizedBaseRandomLayer):
     """  # noqa: E501
 
     def __init__(self, alpha=0.2, seed=None, **kwargs):
-        super().__init__(seed=seed, force_generator=True, **kwargs)
         # MixUp layer uses stateless rng generator for following random
         # operations
+        super().__init__(seed=seed, force_generator=True, **kwargs)
         self.alpha = alpha
         self.seed = seed
 
@@ -131,12 +133,7 @@ class MixUp(VectorizedBaseRandomLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update(
-            {
-                "alpha": self.alpha,
-                "seed": self.seed,
-            }
-        )
+        config.update({"alpha": self.alpha, "seed": self.seed})
         return config
 
     @classmethod

@@ -16,41 +16,31 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     and hue image processing operation sequentially and randomly on the
     input. It expects input as RGB image.
 
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `channels_last` format
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `channels_last` format
-
     Args:
-        value_range: the range of values the incoming images will have.
-            Represented as a two number tuple written [low, high].
-            This is typically either `[0, 1]` or `[0, 255]` depending
-            on how your preprocessing pipeline is set up.
-        brightness_factor:  A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The brightness factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 0.0 will make image be black. 1.0 will
-            make image be white.
-        contrast_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The contrast factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 0.0 gives solid gray image, 1.0 gives
-            the original image while 2.0 increases the contrast by a factor of
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        brightness_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range of the brightness factor. When represented as a single float,
+            the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``0.0`` will make image be black. ``1.0`` will make image be white.
+        contrast_factor (float|(float, float)|keras_cv.FactorSampler): The range
+            of the contrast factor. When represented as a single float, the
+            factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``0.0`` gives solid gray image. ``1.0`` gives the original image
+            while ``2.0`` increases the contrast by a factor of 2.
+        saturation_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range of the saturation factor. When represented as a single float,
+            the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``1.0`` will give the original image. ``0.0`` makes the image to be
+            fully grayscale. ``2.0`` will enhance the saturation by a factor of
             2.
-        saturation_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The saturation factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 1.0 will give the original
-            image, 0.0 makes the image to be fully grayscale while 2.0 will
-            enhance the saturation by a factor of 2.
-        hue_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The hue factor will be randomly picked between
-            `[0.5 - lower, 0.5 + upper]`. 0.0 means no shift, while a value of
-            -0.5 or +0.5 gives an image with complementary colors.
-        seed: Used to create a random seed, defaults to None.
+        hue_factor (float|(float, float)|keras_cv.FactorSampler): The range of
+            the hue factor. When represented as a single float, the factor will
+            be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
+            shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `torchvision <https://github.com/pytorch/vision>`_

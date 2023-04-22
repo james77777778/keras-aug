@@ -48,7 +48,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             range for random vertical shear. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``.
-        shear_width_factor: (float|(float, float)|keras_cv.FactorSampler): The
+        shear_width_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random horizontal shear. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``.
@@ -149,6 +149,29 @@ class RandomAffine(VectorizedBaseRandomLayer):
         self.fill_value = fill_value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
+
+        # decide whether to enable the augmentation
+        self._enable_rotation = augmentation_utils.is_factor_working(
+            self.rotation_factor, not_working_value=0.0
+        )
+        self._enable_translation_height = augmentation_utils.is_factor_working(
+            self.translation_height_factor, not_working_value=0.0
+        )
+        self._enable_translation_width = augmentation_utils.is_factor_working(
+            self.translation_width_factor, not_working_value=0.0
+        )
+        self._enable_zoom_height = augmentation_utils.is_factor_working(
+            self.zoom_height_factor, not_working_value=0.0
+        )
+        self._enable_zoom_width = augmentation_utils.is_factor_working(
+            self.zoom_width_factor, not_working_value=0.0
+        )
+        self._enable_shear_height = augmentation_utils.is_factor_working(
+            self.shear_height_factor, not_working_value=0.0
+        )
+        self._enable_shear_width = augmentation_utils.is_factor_working(
+            self.shear_width_factor, not_working_value=0.0
+        )
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
@@ -255,80 +278,88 @@ class RandomAffine(VectorizedBaseRandomLayer):
             images=raw_images,
             dtype=tf.float32,
         )
+        boxes = bounding_boxes["boxes"]
 
         # process rotations
-        origin_x = widths / 2
-        origin_y = heights / 2
-        angles = -transformations["angles"]
-        angles = angles[:, tf.newaxis, tf.newaxis]
-        boxes = bounding_boxes["boxes"]
-        # points: (batch_size, max_num_boxes, 4, 2)
-        points = tf.stack(
-            [
-                tf.stack([boxes[:, :, 0], boxes[:, :, 1]], axis=2),
-                tf.stack([boxes[:, :, 2], boxes[:, :, 1]], axis=2),
-                tf.stack([boxes[:, :, 2], boxes[:, :, 3]], axis=2),
-                tf.stack([boxes[:, :, 0], boxes[:, :, 3]], axis=2),
-            ],
-            axis=2,
-        )
-        point_x_offsets = points[..., 0] - origin_x[..., tf.newaxis]
-        point_y_offsets = points[..., 1] - origin_y[..., tf.newaxis]
-        new_x = (
-            origin_x[..., tf.newaxis, tf.newaxis]
-            + tf.multiply(tf.cos(angles), point_x_offsets[..., tf.newaxis])
-            - tf.multiply(tf.sin(angles), point_y_offsets[..., tf.newaxis])
-        )
-        new_y = (
-            origin_y[..., tf.newaxis, tf.newaxis]
-            + tf.multiply(tf.sin(angles), point_x_offsets[..., tf.newaxis])
-            + tf.multiply(tf.cos(angles), point_y_offsets[..., tf.newaxis])
-        )
-        out = tf.concat([new_x, new_y], axis=3)
-        min_cordinates = tf.math.reduce_min(out, axis=2)
-        max_cordinates = tf.math.reduce_max(out, axis=2)
-        boxes = tf.concat([min_cordinates, max_cordinates], axis=2)
+        if self._enable_rotation:
+            origin_x = widths / 2
+            origin_y = heights / 2
+            angles = -transformations["angles"]
+            angles = angles[:, tf.newaxis, tf.newaxis]
+            # points: (batch_size, max_num_boxes, 4, 2)
+            points = tf.stack(
+                [
+                    tf.stack([boxes[:, :, 0], boxes[:, :, 1]], axis=2),
+                    tf.stack([boxes[:, :, 2], boxes[:, :, 1]], axis=2),
+                    tf.stack([boxes[:, :, 2], boxes[:, :, 3]], axis=2),
+                    tf.stack([boxes[:, :, 0], boxes[:, :, 3]], axis=2),
+                ],
+                axis=2,
+            )
+            point_x_offsets = points[..., 0] - origin_x[..., tf.newaxis]
+            point_y_offsets = points[..., 1] - origin_y[..., tf.newaxis]
+            new_x = (
+                origin_x[..., tf.newaxis, tf.newaxis]
+                + tf.multiply(tf.cos(angles), point_x_offsets[..., tf.newaxis])
+                - tf.multiply(tf.sin(angles), point_y_offsets[..., tf.newaxis])
+            )
+            new_y = (
+                origin_y[..., tf.newaxis, tf.newaxis]
+                + tf.multiply(tf.sin(angles), point_x_offsets[..., tf.newaxis])
+                + tf.multiply(tf.cos(angles), point_y_offsets[..., tf.newaxis])
+            )
+            out = tf.concat([new_x, new_y], axis=3)
+            min_cordinates = tf.math.reduce_min(out, axis=2)
+            max_cordinates = tf.math.reduce_max(out, axis=2)
+            boxes = tf.concat([min_cordinates, max_cordinates], axis=2)
 
         # process translations
-        translations = transformations["translations"]
-        translation_widths = translations[:, 0:1] * widths
-        translation_heights = translations[:, 1:2] * heights
-        _x1s = boxes[:, :, 0] + translation_widths
-        _y1s = boxes[:, :, 1] + translation_heights
-        _x2s = boxes[:, :, 2] + translation_widths
-        _y2s = boxes[:, :, 3] + translation_heights
+        if self._enable_translation_height or self._enable_translation_width:
+            translations = transformations["translations"]
+            translation_widths = translations[:, 0:1] * widths
+            translation_heights = translations[:, 1:2] * heights
+            x1s = boxes[:, :, 0] + translation_widths
+            y1s = boxes[:, :, 1] + translation_heights
+            x2s = boxes[:, :, 2] + translation_widths
+            y2s = boxes[:, :, 3] + translation_heights
+            boxes = tf.stack([x1s, y1s, x2s, y2s], axis=-1)
 
         # process shear
-        shears = transformations["shears"]
-        shear_widths = shears[:, 0:1]
-        shear_heights = shears[:, 1:2]
-        # x1, x2
-        x1_tops = _x1s - (shear_widths * _y1s)
-        x1_bottoms = _x1s - (shear_widths * _y2s)
-        x1s = tf.where(shear_widths < 0, x1_tops, x1_bottoms)
-        x2_tops = _x2s - (shear_widths * _y1s)
-        x2_bottoms = _x2s - (shear_widths * _y2s)
-        x2s = tf.where(shear_widths < 0, x2_bottoms, x2_tops)
-        # y1, y2
-        y1_lefts = _y1s - (shear_heights * _x1s)
-        y1_rights = _y1s - (shear_heights * _x2s)
-        y1s = tf.where(shear_heights > 0, y1_rights, y1_lefts)
-        y2_lefts = _y2s - (shear_heights * _x1s)
-        y2_rights = _y2s - (shear_heights * _x2s)
-        y2s = tf.where(shear_heights > 0, y2_lefts, y2_rights)
+        if self._enable_shear_height or self._enable_shear_width:
+            shears = transformations["shears"]
+            shear_widths = shears[:, 0:1]
+            shear_heights = shears[:, 1:2]
+            _x1s, _y1s, _x2s, _y2s = tf.split(boxes, 4, axis=-1)
+            # x1, x2
+            x1_tops = _x1s - (shear_widths * _y1s)
+            x1_bottoms = _x1s - (shear_widths * _y2s)
+            x1s = tf.where(shear_widths < 0, x1_tops, x1_bottoms)
+            x2_tops = _x2s - (shear_widths * _y1s)
+            x2_bottoms = _x2s - (shear_widths * _y2s)
+            x2s = tf.where(shear_widths < 0, x2_bottoms, x2_tops)
+            # y1, y2
+            y1_lefts = _y1s - (shear_heights * _x1s)
+            y1_rights = _y1s - (shear_heights * _x2s)
+            y1s = tf.where(shear_heights > 0, y1_rights, y1_lefts)
+            y2_lefts = _y2s - (shear_heights * _x1s)
+            y2_rights = _y2s - (shear_heights * _x2s)
+            y2s = tf.where(shear_heights > 0, y2_lefts, y2_rights)
+            boxes = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
 
         # process zoom
-        zooms = transformations["zooms"]
-        zoom_widths = zooms[:, 0:1]
-        zoom_heights = zooms[:, 1:2]
-        x_offsets = ((widths - 1.0) / 2.0) * (1.0 - zoom_widths)
-        y_offsets = ((heights - 1.0) / 2.0) * (1.0 - zoom_heights)
-        x1s = (x1s - x_offsets) / zoom_widths
-        x2s = (x2s - x_offsets) / zoom_widths
-        y1s = (y1s - y_offsets) / zoom_heights
-        y2s = (y2s - y_offsets) / zoom_heights
+        if self._enable_zoom_height or self._enable_zoom_width:
+            zooms = transformations["zooms"]
+            zoom_widths = zooms[:, 0:1]
+            zoom_heights = zooms[:, 1:2]
+            x1s, y1s, x2s, y2s = tf.split(boxes, 4, axis=-1)
+            x_offsets = ((widths - 1.0) / 2.0) * (1.0 - zoom_widths)
+            y_offsets = ((heights - 1.0) / 2.0) * (1.0 - zoom_heights)
+            x1s = (x1s - x_offsets) / zoom_widths
+            x2s = (x2s - x_offsets) / zoom_widths
+            y1s = (y1s - y_offsets) / zoom_heights
+            y2s = (y2s - y_offsets) / zoom_heights
+            boxes = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
 
-        boxes = tf.stack([x1s, y1s, x2s, y2s], axis=-1)
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
         bounding_boxes = bounding_box.clip_to_image(

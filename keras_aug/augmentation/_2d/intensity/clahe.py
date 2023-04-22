@@ -5,6 +5,7 @@ from tensorflow import keras
 from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -13,16 +14,17 @@ class CLAHE(VectorizedBaseRandomLayer):
     image.
 
     Args:
-        value_range: the range of values the incoming images will have.
-            Represented as a two number tuple written [low, high]. This is
-            typically either `[0, 1]` or `[0, 255]` depending on how your
-            preprocessing pipeline is set up.
-        factor: A tuple of ints or an int represents threshold values
-            for contrast limiting. If factor is a single float value, the range
-            will be (1, clip_limit), defaults to (1, 4).
-        tile_grid_size: A tuple of int representing the size of grid for
-            histogram equalization, defaults to (8, 8).
-        seed: Used to create a random seed, defaults to None.
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        factor (int|(int, int)|keras_cv.FactorSampler): The range of the
+            threshold values for contrast limiting. If the factor is a single
+            float value, the range will be ``(1, clip_limit)``. Defaults to
+            ``(1, 4)``.
+        tile_grid_size ((int, int)): The size of grid for histogram
+            equalization. Defaults to ``(8, 8)``.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `isears/tf_clahe <https://github.com/isears/tf_clahe>`_
@@ -38,15 +40,10 @@ class CLAHE(VectorizedBaseRandomLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         self.value_range = value_range
-        if isinstance(factor, (tuple, list)):
-            min = factor[0]
-            max = factor[1]
-        else:
-            min = 1
-            max = factor
-        self.factor_input = factor
-        self.factor = preprocessing_utils.parse_factor(
-            (min, max), min_value=1, max_value=None, seed=seed
+        if isinstance(factor, (int, float)):
+            factor = (1, factor)
+        self.factor = augmentation_utils.parse_factor(
+            factor, min_value=1, max_value=None, seed=seed
         )
         self.tile_grid_size = tuple(tile_grid_size)
         self.seed = seed
@@ -239,7 +236,7 @@ class CLAHE(VectorizedBaseRandomLayer):
         config.update(
             {
                 "value_range": self.value_range,
-                "factor": self.factor_input,
+                "factor": self.factor,
                 "tile_grid_size": self.tile_grid_size,
                 "seed": self.seed,
             }

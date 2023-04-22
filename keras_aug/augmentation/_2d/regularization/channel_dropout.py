@@ -12,10 +12,13 @@ class ChannelDropout(VectorizedBaseRandomLayer):
     """Randomly drop channels of the input images.
 
     Args:
-        factor: A tuple or list of int represents the range from
-            which we choose the number of channels to drop, defaults to (0, 2).
-        fill_value: The pixel value for the dropped channel, defauls to 0.
-        seed: Used to create a random seed, defaults to None.
+        factor (float|(float, float)|keras_cv.FactorSampler): The range from
+            which we choose the number of channels to drop. Defaults to
+            ``(0, 2)``.
+        fill_value (int|float, optional): The value to be filled for dropped
+            channel. Defaults to ``0``.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `Albumentations <https://github.com/albumentations-team/albumentations>`_
