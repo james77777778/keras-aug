@@ -11,7 +11,7 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class ResizeAndCrop(VectorizedBaseRandomLayer):
-    """Resizes and crops the images.
+    """Resizes and crops the images while keeping the aspect ratio.
 
     ResizeAndCrop will firstly resize the images to fit in ``(height, width)``
     by smaller side while keeping the aspect ratio of the initial images and
@@ -170,10 +170,10 @@ class ResizeAndCrop(VectorizedBaseRandomLayer):
     ):
         if self.bounding_box_format is None:
             raise ValueError(
-                "`ResizeAndPad()` was called with bounding boxes,"
+                "`ResizeAndCrop()` was called with bounding boxes,"
                 "but no `bounding_box_format` was specified in the constructor."
                 "Please specify a bounding box format in the constructor. i.e."
-                "`ResizeAndPad(..., bounding_box_format='xyxy')`"
+                "`ResizeAndCrop(..., bounding_box_format='xyxy')`"
             )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
@@ -246,7 +246,6 @@ class ResizeAndCrop(VectorizedBaseRandomLayer):
                 segmentation_masks,
                 size=(new_height, new_width),
                 method="nearest",
-                antialias=self.antialias,
             )
             # crop
             new_height = tf.cast(new_height, dtype=tf.float32)

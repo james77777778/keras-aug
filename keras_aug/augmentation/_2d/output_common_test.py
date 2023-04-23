@@ -43,6 +43,11 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "Resize",
+        augmentation.Resize,
+        {"height": 2, "width": 2},
+    ),
+    (
         "ResizeAndCrop",
         augmentation.ResizeAndCrop,
         {"height": 2, "width": 2},
@@ -142,6 +147,7 @@ NO_PRESERVED_SHAPE_LAYERS = [
     augmentation.PadIfNeeded,
     augmentation.MosaicYOLOV8,
     augmentation.RandomCropAndResize,
+    augmentation.Resize,
     augmentation.ResizeAndCrop,
     augmentation.ResizeAndPad,
     augmentation.ResizeByLongestSide,
@@ -172,6 +178,7 @@ SKIP_DTYPE_LAYERS = [
 ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentation.CenterCrop,
     augmentation.PadIfNeeded,
+    augmentation.Resize,
     augmentation.ResizeAndCrop,
     augmentation.ResizeAndPad,
     augmentation.ResizeByLongestSide,

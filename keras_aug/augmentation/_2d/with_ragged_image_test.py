@@ -121,6 +121,11 @@ FORCE_DENSE_IMAGES_LAYERS = [
         },
     ),
     (
+        "Resize",
+        augmentation.Resize,
+        {"height": 2, "width": 2},
+    ),
+    (
         "ResizeAndCrop",
         augmentation.ResizeAndCrop,
         {"height": 2, "width": 2},

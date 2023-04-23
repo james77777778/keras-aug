@@ -11,7 +11,7 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class ResizeAndPad(VectorizedBaseRandomLayer):
-    """Resizes and pads the images.
+    """Resizes and pads the images while keeping the aspect ratio.
 
     ResizeAndPad will firstly resize the images to fit in ``(height, width)``
     while keeping the aspect ratio of the initial images and then pad to
@@ -266,10 +266,7 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
                 paddings=paddings,
                 constant_values=0,
             )
-            segmentation_masks = tf.cast(
-                segmentation_masks, dtype=self.compute_dtype
-            )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def augment_segmentation_mask_single(self, inputs):
         segmentation_mask = inputs.get(
@@ -302,7 +299,7 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
             paddings=paddings,
             constant_values=0,
         )
-        return tf.cast(segmentation_mask, dtype=self.compute_dtype)
+        return segmentation_mask
 
     def get_config(self):
         config = super().get_config()

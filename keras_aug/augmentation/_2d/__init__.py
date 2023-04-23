@@ -7,6 +7,7 @@ from keras_aug.augmentation._2d.geometry.random_affine import RandomAffine
 from keras_aug.augmentation._2d.geometry.random_crop_and_resize import (
     RandomCropAndResize,
 )
+from keras_aug.augmentation._2d.geometry.resize import Resize
 from keras_aug.augmentation._2d.geometry.resize_and_crop import ResizeAndCrop
 from keras_aug.augmentation._2d.geometry.resize_and_pad import ResizeAndPad
 from keras_aug.augmentation._2d.geometry.resize_by_longest_side import (
