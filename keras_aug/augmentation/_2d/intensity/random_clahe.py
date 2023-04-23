@@ -10,8 +10,8 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomCLAHE(VectorizedBaseRandomLayer):
-    """Apply Contrast Limited Adaptive Histogram Equalization to the input
-    image.
+    """Randomly applies Contrast Limited Adaptive Histogram Equalization to the
+    input images.
 
     Args:
         value_range ((int|float, int|float)): The range of values the incoming

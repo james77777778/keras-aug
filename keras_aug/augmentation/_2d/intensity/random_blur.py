@@ -9,7 +9,7 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomBlur(VectorizedBaseRandomLayer):
-    """Blurs the images using random-sized kernels.
+    """Randomly blurs the images using random-sized kernels.
 
     This layer applies a mean filter with varying kernel sizes to blur the
     images. The sampled kernel sizes are always odd numbers.

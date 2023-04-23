@@ -13,7 +13,7 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomJpegQuality(VectorizedBaseRandomLayer):
-    """Applies random jpeg compression artifacts to the input images.
+    """Randomly applies jpeg compression artifacts to the input images.
 
     Performs the jpeg compression algorithm on the image. This layer can be used
     in order to ensure your model is robust to artifacts introduced by JPEG

@@ -12,9 +12,9 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomColorJitter(VectorizedBaseRandomLayer):
-    """RandomColorJitter class randomly apply brightness, contrast, saturation
-    and hue image processing operation sequentially and randomly on the
-    input. It expects input as RGB image.
+    """Randomly applies brightness, contrast, saturation and hue image
+    processing operation sequentially and randomly on the input images. It
+    expects input as RGB image.
 
     Args:
         value_range ((int|float, int|float)): The range of values the incoming
