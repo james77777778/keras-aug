@@ -1,15 +1,14 @@
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentation import ResizeAndCrop
+from keras_aug.augmentation import Resize
 
 
 def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
-    layer = ResizeAndCrop(
+    layer = Resize(
         height=512,
         width=512,
-        position="top_left",
         bounding_box_format="xyxy",
     )
     result = dataset.map(layer, num_parallel_calls=tf.data.AUTOTUNE)
