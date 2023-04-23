@@ -36,7 +36,6 @@ TEST_CONFIGURATIONS = [
         augmentation.ResizeBySmallestSide,
         {"min_size": [2]},
     ),
-    ("CLAHE", augmentation.CLAHE, {"value_range": (0, 255)}),
     ("Normalize", augmentation.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentation.RandomBlur, {"factor": (3, 7)}),
     (
@@ -48,6 +47,7 @@ TEST_CONFIGURATIONS = [
             "contrast_factor": 0.1,
         },
     ),
+    ("RandomCLAHE", augmentation.RandomCLAHE, {"value_range": (0, 255)}),
     (
         "RandomColorJitter",
         augmentation.RandomColorJitter,

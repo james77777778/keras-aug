@@ -9,7 +9,7 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class CLAHE(VectorizedBaseRandomLayer):
+class RandomCLAHE(VectorizedBaseRandomLayer):
     """Apply Contrast Limited Adaptive Histogram Equalization to the input
     image.
 
@@ -27,7 +27,7 @@ class CLAHE(VectorizedBaseRandomLayer):
             ``None``.
 
     References:
-        - `isears/tf_clahe <https://github.com/isears/tf_clahe>`_
+        - `isears/tf_RandomCLAHE <https://github.com/isears/tf_RandomCLAHE>`_
     """
 
     def __init__(
@@ -64,13 +64,13 @@ class CLAHE(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-        inputs_for_clahe_single_image = {
+        inputs_for_RandomCLAHE_single_image = {
             "images": images,
             "clip_limits": transformations,
         }
         images = tf.vectorized_map(
-            self.clahe_single_image,
-            inputs_for_clahe_single_image,
+            self.RandomCLAHE_single_image,
+            inputs_for_RandomCLAHE_single_image,
         )
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
@@ -105,7 +105,7 @@ class CLAHE(VectorizedBaseRandomLayer):
         clipped_hists = clipped_hists + tf.math.truediv(clipped_px_count, 256)
         return clipped_hists
 
-    def clahe_single_image(self, inputs):
+    def RandomCLAHE_single_image(self, inputs):
         image = inputs.get("images", None)
         clip_limit = inputs.get("clip_limits", None)
 

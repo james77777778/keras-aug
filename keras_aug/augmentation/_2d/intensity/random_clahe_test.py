@@ -60,7 +60,7 @@ def equalize(image, bins: int = 256) -> tf.Tensor:
     return image
 
 
-class CLAHETest(tf.test.TestCase):
+class RandomCLAHETest(tf.test.TestCase):
     regular_args = {
         "value_range": (0, 255),
         "factor": (2, 4),
@@ -73,19 +73,19 @@ class CLAHETest(tf.test.TestCase):
         image = tf.random.uniform(shape=image_shape) * 100.0
         args = self.regular_args.copy()
         args.update({"value_range": (0, 100)})
-        layer = augmentation.CLAHE(**args)
+        layer = augmentation.RandomCLAHE(**args)
 
         output = layer(image)
 
         self.assertNotAllClose(image, output)
 
-    def test_clahe_output(self):
+    def test_RandomCLAHE_output(self):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
         image = tf.cast(image, dtype=tf.uint8)
         args = self.regular_args.copy()
         args.update({"factor": (1, 1), "tile_grid_size": (1, 1)})
-        layer = augmentation.CLAHE(**args)
+        layer = augmentation.RandomCLAHE(**args)
         equalized = equalize(image)
 
         output = layer(image)

@@ -26,8 +26,9 @@ class PadIfNeeded(VectorizedBaseRandomLayer):
             divisible by.
         width_divisor (int, optional): The divisor that ensures image width is
             divisible by.
-        position (str, optional): The padding method. Defaults to
-            ``"center"``.
+        position (str, optional): The padding method.
+            Supported values: ``"center", "top_left", "top_right", "bottom_left", "bottom_right", "random"``.
+            Defaults to ``"center"``.
         padding_value (int|float, optional): The padding value.
             Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding

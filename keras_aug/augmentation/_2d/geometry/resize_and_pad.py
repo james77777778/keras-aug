@@ -20,12 +20,14 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
     Args:
         height (int): The height of result image.
         width (int): The width of result image.
-        interpolation (str, optional): The interpolation mode. Supported values:
-            ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
+        interpolation (str, optional): The interpolation mode.
+            Supported values: ``"nearest", "bilinear"``.
+            Defaults to `"bilinear"`.
         antialias (bool, optional): Whether to use antialias. Defaults to
             ``False``.
-        position (str, optional): The padding method. Defaults to
-            ``"center"``.
+        position (str, optional): The padding method.
+            Supported values: ``"center", "top_left", "top_right", "bottom_left", "bottom_right", "random"``.
+            Defaults to ``"center"``.
         padding_value (int|float, optional): The padding value.
             Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
@@ -282,7 +284,6 @@ class ResizeAndPad(VectorizedBaseRandomLayer):
             segmentation_mask,
             size=(new_height, new_width),
             method="nearest",
-            antialias=self.antialias,
         )
         # pad
         pad_top = transformation["pad_tops"][0]

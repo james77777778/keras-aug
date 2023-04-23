@@ -25,10 +25,10 @@ Geometry
 Intensity
 ---------------
 
-.. autoclass:: CLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
 .. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)
 .. autoclass:: RandomBrightnessContrast(value_range, brightness_factor, contrast_factor, seed=None, **kwargs)
+.. autoclass:: RandomCLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
 .. autoclass:: RandomColorJitter(value_range, brightness_factor, contrast_factor, saturation_factor, hue_factor, seed=None, **kwargs)
 .. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomHSV(value_range, hue_factor, saturation_factor, value_factor, seed=None, **kwargs)
