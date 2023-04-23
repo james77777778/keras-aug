@@ -41,6 +41,11 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "ResizeAndCrop",
+        augmentation.ResizeAndCrop,
+        {"height": 2, "width": 2},
+    ),
+    (
         "ResizeAndPad",
         augmentation.ResizeAndPad,
         {"height": 2, "width": 2},

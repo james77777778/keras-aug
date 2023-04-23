@@ -42,6 +42,11 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "ResizeAndCrop",
+        augmentation.ResizeAndCrop,
+        {"height": 2, "width": 2},
+    ),
+    (
         "ResizeAndPad",
         augmentation.ResizeAndPad,
         {"height": 2, "width": 2},
@@ -139,6 +144,7 @@ TEST_CONFIGURATIONS = [
 NO_XLA_SUPPORT_LAYERS = [
     augmentation.RandomAffine,
     augmentation.RandomCropAndResize,
+    augmentation.ResizeAndCrop,
     augmentation.ResizeByLongestSide,
     augmentation.ResizeBySmallestSide,
     augmentation.RandomBlur,
