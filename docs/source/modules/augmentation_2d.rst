@@ -27,7 +27,7 @@ Geometry
 Intensity
 ---------------
 
-.. autoclass:: Normalize(value_range, **kwargs)
+.. autoclass:: AutoContrast(value_range, **kwargs)
 .. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)
 .. autoclass:: RandomBrightnessContrast(value_range, brightness_factor, contrast_factor, seed=None, **kwargs)
