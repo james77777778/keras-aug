@@ -23,7 +23,7 @@ class RandomApply(VectorizedBaseRandomLayer):
             ``prob < rate``. Layer should not modify the shape of the inputs.
         rate (float, optional): The value that controls the frequency of
             applying the layer. ``1.0`` means the ``layer`` will always apply.
-            ``0.0`` means no op. Defaults to 0.5.
+            ``0.0`` means no op. Defaults to ``0.5``.
         seed (int|float, optional): The random seed. Defaults to
             ``None``.
 

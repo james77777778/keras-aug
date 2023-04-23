@@ -13,24 +13,24 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomJpegQuality(VectorizedBaseRandomLayer):
-    """Applies Random Jpeg compression artifacts to an image.
+    """Applies random jpeg compression artifacts to the input images.
 
     Performs the jpeg compression algorithm on the image. This layer can be used
     in order to ensure your model is robust to artifacts introduced by JPEG
     compression.
 
     Args:
-        value_range: the range of values the incoming images will have.
-            Represented as a two number tuple written [low, high]. This is
-            typically either `[0, 1]` or `[0, 255]` depending on how your
-            preprocessing pipeline is set up.
-        factor: A tuple of two ints, a single int or
-            `keras_cv.FactorSampler`. When represented as a single int, the
-            factor will be randomly picked between `[100 - factor, 100]`.
-            When 50 is chosen, the output image will be compressed 50% with
-            JPEG, and when 100 is chosen, it is still lossy compresson. This
-            value is passed to `tf.image.adjust_jpeg_quality()`.
-        seed: Used to create a random seed, defaults to None.
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        factor (int|(int, int)|keras_cv.FactorSampler): The range of the
+            compression factor. When represented as a single int, the
+            factor will be randomly picked between ``[100 - factor, 100]``.
+            ``50`` will give the image with 50% JPEG compression. ``100`` will
+            still give a lossy compresson. This value is passed to
+            ``tf.image.adjust_jpeg_quality()``.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_

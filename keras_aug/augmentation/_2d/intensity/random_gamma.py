@@ -12,21 +12,22 @@ from keras_aug.utils import augmentation as augmentation_utils
 class RandomGamma(VectorizedBaseRandomLayer):
     """Randomly adjusts gamma of the input images.
 
-    This layer will randomly increase/reduce the gamma for the input images.
-    Gamma is adjusted independently of each image.
+    This layer will randomly increase/reduce the gamma for the input images by
+    the equation: ``y = x ** factor``. Gamma is adjusted independently of each
+    image. The image is adjusted by converting the pixel value range to
+    ``[0, 1]`` and applying RandomGamma. The image is then converted back to the
+    original value range.
 
     Args:
-        value_range: A list or tuple of 2 floats for the lower and upper limit
-            of the values of the input data. The gamma adjustment will be
-            scaled to this range, and the output values will be clipped to this
-            range.
-        factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 1.0 will give the original
-            image. For any pixel x in the image, the output will be
-            `x ** factor`.
-        seed: Used to create a random seed, defaults to None.
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        factor (float|(float, float)|keras_cv.FactorSampler): The range of the
+            gamma factor. When represented as a single float, the
+            factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``1.0`` will give the original image.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
     """
 
     def __init__(

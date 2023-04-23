@@ -30,6 +30,7 @@ class MixUp(VectorizedBaseRandomLayer):
     References:
         - `mixup: Beyond Empirical Risk Minimization <https://arxiv.org/abs/1710.09412>`_
         - `Bag of Freebies for Training Object Detection Neural Networks <https://arxiv.org/abs/1902.04103>`_
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(self, alpha=0.2, seed=None, **kwargs):

@@ -15,36 +15,33 @@ class RandomHSV(VectorizedBaseRandomLayer):
     """Randomly adjusts the hue, saturation and value on given images.
 
     This layer will randomly increase/reduce the hue, saturation and value for
-    the input RGB images.
-
-    The image hue, saturation and value is adjusted by converting the image(s)
-    to HSV and rotating the hue channel (H) by hue factor, multiplying the
-    saturation channel (S) by saturation factor and multiplying the value
-    channel (V) by value factor. The image is then converted back to RGB.
+    the input RGB images. The image hue, saturation and value is adjusted by
+    converting the image(s) to HSV and rotating the hue channel (H) by hue
+    factor, multiplying the saturation channel (S) by saturation factor and
+    multiplying the value channel (V) by value factor. The image is then
+    converted back to RGB.
 
     Args:
-        value_range: the range of values the incoming images will have.
-            Represented as a two number tuple written [low, high]. This is
-            typically either `[0, 1]` or `[0, 255]` depending on how your
-            preprocessing pipeline is set up.
-        hue_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The hue factor will be randomly picked between
-            `[0.5 - lower, 0.5 + upper]`. 0.0 means no shift, while a value of
-            -0.5 or +0.5 gives an image with complementary colors.
-        saturation_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The saturation factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 1.0 will give the original
-            image, 0.0 makes the image to be fully grayscale while 2.0 will
-            enhance the saturation by a factor of 2.
-        value_factor: A tuple of two floats, a single float or
-            `keras_cv.FactorSampler`. When represented as a single float,
-            lower = upper. The value factor will be randomly picked between
-            `[1.0 - lower, 1.0 + upper]`. 1.0 will give the original
-            image, 0.0 makes the image to be zero values while 2.0 will
-            enhance the value by a factor of 2.
-        seed: Used to create a random seed, defaults to None.
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
+        hue_factor (float|(float, float)|keras_cv.FactorSampler): The range of
+            the hue factor. When represented as a single float, the factor will
+            be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
+            shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
+        saturation_factor (float|(float, float)|keras_cv.FactorSampler): The
+            range of the saturation factor. When represented as a single float,
+            the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``1.0`` will give the original image. ``0.0`` makes the image to be
+            fully grayscale. ``2.0`` will enhance the saturation by a factor of
+            2.
+        value_factor (float|(float, float)|keras_cv.FactorSampler): The range
+            of the value factor. When represented as a single float,
+            the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
+            ``1.0`` will give the original image. ``0.0`` makes the image to be
+            zero values. ``2.0`` will enhance the value by a factor of 2.
+        seed (int|float, optional): The random seed. Defaults to
+            ``None``.
 
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_

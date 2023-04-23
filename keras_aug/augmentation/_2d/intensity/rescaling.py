@@ -10,8 +10,8 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 class Rescaling(VectorizedBaseRandomLayer):
     """Rescales the inputs to a new range.
 
-    Rescaling rescales every value of the inputs (often the images) by
-    multiplying by ``scale`` and adding ``offset``.
+    Rescaling rescales every value of the inputs (often the images) by the
+    equation: ``y = x * scale + offset``.
 
     Args:
         scale (int|float): The scale to apply to the inputs.

@@ -14,7 +14,7 @@ from keras_aug.utils.augmentation import LABELS
 
 @keras.utils.register_keras_serializable(package="keras_aug")
 class MosaicYOLOV8(VectorizedBaseRandomLayer):
-    """The mosaic data augmentation technique used by YOLO series.
+    """The Mosaic data augmentation technique used by YOLO series.
 
     The Mosaic data augmentation first takes 4 images from the batch and makes a
     grid. After that based on the offset, a crop is taken to form the mosaic

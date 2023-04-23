@@ -3,35 +3,6 @@ API - Augmentation - 2D
 
 .. automodule:: keras_aug.augmentation
 
-.. autosummary::
-    :nosignatures:
-
-    CenterCrop
-    PadIfNeeded
-    RandomAffine
-    RandomCropAndResize
-    ResizeByLongestSide
-    ResizeBySmallestSide
-
-    CLAHE
-    Normalize
-    RandomBlur
-    RandomBrightnessContrast
-    RandomColorJitter
-    RandomGamma
-    RandomHSV
-    RandomJpegQuality
-    Rescaling
-
-    MixUp
-    MosaicYOLOV8
-
-    ChannelDropout
-
-    RandomApply
-
-    VectorizedBaseRandomLayer
-
 .. -----------------------------------------------------------
 ..                        Geometry
 .. -----------------------------------------------------------
@@ -54,14 +25,14 @@ Geometry
 Intensity
 ---------------
 
-.. autoclass:: CLAHE
-.. autoclass:: Normalize
-.. autoclass:: RandomBlur
-.. autoclass:: RandomBrightnessContrast
-.. autoclass:: RandomColorJitter
-.. autoclass:: RandomGamma
-.. autoclass:: RandomHSV
-.. autoclass:: RandomJpegQuality
+.. autoclass:: CLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
+.. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
+.. autoclass:: RandomBlur(factor, seed=None, **kwargs)
+.. autoclass:: RandomBrightnessContrast(value_range, brightness_factor, contrast_factor, seed=None, **kwargs)
+.. autoclass:: RandomColorJitter(value_range, brightness_factor, contrast_factor, saturation_factor, hue_factor, seed=None, **kwargs)
+.. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
+.. autoclass:: RandomHSV(value_range, hue_factor, saturation_factor, value_factor, seed=None, **kwargs)
+.. autoclass:: RandomJpegQuality(value_range, factor, seed=None, **kwargs)
 .. autoclass:: Rescaling(scale, offset=0.0)
 
 .. -----------------------------------------------------------
@@ -71,8 +42,8 @@ Intensity
 Mix
 ---------------
 
-.. autoclass:: MixUp
-.. autoclass:: MosaicYOLOV8
+.. autoclass:: MixUp(alpha=0.2, seed=None, **kwargs)
+.. autoclass:: MosaicYOLOV8(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Regularization
@@ -81,7 +52,7 @@ Mix
 Regularization
 ---------------
 
-.. autoclass:: ChannelDropout
+.. autoclass:: ChannelDropout(factor=(0, 2), fill_value=0, seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Utility
@@ -90,7 +61,7 @@ Regularization
 Utility
 ---------------
 
-.. autoclass:: RandomApply
+.. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Base
@@ -99,4 +70,4 @@ Utility
 Base
 ---------------
 
-.. autoclass:: VectorizedBaseRandomLayer
+.. autoclass:: VectorizedBaseRandomLayer(seed=None, **kwargs)

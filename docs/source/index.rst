@@ -1,30 +1,26 @@
 Welcome to KerasAug's documentation!
 ====================================
 
-User Guide
--------------
+💡 User Guide
+-------------------
 
 .. toctree::
    :maxdepth: 2
-   :caption: 💡 User Guide
 
-
-API Reference
--------------
+📚 API Reference
+-------------------
 
 .. toctree::
    :maxdepth: 2
-   :caption: 📚 API Reference
 
    modules/augmentation_2d.rst
    modules/utils_augmentation.rst
 
-Benchmarks
--------------
+🚀 Benchmarks
+-------------------
 
 .. toctree::
    :maxdepth: 1
-   :caption: 🚀 Benchmarks
 
 
 Indices and tables
