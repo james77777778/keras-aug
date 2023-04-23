@@ -67,6 +67,8 @@ TEST_CONFIGURATIONS = [
         {"min_size": [2]},
     ),
     ("AutoContrast", augmentation.AutoContrast, {"value_range": (0, 255)}),
+    ("ChannelShuffle", augmentation.ChannelShuffle, {"groups": 3}),
+    ("Grayscale", augmentation.Grayscale, {"output_channels": 3}),
     ("Normalize", augmentation.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentation.RandomBlur, {"factor": (3, 7)}),
     (
@@ -77,6 +79,11 @@ TEST_CONFIGURATIONS = [
             "brightness_factor": 0.1,
             "contrast_factor": 0.1,
         },
+    ),
+    (
+        "RandomChannelShift",
+        augmentation.RandomChannelShift,
+        {"value_range": (0, 255), "factor": 0.1},
     ),
     (
         "RandomCLAHE",
