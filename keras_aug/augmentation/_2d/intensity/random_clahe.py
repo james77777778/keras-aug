@@ -27,7 +27,7 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
             ``None``.
 
     References:
-        - `isears/tf_RandomCLAHE <https://github.com/isears/tf_RandomCLAHE>`_
+        - `isears/tf_clahe <https://github.com/isears/tf_clahe>`_
     """
 
     def __init__(
