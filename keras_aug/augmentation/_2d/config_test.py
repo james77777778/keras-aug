@@ -65,6 +65,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ResizeBySmallestSide,
         {"min_size": [2]},
     ),
+    ("AutoContrast", augmentation.AutoContrast, {"value_range": (0, 255)}),
     ("Normalize", augmentation.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentation.RandomBlur, {"factor": (3, 7)}),
     (

@@ -67,6 +67,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ResizeBySmallestSide,
         {"min_size": [2]},
     ),
+    ("AutoContrast", augmentation.AutoContrast, {"value_range": (0, 255)}),
     ("Normalize", augmentation.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentation.RandomBlur, {"factor": (3, 7)}),
     (
@@ -160,6 +161,7 @@ NO_BFLOAT16_DTYPE_LAYERS = [
 ]
 
 NO_UINT8_DTYPE_LAYERS = [
+    augmentation.AutoContrast,
     augmentation.Normalize,
     augmentation.RandomBrightnessContrast,
     augmentation.RandomColorJitter,
@@ -183,6 +185,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentation.ResizeAndPad,
     augmentation.ResizeByLongestSide,
     augmentation.ResizeBySmallestSide,
+    augmentation.AutoContrast,
     augmentation.Normalize,
     augmentation.Rescaling,
     augmentation.MixUp,
