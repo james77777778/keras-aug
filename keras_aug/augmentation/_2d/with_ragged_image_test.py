@@ -26,6 +26,8 @@ TEST_CONFIGURATIONS = [
             "shear_width_factor": 0.1,
         },
     ),
+    ("RandomFlip", augmentation.RandomFlip, {"mode": "horizontal"}),
+    ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
         "ResizeByLongestSide",
         augmentation.ResizeByLongestSide,
@@ -118,6 +120,7 @@ FORCE_DENSE_IMAGES_LAYERS = [
         augmentation.CenterCrop,
         {"height": 2, "width": 2},
     ),
+    ("RandomCrop", augmentation.RandomCrop, {"height": 2, "width": 2}),
     (
         "RandomCropAndResize",
         augmentation.RandomCropAndResize,

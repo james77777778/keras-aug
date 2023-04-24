@@ -4,9 +4,12 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 from keras_aug.augmentation._2d.geometry.center_crop import CenterCrop
 from keras_aug.augmentation._2d.geometry.pad_if_needed import PadIfNeeded
 from keras_aug.augmentation._2d.geometry.random_affine import RandomAffine
+from keras_aug.augmentation._2d.geometry.random_crop import RandomCrop
 from keras_aug.augmentation._2d.geometry.random_crop_and_resize import (
     RandomCropAndResize,
 )
+from keras_aug.augmentation._2d.geometry.random_flip import RandomFlip
+from keras_aug.augmentation._2d.geometry.random_rotate import RandomRotate
 from keras_aug.augmentation._2d.geometry.resize import Resize
 from keras_aug.augmentation._2d.geometry.resize_and_crop import ResizeAndCrop
 from keras_aug.augmentation._2d.geometry.resize_and_pad import ResizeAndPad

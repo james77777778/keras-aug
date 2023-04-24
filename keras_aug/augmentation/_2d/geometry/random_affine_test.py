@@ -5,7 +5,7 @@ from keras_cv import bounding_box
 from keras_aug import augmentation
 
 
-class RandomRotationTest(tf.test.TestCase):
+class RandomAffineTest(tf.test.TestCase):
     regular_args = {
         "rotation_factor": 10,
         "translation_height_factor": 0.1,

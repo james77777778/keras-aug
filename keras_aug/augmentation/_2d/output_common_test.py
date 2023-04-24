@@ -32,6 +32,7 @@ TEST_CONFIGURATIONS = [
             "shear_width_factor": 0.1,
         },
     ),
+    ("RandomCrop", augmentation.RandomCrop, {"height": 2, "width": 2}),
     (
         "RandomCropAndResize",
         augmentation.RandomCropAndResize,
@@ -42,6 +43,12 @@ TEST_CONFIGURATIONS = [
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
     ),
+    (
+        "RandomFlip",
+        augmentation.RandomFlip,
+        {"mode": "horizontal_and_vertical"},
+    ),
+    ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
         "Resize",
         augmentation.Resize,
@@ -154,6 +161,7 @@ NO_PRESERVED_SHAPE_LAYERS = [
     augmentation.CenterCrop,
     augmentation.PadIfNeeded,
     augmentation.MosaicYOLOV8,
+    augmentation.RandomCrop,
     augmentation.RandomCropAndResize,
     augmentation.Resize,
     augmentation.ResizeAndCrop,
@@ -164,7 +172,9 @@ NO_PRESERVED_SHAPE_LAYERS = [
 
 NO_BFLOAT16_DTYPE_LAYERS = [
     augmentation.RandomAffine,
+    augmentation.RandomCrop,
     augmentation.RandomCropAndResize,
+    augmentation.RandomRotate,
 ]
 
 NO_UINT8_DTYPE_LAYERS = [

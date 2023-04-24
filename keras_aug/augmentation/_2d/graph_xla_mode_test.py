@@ -31,6 +31,7 @@ TEST_CONFIGURATIONS = [
             "shear_width_factor": 0.1,
         },
     ),
+    ("RandomCrop", augmentation.RandomCrop, {"height": 2, "width": 2}),
     (
         "RandomCropAndResize",
         augmentation.RandomCropAndResize,
@@ -41,6 +42,8 @@ TEST_CONFIGURATIONS = [
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
     ),
+    ("RandomFlip", augmentation.RandomFlip, {"mode": "horizontal"}),
+    ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
         "Resize",
         augmentation.Resize,
@@ -156,7 +159,9 @@ TEST_CONFIGURATIONS = [
 
 NO_XLA_SUPPORT_LAYERS = [
     augmentation.RandomAffine,
+    augmentation.RandomCrop,
     augmentation.RandomCropAndResize,
+    augmentation.RandomRotate,
     augmentation.ResizeAndCrop,
     augmentation.ResizeByLongestSide,
     augmentation.ResizeBySmallestSide,

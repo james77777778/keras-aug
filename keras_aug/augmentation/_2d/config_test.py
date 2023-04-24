@@ -30,6 +30,7 @@ TEST_CONFIGURATIONS = [
             "shear_width_factor": 0.1,
         },
     ),
+    ("RandomCrop", augmentation.RandomCrop, {"height": 2, "width": 2}),
     (
         "RandomCropAndResize",
         augmentation.RandomCropAndResize,
@@ -40,6 +41,8 @@ TEST_CONFIGURATIONS = [
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
     ),
+    ("RandomFlip", augmentation.RandomFlip, {"mode": "horizontal"}),
+    ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
         "Resize",
         augmentation.Resize,
