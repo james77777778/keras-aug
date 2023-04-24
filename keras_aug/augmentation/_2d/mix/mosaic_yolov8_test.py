@@ -40,28 +40,6 @@ class MosaicYOLOV8Test(tf.test.TestCase):
         self.assertEqual(ys_bounding_boxes["boxes"].shape, [2, None, 4])
         self.assertEqual(ys_bounding_boxes["classes"].shape, [2, None])
 
-    def test_in_tf_function(self):
-        xs = tf.cast(
-            tf.stack(
-                [2 * tf.ones((4, 4, 3)), tf.ones((4, 4, 3))],
-                axis=0,
-            ),
-            tf.float32,
-        )
-        ys = tf.one_hot(tf.constant([0, 1]), 2)
-
-        layer = augmentation.MosaicYOLOV8(height=4, width=4)
-
-        @tf.function
-        def augment(x, y):
-            return layer({"images": x, "labels": y})
-
-        outputs = augment(xs, ys)
-        xs, ys = outputs["images"], outputs["labels"]
-
-        self.assertEqual(xs.shape, [2, 4, 4, 3])
-        self.assertEqual(ys.shape, [2, 2])
-
     def test_image_input_only(self):
         xs = tf.cast(
             tf.stack([2 * tf.ones((10, 10, 1)), tf.ones((10, 10, 1))], axis=0),

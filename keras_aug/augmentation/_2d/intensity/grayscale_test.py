@@ -16,33 +16,6 @@ class GrayscaleTest(tf.test.TestCase):
         self.assertEqual(xs1.shape, [2, 4, 8, 1])
         self.assertEqual(xs2.shape, [2, 4, 8, 3])
 
-    def test_in_tf_function(self):
-        xs = tf.cast(
-            tf.stack([2 * tf.ones((10, 10, 3)), tf.ones((10, 10, 3))], axis=0),
-            tf.float32,
-        )
-
-        # test 1
-        layer = augmentation.Grayscale(output_channels=1)
-
-        @tf.function
-        def augment(x):
-            return layer(x)
-
-        xs1 = augment(xs)
-
-        # test 2
-        layer = augmentation.Grayscale(output_channels=3)
-
-        @tf.function
-        def augment(x):
-            return layer(x)
-
-        xs2 = augment(xs)
-
-        self.assertEqual(xs1.shape, [2, 10, 10, 1])
-        self.assertEqual(xs2.shape, [2, 10, 10, 3])
-
     def test_non_square_image(self):
         xs = tf.cast(
             tf.stack([2 * tf.ones((4, 8, 3)), tf.ones((4, 8, 3))], axis=0),

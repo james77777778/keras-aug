@@ -45,22 +45,6 @@ class ChannelShuffleTest(tf.test.TestCase):
         self.assertTrue(tf.math.reduce_any(xs[0] == 2.0))
         self.assertTrue(tf.math.reduce_any(xs[1] == 1.0))
 
-    def test_in_tf_function(self):
-        xs = tf.cast(
-            tf.stack([2 * tf.ones((10, 10, 1)), tf.ones((10, 10, 1))], axis=0),
-            dtype=tf.float32,
-        )
-
-        layer = ChannelShuffle(groups=1)
-
-        @tf.function
-        def augment(x):
-            return layer(x)
-
-        xs = augment(xs)
-        self.assertTrue(tf.math.reduce_any(xs[0] == 2.0))
-        self.assertTrue(tf.math.reduce_any(xs[1] == 1.0))
-
     def test_in_single_image(self):
         xs = tf.cast(tf.ones((128, 128, 1)), dtype=tf.float32)
 

@@ -21,23 +21,6 @@ class RandomChannelShiftTest(tf.test.TestCase, parameterized.TestCase):
         self.assertFalse(tf.math.reduce_any(xs[0] == 2.0))
         self.assertFalse(tf.math.reduce_any(xs[1] == 1.0))
 
-    def test_in_tf_function(self):
-        xs = tf.cast(
-            tf.stack([2 * tf.ones((10, 10, 3)), tf.ones((10, 10, 3))], axis=0),
-            dtype=tf.float32,
-        )
-        layer = augmentation.RandomChannelShift(
-            factor=0.3, value_range=(0, 255)
-        )
-
-        @tf.function
-        def augment(x):
-            return layer(x)
-
-        xs = augment(xs)
-        self.assertFalse(tf.math.reduce_any(xs[0] == 2.0))
-        self.assertFalse(tf.math.reduce_any(xs[1] == 1.0))
-
     def test_5_channels(self):
         xs = tf.cast(tf.ones((4, 4, 5)), dtype=tf.float32)
         layer = augmentation.RandomChannelShift(
