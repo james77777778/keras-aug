@@ -94,6 +94,25 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "RandomPosterize",
+        augmentation.RandomPosterize,
+        {"value_range": (0, 255), "factor": (5, 8)},
+    ),
+    (
+        "RandomSharpness",
+        augmentation.RandomSharpness,
+        {"value_range": (0, 255), "factor": 0.1},
+    ),
+    (
+        "RandomSolarize",
+        augmentation.RandomSolarize,
+        {
+            "value_range": (0, 255),
+            "threshold_factor": 10,
+            "addition_factor": 10,
+        },
+    ),
+    (
         "Rescaling",
         augmentation.Rescaling,
         {"scale": 1.0 / 255.0},

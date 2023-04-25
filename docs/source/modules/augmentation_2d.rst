@@ -43,6 +43,9 @@ Intensity
 .. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomHSV(value_range, hue_factor, saturation_factor, value_factor, seed=None, **kwargs)
 .. autoclass:: RandomJpegQuality(value_range, factor, seed=None, **kwargs)
+.. autoclass:: RandomPosterize(value_range, factor, seed=None, **kwargs)
+.. autoclass:: RandomSharpness(value_range, factor, seed=None, **kwargs)
+.. autoclass:: RandomSolarize(value_range, threshold_factor, addition_factor=0, seed=None, **kwargs)
 .. autoclass:: Rescaling(scale, offset=0.0)
 
 .. -----------------------------------------------------------

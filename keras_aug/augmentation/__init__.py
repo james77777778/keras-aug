@@ -40,6 +40,13 @@ from keras_aug.augmentation._2d.intensity.random_hsv import RandomHSV
 from keras_aug.augmentation._2d.intensity.random_jpeg_quality import (
     RandomJpegQuality,
 )
+from keras_aug.augmentation._2d.intensity.random_posterize import (
+    RandomPosterize,
+)
+from keras_aug.augmentation._2d.intensity.random_sharpness import (
+    RandomSharpness,
+)
+from keras_aug.augmentation._2d.intensity.random_solarize import RandomSolarize
 from keras_aug.augmentation._2d.intensity.rescaling import Rescaling
 from keras_aug.augmentation._2d.mix.mix_up import MixUp
 from keras_aug.augmentation._2d.mix.mosaic_yolov8 import MosaicYOLOV8
