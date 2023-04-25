@@ -40,6 +40,7 @@ TEST_CONFIGURATIONS = [
     ),
     ("AutoContrast", augmentation.AutoContrast, {"value_range": (0, 255)}),
     ("ChannelShuffle", augmentation.ChannelShuffle, {"groups": 3}),
+    ("Equalize", augmentation.Equalize, {"value_range": (0, 255)}),
     ("Grayscale", augmentation.Grayscale, {"output_channels": 3}),
     ("Normalize", augmentation.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", augmentation.RandomBlur, {"factor": (3, 7)}),

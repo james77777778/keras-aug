@@ -32,6 +32,7 @@ Intensity
 
 .. autoclass:: AutoContrast(value_range, **kwargs)
 .. autoclass:: ChannelShuffle(groups=3, seed=None, **kwargs)
+.. autoclass:: Equalize(value_range, bins=256, **kwargs)
 .. autoclass:: Grayscale(output_channels=3, **kwargs)
 .. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)

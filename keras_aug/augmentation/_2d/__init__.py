@@ -21,6 +21,7 @@ from keras_aug.augmentation._2d.geometry.resize_by_smallest_side import (
 )
 from keras_aug.augmentation._2d.intensity.auto_contrast import AutoContrast
 from keras_aug.augmentation._2d.intensity.channel_shuffle import ChannelShuffle
+from keras_aug.augmentation._2d.intensity.equalize import Equalize
 from keras_aug.augmentation._2d.intensity.grayscale import Grayscale
 from keras_aug.augmentation._2d.intensity.normalize import Normalize
 from keras_aug.augmentation._2d.intensity.random_blur import RandomBlur
