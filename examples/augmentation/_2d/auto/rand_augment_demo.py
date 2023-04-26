@@ -11,6 +11,7 @@ def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
     layer = RandAugment(
         value_range=(0, 255),
+        fill_mode="constant",
         fill_value=128,
         bounding_box_format="xyxy",
         seed=2023,
@@ -32,6 +33,7 @@ def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
     layer = RandAugment(
         value_range=(0, 255),
+        fill_mode="constant",
         fill_value=128,
         batchwise=True,
         bounding_box_format="xyxy",

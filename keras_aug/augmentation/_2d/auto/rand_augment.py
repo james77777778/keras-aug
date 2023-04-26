@@ -25,6 +25,11 @@ class RandAugment(VectorizedBaseRandomLayer):
     The input images will be converted to the range [0, 255], performed
     RandAugment and then converted back to the original value range.
 
+    For object detection tasks, you should set ``fill_mode="constant"`` and
+    ``fill_value=128`` to avoid artifacts. Moreover, you can set
+    ``use_geometry=False`` to turn off all geometric augmentations if the
+    distortion of the bounding boxes is too large.
+
     Args:
         value_range ((int|float, int|float)): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
@@ -44,11 +49,16 @@ class RandAugment(VectorizedBaseRandomLayer):
             translation. Defaults to ``150.0 / 331.0`` which is for ImageNet
             classification model. For CIFAR, it is set to ``10.0 / 32.0``.
             Usually best values are in the range ``[1.0 / 3.0, 1.0 / 2.0]``.
-        fill_value (int|float, optional): The value to be filled outside the
-            boundaries when ``fill_mode="constant"``. Defaults to ``0``.
         use_geometry (bool, optional): whether to include geometric
             augmentations. This should be set to ``False`` when performing
             object detection. Defaults to ``True``.
+        interpolation (str, optional): The interpolation mode. Supported values:
+            ``"nearest", "bilinear"``. Defaults to `"nearest"`.
+        fill_mode (str, optional): The fill mode. Supported values:
+            ``"constant", "reflect", "wrap", "nearest"``. Defaults to
+            ``"reflect"``.
+        fill_value (int|float, optional): The value to be filled outside the
+            boundaries when ``fill_mode="constant"``. Defaults to ``0``.
         batchwise (bool, optional): whether to run RandAugment in batchwise.
             When enabled, RandAugment might run faster by truely vectorizing
             the augmentations.
@@ -72,8 +82,10 @@ class RandAugment(VectorizedBaseRandomLayer):
         magnitude_stddev=0.0,
         cutout_multiplier=40.0,
         translation_multiplier=150.0 / 331.0,
-        fill_value=0,
         use_geometry=True,
+        interpolation="nearest",
+        fill_mode="reflect",
+        fill_value=0,
         batchwise=False,
         bounding_box_format=None,
         seed=None,
@@ -86,8 +98,10 @@ class RandAugment(VectorizedBaseRandomLayer):
         self.magnitude_stddev = magnitude_stddev
         self.cutout_multiplier = cutout_multiplier
         self.translation_multiplier = translation_multiplier
-        self.fill_value = fill_value
         self.use_geometry = use_geometry
+        self.interpolation = interpolation
+        self.fill_mode = fill_mode
+        self.fill_value = fill_value
         self.batchwise = batchwise
         self.bounding_box_format = bounding_box_format
         self.seed = seed
@@ -224,6 +238,8 @@ class RandAugment(VectorizedBaseRandomLayer):
         if use_geometry:
             rotate = augmentation.RandomAffine(
                 **policy["rotate"],
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
                 fill_value=self.fill_value,
                 bounding_box_format=bounding_box_format,
                 seed=seed,
@@ -231,6 +247,8 @@ class RandAugment(VectorizedBaseRandomLayer):
             )
             shear_x = augmentation.RandomAffine(
                 **policy["shear_x"],
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
                 fill_value=self.fill_value,
                 bounding_box_format=bounding_box_format,
                 seed=seed,
@@ -238,6 +256,8 @@ class RandAugment(VectorizedBaseRandomLayer):
             )
             shear_y = augmentation.RandomAffine(
                 **policy["shear_y"],
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
                 fill_value=self.fill_value,
                 bounding_box_format=bounding_box_format,
                 seed=seed,
@@ -245,6 +265,8 @@ class RandAugment(VectorizedBaseRandomLayer):
             )
             translate_x = augmentation.RandomAffine(
                 **policy["translate_x"],
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
                 fill_value=self.fill_value,
                 bounding_box_format=bounding_box_format,
                 seed=seed,
@@ -252,6 +274,8 @@ class RandAugment(VectorizedBaseRandomLayer):
             )
             translate_y = augmentation.RandomAffine(
                 **policy["translate_y"],
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
                 fill_value=self.fill_value,
                 bounding_box_format=bounding_box_format,
                 seed=seed,
@@ -283,8 +307,10 @@ class RandAugment(VectorizedBaseRandomLayer):
                 "magnitude_stddev": self.magnitude_stddev,
                 "cutout_multiplier": self.cutout_multiplier,
                 "translation_multiplier": self.translation_multiplier,
-                "fill_value": self.fill_value,
                 "use_geometry": self.use_geometry,
+                "interpolation": self.interpolation,
+                "fill_mode": self.fill_mode,
+                "fill_value": self.fill_value,
                 "batchwise": self.batchwise,
                 "bounding_box_format": self.bounding_box_format,
                 "seed": self.seed,
