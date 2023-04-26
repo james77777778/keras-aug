@@ -24,6 +24,7 @@ from keras_aug.augmentation._2d.intensity.auto_contrast import AutoContrast
 from keras_aug.augmentation._2d.intensity.channel_shuffle import ChannelShuffle
 from keras_aug.augmentation._2d.intensity.equalize import Equalize
 from keras_aug.augmentation._2d.intensity.grayscale import Grayscale
+from keras_aug.augmentation._2d.intensity.invert import Invert
 from keras_aug.augmentation._2d.intensity.normalize import Normalize
 from keras_aug.augmentation._2d.intensity.random_blur import RandomBlur
 from keras_aug.augmentation._2d.intensity.random_brightness_contrast import (
@@ -48,7 +49,7 @@ from keras_aug.augmentation._2d.intensity.random_sharpness import (
     RandomSharpness,
 )
 from keras_aug.augmentation._2d.intensity.random_solarize import RandomSolarize
-from keras_aug.augmentation._2d.intensity.rescaling import Rescaling
+from keras_aug.augmentation._2d.intensity.rescale import Rescale
 from keras_aug.augmentation._2d.mix.mix_up import MixUp
 from keras_aug.augmentation._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentation._2d.regularization.channel_dropout import (

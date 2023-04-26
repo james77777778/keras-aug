@@ -34,6 +34,7 @@ Intensity
 .. autoclass:: ChannelShuffle(groups=3, seed=None, **kwargs)
 .. autoclass:: Equalize(value_range, bins=256, **kwargs)
 .. autoclass:: Grayscale(output_channels=3, **kwargs)
+.. autoclass:: Invert(value_range, **kwargs)
 .. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)
 .. autoclass:: RandomBrightnessContrast(value_range, brightness_factor, contrast_factor, seed=None, **kwargs)
@@ -46,7 +47,7 @@ Intensity
 .. autoclass:: RandomPosterize(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomSharpness(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomSolarize(value_range, threshold_factor, addition_factor=0, seed=None, **kwargs)
-.. autoclass:: Rescaling(scale, offset=0.0)
+.. autoclass:: Rescale(scale, offset=0.0)
 
 .. -----------------------------------------------------------
 ..                        Mix

@@ -7,36 +7,29 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class Rescaling(VectorizedBaseRandomLayer):
-    """Rescales the inputs to a new range.
+class Invert(VectorizedBaseRandomLayer):
+    """Inverts the inputs.
 
-    Rescaling rescales every value of the inputs (often the images) by the
-    equation: ``y = x * scale + offset``.
+    Inverts the pixel value by equation: ``y = max_pixel_value - x``.
 
     Args:
-        scale (int|float): The scale to apply to the inputs.
-        offset (int|float, optional): The offset to apply to the inputs.
-            Defaults to ``0.0``
-
-    References:
-        - `KerasCV <https://github.com/keras-team/keras-cv>`_
+        value_range ((int|float, int|float)): The range of values the incoming
+            images will have. This is typically either ``[0, 1]`` or
+            ``[0, 255]`` depending on how your preprocessing pipeline is set up.
     """
 
-    def __init__(self, scale, offset=0.0, **kwargs):
+    def __init__(self, value_range, **kwargs):
         super().__init__(**kwargs)
-        self.scale = tf.cast(scale, self.compute_dtype)
-        self.offset = tf.cast(offset, self.compute_dtype)
+        self.value_range = value_range
 
     def augment_ragged_image(self, image, transformation, **kwargs):
-        images = tf.expand_dims(image, axis=0)
-        images = self.augment_images(
-            images=images, transformations=transformation, **kwargs
+        return self.augment_images(
+            images=image, transformations=transformation, **kwargs
         )
-        return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
         images = tf.cast(images, dtype=self.compute_dtype)
-        return images * self.scale + self.offset
+        return self.value_range[1] - images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -54,7 +47,7 @@ class Rescaling(VectorizedBaseRandomLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"scale": self.scale, "offset": self.offset})
+        config.update({"value_range": self.value_range})
         return config
 
     @classmethod
