@@ -169,6 +169,7 @@ class RandAugment(VectorizedBaseRandomLayer):
             magnitude, magnitude_stddev, translation_multiplier
         )
 
+        identity = augmentation.Identity(**policy["identity"], **kwargs)
         auto_contrast = augmentation.AutoContrast(
             **policy["auto_contrast"],
             value_range=(0, 255),
@@ -178,7 +179,9 @@ class RandAugment(VectorizedBaseRandomLayer):
         equalize = augmentation.Equalize(
             **policy["equalize"], value_range=(0, 255), seed=seed, **kwargs
         )
-        # TODO: invert layer
+        invert = augmentation.Invert(
+            **policy["invert"], value_range=(0, 255), **kwargs
+        )
         posterize = augmentation.RandomPosterize(
             **policy["posterize"], value_range=(0, 255), seed=seed, **kwargs
         )
@@ -205,8 +208,10 @@ class RandAugment(VectorizedBaseRandomLayer):
             **kwargs,
         )
         layers = [
+            identity,
             auto_contrast,
             equalize,
+            invert,
             posterize,
             solarize,
             color,
@@ -297,7 +302,7 @@ def create_rand_augment_policy(
 ):
     """Create RandAugment Policy.
 
-    TODO: Invert, CutOut
+    TODO: CutOut
 
     Notes:
         This policy adopts relative translatation instead of pixel adjustment.
@@ -311,9 +316,10 @@ def create_rand_augment_policy(
     max_magnitude = 30.0  # AA: 10.0; RA: 30.0
 
     policy = {}
+    policy["identity"] = {}
     policy["auto_contrast"] = {}
     policy["equalize"] = {}
-    policy["invert"] = {}  # TODO
+    policy["invert"] = {}
     policy["rotate"] = {
         "rotation_factor": SignedNormalFactorSampler(
             mean=(magnitude / max_level) * 30.0,
