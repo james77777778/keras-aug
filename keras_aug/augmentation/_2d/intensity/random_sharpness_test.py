@@ -21,7 +21,7 @@ class RandomSharpnessTest(tf.test.TestCase):
         )
         xs = tf.expand_dims(xs, axis=0)
         layer = augmentation.RandomSharpness(
-            value_range=(0, 255), factor=(1.0, 1.0)
+            value_range=(0, 255), factor=(0.0, 0.0)
         )
         result = tf.expand_dims(
             tf.constant(

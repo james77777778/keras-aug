@@ -178,8 +178,9 @@ class RandomHSV(VectorizedBaseRandomLayer):
         saturation_factors = saturation_factors[..., tf.newaxis, tf.newaxis]
         means = tf.image.rgb_to_grayscale(images)
         means = tf.image.grayscale_to_rgb(means)
-        images = augmentation_utils.blend(images, means, saturation_factors)
-        images = tf.clip_by_value(images, 0, 255)
+        images = augmentation_utils.blend(
+            means, images, saturation_factors, (0, 255)
+        )
         return images
 
     def adjust_value(self, images, transformations):
@@ -188,9 +189,8 @@ class RandomHSV(VectorizedBaseRandomLayer):
         value_factors = transformations["value_factors"]
         value_factors = value_factors[..., tf.newaxis, tf.newaxis]
         images = augmentation_utils.blend(
-            images, tf.zeros_like(images), value_factors
+            tf.zeros_like(images), images, value_factors, (0, 255)
         )
-        images = tf.clip_by_value(images, 0, 255)
         return images
 
     def get_config(self):

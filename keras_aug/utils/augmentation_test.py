@@ -152,9 +152,9 @@ class AugmentationUtilsTest(tf.test.TestCase, parameterized.TestCase):
     def test_blend(self):
         ones = tf.ones(shape=(2, 4, 4, 3))
         twos = tf.ones(shape=(2, 4, 4, 3)) * 2
-        ratios = tf.ones(shape=(2, 1, 1, 1)) * 0.5
+        ratios = tf.ones(shape=(2, 1, 1, 1)) * 0.3
         expected_result = ratios * ones + (1.0 - ratios) * twos
 
-        result = augmentation_utils.blend(ones, twos, ratios)
+        result = augmentation_utils.blend(twos, ones, ratios)
 
         self.assertAllEqual(result, expected_result)

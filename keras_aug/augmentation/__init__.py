@@ -1,3 +1,4 @@
+from keras_aug.augmentation._2d.auto.rand_augment import RandAugment
 from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -53,4 +54,5 @@ from keras_aug.augmentation._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentation._2d.regularization.channel_dropout import (
     ChannelDropout,
 )
+from keras_aug.augmentation._2d.utility.identity import Identity
 from keras_aug.augmentation._2d.utility.random_apply import RandomApply

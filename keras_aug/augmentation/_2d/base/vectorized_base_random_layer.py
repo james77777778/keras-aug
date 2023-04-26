@@ -184,6 +184,33 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         )
         return ragged_spec
 
+    def augment_ragged_image(self, image, transformation, **kwargs):
+        """Augment an image from a ragged image batch during training.
+
+        This method accepts a single Dense image Tensor, and returns a Dense
+        image. The resulting images are then stacked back into a ragged image
+        batch. The behavior of this method should be identical to that of
+        `augment_images()` but is to operate on a batch-wise basis.
+
+        Args:
+            image: a single image from the batch
+            transformation: a single transformation sampled from
+                `get_random_transformations()`.
+            kwargs: all the other call arguments (i.e. bounding_boxes, labels,
+                etc.).
+
+        Returns:
+            Augmented image.
+        """
+        raise NotImplementedError(
+            "A ragged image batch was passed to layer of type "
+            f"`{type(self).__name__}`. This layer does not implement "
+            "`augment_ragged_image()`. If this is a `keras_cv`, open a GitHub "
+            "issue requesting Ragged functionality on the layer titled: "
+            f"'`{type(self).__name__}`: ragged image support'. If this is a "
+            "custom layer, implement the `augment_ragged_image()` method."
+        )
+
     def augment_images(self, images, transformations, **kwargs):
         """Augment a batch of images.
 

@@ -74,7 +74,18 @@ Regularization
 Utility
 ---------------
 
+.. autoclass:: Identity(**kwargs)
 .. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
+
+
+.. -----------------------------------------------------------
+..                        Auto
+.. -----------------------------------------------------------
+
+Auto
+---------------
+
+.. autoclass:: RandAugment(value_range, augmentations_per_image=2, magnitude=10, magnitude_stddev=0, cutout_multiplier=40, translation_multiplier=150.0/331.0, fill_value=0, use_geometry=True, batchwise=False, bounding_box_format=None, seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Base

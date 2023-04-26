@@ -9,6 +9,11 @@ from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
     (
+        "RandAugment",
+        augmentation.RandAugment,
+        {"value_range": (0, 255), "seed": 2023},
+    ),
+    (
         "CenterCrop",
         augmentation.CenterCrop,
         {"height": 2, "width": 2},
@@ -170,6 +175,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ChannelDropout,
         {},
     ),
+    ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,
@@ -178,6 +184,7 @@ TEST_CONFIGURATIONS = [
 ]
 
 NO_XLA_SUPPORT_LAYERS = [
+    augmentation.RandAugment,
     augmentation.RandomAffine,
     augmentation.RandomCrop,
     augmentation.RandomCropAndResize,

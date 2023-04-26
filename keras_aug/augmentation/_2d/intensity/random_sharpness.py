@@ -25,12 +25,12 @@ class RandomSharpness(VectorizedBaseRandomLayer):
             will be picked between ``[1.0 - lower, 1.0 + upper]``. ``1.0`` will
             give the original image. ``0.0`` makes the image to be blurred.
             ``2.0`` will enhance the sharpness by a factor of 2.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `PIL <https://pillow.readthedocs.io/en/stable/reference/ImageEnhance.html>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
+        - `Tensorflow Model <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
     """  # noqa: E501
 
     def __init__(
@@ -93,16 +93,14 @@ class RandomSharpness(VectorizedBaseRandomLayer):
         # original image.
         mask = tf.ones_like(smoothed_image)
         mask = tf.pad(mask, [[0, 0], [1, 1], [1, 1], [0, 0]])
-        padded_smoothed_image = tf.pad(
+        smoothed_image = tf.pad(
             smoothed_image, [[0, 0], [1, 1], [1, 1], [0, 0]]
         )
 
-        images = tf.where(
-            tf.equal(mask, 1), padded_smoothed_image, original_images
-        )
+        images = tf.where(tf.equal(mask, 1), smoothed_image, original_images)
         # Blend the final result.
         images = augmentation_utils.blend(
-            images, original_images, transformations
+            images, original_images, transformations, (0, 255)
         )
         images = preprocessing_utils.transform_value_range(
             images,

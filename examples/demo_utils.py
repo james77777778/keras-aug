@@ -1,7 +1,7 @@
 """
-Hardly borrow from:
-https://github.com/keras-team/keras-cv/blob/master/examples/layers/preprocessing/bounding_box/demo_utils.py
-"""
+References:
+ - https://github.com/keras-team/keras-cv/blob/master/examples/layers/preprocessing/bounding_box/demo_utils.py
+"""  # noqa: E501
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,19 +10,22 @@ import tensorflow_datasets as tfds
 from keras_cv import bounding_box
 
 
-def preprocess_voc(inputs, format):
+def preprocess_voc(inputs, format=None):
     image = inputs["image"]
     image = tf.cast(image, tf.float32)
-    boxes = inputs["objects"]["bbox"]
-    boxes = bounding_box.convert_format(
-        boxes,
-        images=image,
-        source="rel_yxyx",
-        target=format,
-    )
-    classes = tf.cast(inputs["objects"]["label"], tf.float32)
-    bounding_boxes = {"classes": classes, "boxes": boxes}
-    return {"images": image, "bounding_boxes": bounding_boxes}
+    if format is not None:
+        boxes = inputs["objects"]["bbox"]
+        boxes = bounding_box.convert_format(
+            boxes,
+            images=image,
+            source="rel_yxyx",
+            target=format,
+        )
+        classes = tf.cast(inputs["objects"]["label"], tf.float32)
+        bounding_boxes = {"classes": classes, "boxes": boxes}
+        return {"images": image, "bounding_boxes": bounding_boxes}
+    else:
+        return image
 
 
 def load_voc_dataset(
@@ -46,10 +49,15 @@ def load_voc_dataset(
 def visualize_data(data, bounding_box_format, output_path=None):
     data = next(iter(data))
     images = data["images"]
-    bounding_boxes = data["bounding_boxes"]
-    output_images = visualize_bounding_boxes(
-        images, bounding_boxes, bounding_box_format
-    ).numpy()
+    if bounding_box_format is not None:
+        bounding_boxes = data["bounding_boxes"]
+        output_images = visualize_bounding_boxes(
+            images, bounding_boxes, bounding_box_format
+        ).numpy()
+    else:
+        if isinstance(images, tf.RaggedTensor):
+            images = images.to_tensor(0)
+        output_images = images.numpy()
     gallery_show(output_images.astype(int), output_path)
 
 
@@ -59,10 +67,15 @@ def visualize_data_across_batch(data, bounding_box_format, output_path=None):
     for _ in range(9):
         cur_data = next(data_iterator)
         images = cur_data["images"]
-        bounding_boxes = cur_data["bounding_boxes"]
-        output_images = visualize_bounding_boxes(
-            images, bounding_boxes, bounding_box_format
-        ).numpy()
+        if bounding_box_format is not None:
+            bounding_boxes = cur_data["bounding_boxes"]
+            output_images = visualize_bounding_boxes(
+                images, bounding_boxes, bounding_box_format
+            ).numpy()
+        else:
+            if isinstance(images, tf.RaggedTensor):
+                images = images.to_tensor(0)
+            output_images = images.numpy()
         # pick first output_image
         results.append(output_images[0].astype(int))
     gallery_show(results, output_path)
@@ -98,4 +111,4 @@ def gallery_show(images, output_path=None):
     plt.tight_layout()
     if output_path is None:
         output_path = "demo.png"
-    plt.savefig(output_path)
+    plt.savefig(output_path, dpi=150)

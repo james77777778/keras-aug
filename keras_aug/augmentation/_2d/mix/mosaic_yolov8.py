@@ -400,17 +400,18 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         return tf.cast(outputs, dtype=self.compute_dtype)
 
     def get_config(self):
-        config = {
-            "height": self.height,
-            "width": self.width,
-            "offset": self.offset,
-            "padding_value": self.padding_value,
-            "bounding_box_format": self.bounding_box_format,
-            "seed": self.seed,
-        }
-        base_config = super().get_config()
-
-        return dict(list(base_config.items()) + list(config.items()))
+        config = super().get_config()
+        config.update(
+            {
+                "height": self.height,
+                "width": self.width,
+                "offset": self.offset,
+                "padding_value": self.padding_value,
+                "bounding_box_format": self.bounding_box_format,
+                "seed": self.seed,
+            }
+        )
+        return config
 
     @classmethod
     def from_config(cls, config):

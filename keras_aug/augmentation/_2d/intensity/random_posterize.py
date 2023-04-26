@@ -47,7 +47,11 @@ class RandomPosterize(VectorizedBaseRandomLayer):
         self.seed = seed
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        return self.factor(shape=(batch_size, 1), dtype=tf.int32)
+        # cannot sample from tf.int32 due to self.factor might be
+        # NormalFactorSampler
+        factors = self.factor(shape=(batch_size, 1))
+        factors = tf.clip_by_value(factors, 0, 8)
+        return tf.cast(factors, dtype=tf.int32)
 
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)

@@ -9,6 +9,7 @@ from keras_aug.utils.augmentation import LABELS
 
 SEED = 2025
 TEST_CONFIGURATIONS = [
+    ("RandAugment", augmentation.RandAugment, {"value_range": (0, 255)}),
     (
         "CenterCrop",
         augmentation.CenterCrop,
@@ -169,6 +170,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ChannelDropout,
         {},
     ),
+    ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,
@@ -191,6 +193,7 @@ NO_PRESERVED_SHAPE_LAYERS = [
 ]
 
 NO_BFLOAT16_DTYPE_LAYERS = [
+    augmentation.RandAugment,
     augmentation.RandomAffine,
     augmentation.RandomCrop,
     augmentation.RandomCropAndResize,
@@ -198,6 +201,7 @@ NO_BFLOAT16_DTYPE_LAYERS = [
 ]
 
 NO_UINT8_DTYPE_LAYERS = [
+    augmentation.RandAugment,
     augmentation.AutoContrast,
     augmentation.Normalize,
     augmentation.RandomBrightnessContrast,
@@ -231,6 +235,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentation.Normalize,
     augmentation.Rescaling,
     augmentation.MixUp,
+    augmentation.Identity,
     augmentation.RandomApply,
 ]
 
@@ -267,7 +272,10 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
 
         if layer_cls not in NO_PRESERVED_SHAPE_LAYERS:
             self.assertEqual(images.shape, outputs[IMAGES].shape)
-            self.assertNotAllClose(images, outputs[IMAGES])
+            if layer_cls is not augmentation.Identity:
+                self.assertNotAllClose(images, outputs[IMAGES])
+            else:
+                self.assertAllClose(images, outputs[IMAGES])
         else:
             self.assertNotEqual(images.shape, outputs[IMAGES].shape)
 
@@ -284,7 +292,10 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
 
         output = layer({IMAGES: images, LABELS: labels})
 
-        self.assertNotAllClose(images, output[IMAGES])
+        if layer_cls is not augmentation.Identity:
+            self.assertNotAllClose(images, output[IMAGES])
+        else:
+            self.assertAllClose(images, output[IMAGES])
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_layer_dtypes(self, layer_cls, args):

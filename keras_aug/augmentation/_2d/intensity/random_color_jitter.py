@@ -145,7 +145,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
-        return tf.cast(images, dtype=self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -167,7 +167,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         brightness_factors = transformations["brightness_factors"]
         brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
         images = augmentation_utils.blend(
-            images, tf.zeros_like(images), brightness_factors
+            tf.zeros_like(images), images, brightness_factors, (0, 255)
         )
         images = tf.clip_by_value(images, 0, 255)
         return images
@@ -179,8 +179,9 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         means = tf.image.rgb_to_grayscale(images)
         means = tf.image.grayscale_to_rgb(means)
-        images = augmentation_utils.blend(images, means, contrast_factors)
-        images = tf.clip_by_value(images, 0, 255)
+        images = augmentation_utils.blend(
+            means, images, contrast_factors, (0, 255)
+        )
         return images
 
     def adjust_saturation(self, images, transformations):
@@ -190,8 +191,9 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         saturation_factors = saturation_factors[..., tf.newaxis, tf.newaxis]
         means = tf.image.rgb_to_grayscale(images)
         means = tf.image.grayscale_to_rgb(means)
-        images = augmentation_utils.blend(images, means, saturation_factors)
-        images = tf.clip_by_value(images, 0, 255)
+        images = augmentation_utils.blend(
+            means, images, saturation_factors, (0, 255)
+        )
         return images
 
     def adjust_hue(self, images, transformations):

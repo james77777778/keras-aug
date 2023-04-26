@@ -9,6 +9,11 @@ from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
     (
+        "RandAugment",
+        augmentation.RandAugment,
+        {"value_range": (0, 255), "seed": 2023},
+    ),
+    (
         "PadIfNeeded",
         augmentation.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
@@ -127,6 +132,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ChannelDropout,
         {},
     ),
+    ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,

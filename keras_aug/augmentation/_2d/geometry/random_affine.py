@@ -318,17 +318,22 @@ class RandomAffine(VectorizedBaseRandomLayer):
             translations = transformations["translations"]
             translation_widths = translations[:, 0:1] * widths
             translation_heights = translations[:, 1:2] * heights
-            x1s = boxes[:, :, 0] + translation_widths
-            y1s = boxes[:, :, 1] + translation_heights
-            x2s = boxes[:, :, 2] + translation_widths
-            y2s = boxes[:, :, 3] + translation_heights
-            boxes = tf.stack([x1s, y1s, x2s, y2s], axis=-1)
+            translation_widths = translation_widths[..., tf.newaxis]
+            translation_heights = translation_heights[..., tf.newaxis]
+            x1s, y1s, x2s, y2s = tf.split(boxes, 4, axis=-1)
+            x1s = x1s + translation_widths
+            y1s = y1s + translation_heights
+            x2s = x2s + translation_widths
+            y2s = y2s + translation_heights
+            boxes = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
 
         # process shear
         if self._enable_shear_height or self._enable_shear_width:
             shears = transformations["shears"]
             shear_widths = shears[:, 0:1]
             shear_heights = shears[:, 1:2]
+            shear_widths = shear_widths[..., tf.newaxis]
+            shear_heights = shear_heights[..., tf.newaxis]
             _x1s, _y1s, _x2s, _y2s = tf.split(boxes, 4, axis=-1)
             # x1, x2
             x1_tops = _x1s - (shear_widths * _y1s)
@@ -354,6 +359,10 @@ class RandomAffine(VectorizedBaseRandomLayer):
             x1s, y1s, x2s, y2s = tf.split(boxes, 4, axis=-1)
             x_offsets = ((widths - 1.0) / 2.0) * (1.0 - zoom_widths)
             y_offsets = ((heights - 1.0) / 2.0) * (1.0 - zoom_heights)
+            zoom_widths = zoom_widths[..., tf.newaxis]
+            zoom_heights = zoom_heights[..., tf.newaxis]
+            x_offsets = x_offsets[..., tf.newaxis]
+            y_offsets = y_offsets[..., tf.newaxis]
             x1s = (x1s - x_offsets) / zoom_widths
             x2s = (x2s - x_offsets) / zoom_widths
             y1s = (y1s - y_offsets) / zoom_heights

@@ -1,22 +1,20 @@
 """
 References:
-https://github.com/keras-team/keras-cv/blob/master/keras_cv/layers/preprocessing/vectorized_base_image_augmentation_layer.py
-- BATCHED
-- IMAGES, LABELS, TARGETS, BOUNDING_BOXES, SEGMENTATION_MASKS, KEYPOINTS
-- H_AXIS, W_AXIS
-https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.py
-- parse_factor
-- get_rotation_matrix
-- get_translation_matrix
-- get_shear_matrix
+- https://github.com/keras-team/keras-cv/blob/master/keras_cv/layers/preprocessing/vectorized_base_image_augmentation_layer.py
+- https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.py
 """  # noqa: E501
 
 import enum
 from typing import Sequence
 
 import tensorflow as tf
-from keras_cv import core
+from keras_cv.core import ConstantFactorSampler
+from keras_cv.core import FactorSampler
+from keras_cv.core import NormalFactorSampler
+from keras_cv.core import UniformFactorSampler
 from tensorflow import keras
+
+from keras_aug.core import SignedNormalFactorSampler
 
 H_AXIS = -3
 W_AXIS = -2
@@ -119,14 +117,17 @@ def is_factor_working(factor, not_working_value=0.0):
     elif isinstance(factor, Sequence):
         if factor[0] == factor[1] and factor[0] == not_working_value:
             return False
-    elif isinstance(factor, core.ConstantFactorSampler):
+    elif isinstance(factor, ConstantFactorSampler):
         if factor.value == not_working_value:
             return False
-    elif isinstance(factor, core.UniformFactorSampler):
+    elif isinstance(factor, UniformFactorSampler):
         if (
             factor.lower == not_working_value
             and factor.upper == not_working_value
         ):
+            return False
+    elif isinstance(factor, (NormalFactorSampler, SignedNormalFactorSampler)):
+        if factor.stddev == 0 and factor.mean == not_working_value:
             return False
     else:
         raise ValueError(
@@ -166,7 +167,7 @@ def parse_factor(
     param_name="factor",
     seed=None,
 ):
-    if isinstance(param, core.FactorSampler):
+    if isinstance(param, FactorSampler):
         return param
 
     if isinstance(param, float) or isinstance(param, int):
@@ -186,14 +187,37 @@ def parse_factor(
         )
 
     if param[0] == param[1]:
-        return core.ConstantFactorSampler(param[0])
+        return ConstantFactorSampler(param[0])
 
-    return core.UniformFactorSampler(param[0], param[1], seed=seed)
+    return UniformFactorSampler(param[0], param[1], seed=seed)
 
 
-def blend(images_1, images_2, ratios):
-    """Blend the images by `ratios * images_1 + (1 - ratios) * images_2`"""
-    return ratios * images_1 + (1.0 - ratios) * images_2
+def blend(images_1, images_2, factors, value_range=None):
+    """Blend image1 and image2 using 'factors'. Can be batched inputs.
+
+    Factor can be above ``0.0``.  A value of ``0.0`` means only image1 is used.
+    A value of ``1.0`` means only image2 is used.  A value between ``0.0`` and
+    ``1.0`` means we linearly interpolate the pixel values between the two
+    images.  A value greater than ``1.0`` "extrapolates" the difference
+    between the two pixel values. If ``value_range`` is set, the results will be
+    clipped into ``value_range``
+
+    Args:
+      image1 (tf.Tensor): First image(s).
+      image2 (tf.Tensor): Second image(s).
+      factor (float|tf.Tensor): The blend factor(s).
+      value_range ((int|float, int|float), optional) The value range of the
+        results. Defaults to ``None``.
+
+    Returns:
+      A blended image Tensor.
+    """
+    differences = images_2 - images_1
+    scaled = factors * differences
+    results = images_1 + scaled
+    if value_range is not None:
+        results = tf.clip_by_value(results, value_range[0], value_range[1])
+    return results
 
 
 def get_rotation_matrix(

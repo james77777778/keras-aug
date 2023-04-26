@@ -130,9 +130,8 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         brightness_factors = transformations["brightness_factors"]
         brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
         images = augmentation_utils.blend(
-            images, tf.zeros_like(images), brightness_factors
+            tf.zeros_like(images), images, brightness_factors, (0, 255)
         )
-        images = tf.clip_by_value(images, 0, 255)
         return images
 
     def adjust_contrast(self, images, transformations):
@@ -142,8 +141,9 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         means = tf.image.rgb_to_grayscale(images)
         means = tf.image.grayscale_to_rgb(means)
-        images = augmentation_utils.blend(images, means, contrast_factors)
-        images = tf.clip_by_value(images, 0, 255)
+        images = augmentation_utils.blend(
+            means, images, contrast_factors, (0, 255)
+        )
         return images
 
     def get_config(self):

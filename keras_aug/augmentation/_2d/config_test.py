@@ -7,6 +7,7 @@ from keras_cv import core
 from keras_aug.augmentation import _2d as augmentation
 
 TEST_CONFIGURATIONS = [
+    ("RandAugment", augmentation.RandAugment, {"value_range": (0, 255)}),
     (
         "CenterCrop",
         augmentation.CenterCrop,
@@ -165,6 +166,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ChannelDropout,
         {},
     ),
+    ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,

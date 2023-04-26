@@ -9,6 +9,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
+    ("RandAugment", augmentation.RandAugment, {"value_range": (0, 255)}),
     (
         "CenterCrop",
         augmentation.CenterCrop,
@@ -171,6 +172,7 @@ TEST_CONFIGURATIONS = [
         augmentation.ChannelDropout,
         {},
     ),
+    ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,
