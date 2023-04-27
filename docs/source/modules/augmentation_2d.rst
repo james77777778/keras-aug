@@ -4,6 +4,15 @@ API - Augmentation - 2D
 .. automodule:: keras_aug.augmentation
 
 .. -----------------------------------------------------------
+..                        Auto
+.. -----------------------------------------------------------
+
+Auto
+---------------
+
+.. autoclass:: RandAugment(value_range, augmentations_per_image=2, magnitude=10, magnitude_stddev=0, cutout_multiplier=60.0 / 331.0, translation_multiplier=150.0/331.0, use_geometry=True, interpolation="nearest", fill_mode="reflect", fill_value=0, exclude_ops=None, bounding_box_format=None, seed=None, **kwargs)
+
+.. -----------------------------------------------------------
 ..                        Geometry
 .. -----------------------------------------------------------
 
@@ -78,15 +87,6 @@ Utility
 
 .. autoclass:: Identity(**kwargs)
 .. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
-
-.. -----------------------------------------------------------
-..                        Auto
-.. -----------------------------------------------------------
-
-Auto
----------------
-
-.. autoclass:: RandAugment(value_range, augmentations_per_image=2, magnitude=10, magnitude_stddev=0, cutout_multiplier=40, translation_multiplier=150.0/331.0, use_geometry=True, interpolation="nearest", fill_mode="reflect", fill_value=0, batchwise=False, bounding_box_format=None, seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Base

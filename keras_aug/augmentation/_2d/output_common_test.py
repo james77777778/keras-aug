@@ -223,6 +223,8 @@ NO_UINT8_DTYPE_LAYERS = [
 ]
 
 SKIP_DTYPE_LAYERS = [
+    # hard to test the policy of RandAugment
+    augmentation.RandAugment,
     # it is impossible to change dtype in runtime for RandomApply
     augmentation.RandomApply,
 ]

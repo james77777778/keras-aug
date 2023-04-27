@@ -44,11 +44,12 @@ class RandAugment(VectorizedBaseRandomLayer):
             enabled, A gaussian noise with ``magnitude_stddev`` as sigma will be
             added to ``magnitude``.
         cutout_multiplier (float, optional): The multiplier for applying cutout.
-            Defaults to ``40``.
+            Defaults to ``60.0 / 331.0`` which is for ImageNet classification
+            model. Usually best value is about ``0.18``.
         translation_multiplier (float, optional): The multiplier for applying
             translation. Defaults to ``150.0 / 331.0`` which is for ImageNet
             classification model. For CIFAR, it is set to ``10.0 / 32.0``.
-            Usually best values are in the range ``[1.0 / 3.0, 1.0 / 2.0]``.
+            Usually best value is in the range ``[1.0 / 3.0, 1.0 / 2.0]``.
         use_geometry (bool, optional): whether to include geometric
             augmentations. This should be set to ``False`` when performing
             object detection. Defaults to ``True``.
@@ -59,9 +60,8 @@ class RandAugment(VectorizedBaseRandomLayer):
             ``"reflect"``.
         fill_value (int|float, optional): The value to be filled outside the
             boundaries when ``fill_mode="constant"``. Defaults to ``0``.
-        batchwise (bool, optional): whether to run RandAugment in batchwise.
-            When enabled, RandAugment might run faster by truely vectorizing
-            the augmentations.
+        exclude_ops (list(str), optional): Exclude selected operations.
+            Defaults to ``None``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
@@ -70,7 +70,7 @@ class RandAugment(VectorizedBaseRandomLayer):
 
     References:
         - `RandAugment <https://arxiv.org/abs/1909.13719>`_
-        - `Tensorflow Model <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
+        - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
@@ -80,13 +80,13 @@ class RandAugment(VectorizedBaseRandomLayer):
         augmentations_per_image=2,
         magnitude=10,
         magnitude_stddev=0.0,
-        cutout_multiplier=40.0,
+        cutout_multiplier=60.0 / 331.0,
         translation_multiplier=150.0 / 331.0,
         use_geometry=True,
         interpolation="nearest",
         fill_mode="reflect",
         fill_value=0,
-        batchwise=False,
+        exclude_ops=None,
         bounding_box_format=None,
         seed=None,
         **kwargs,
@@ -102,7 +102,7 @@ class RandAugment(VectorizedBaseRandomLayer):
         self.interpolation = interpolation
         self.fill_mode = fill_mode
         self.fill_value = fill_value
-        self.batchwise = batchwise
+        self.exclude_ops = exclude_ops
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
@@ -110,7 +110,9 @@ class RandAugment(VectorizedBaseRandomLayer):
             magnitude,
             magnitude_stddev,
             translation_multiplier,
+            cutout_multiplier,
             use_geometry,
+            exclude_ops,
             bounding_box_format,
             seed,
             **kwargs,
@@ -120,7 +122,7 @@ class RandAugment(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(self, batch_size):
         random_indices = self._random_generator.random_uniform(
             shape=(
-                batch_size if not self.batchwise else 1,
+                batch_size,
                 self.augmentations_per_image,
             ),
             minval=0,
@@ -140,26 +142,16 @@ class RandAugment(VectorizedBaseRandomLayer):
         )
         inputs[IMAGES] = images
 
-        if self.batchwise:
-            result = inputs.copy()
-            for random_indice in transformations[0]:
-                # construct branch_fns
-                branch_fns = {}
-                for idx, layer in enumerate(self.layers):
-                    branch_fns[idx] = partial(layer, result)
-                # augment
-                result = tf.switch_case(random_indice, branch_fns=branch_fns)
-        else:
-            inputs_for_rand_augment_single_input = {
-                "inputs": inputs,
-                "transformations": transformations,
-            }
-            result = tf.map_fn(
-                self.rand_augment_single_input,
-                inputs_for_rand_augment_single_input,
-            )
-            # unpack result to normal inputs
-            result = result["inputs"]
+        inputs_for_rand_augment_single_input = {
+            "inputs": inputs,
+            "transformations": transformations,
+        }
+        result = tf.map_fn(
+            self.rand_augment_single_input,
+            inputs_for_rand_augment_single_input,
+        )
+        # unpack result to normal inputs
+        result = result["inputs"]
 
         # recover value_range
         images = result.get(IMAGES, None)
@@ -174,114 +166,193 @@ class RandAugment(VectorizedBaseRandomLayer):
         magnitude,
         magnitude_stddev,
         translation_multiplier,
+        cutout_multiplier,
         use_geometry,
+        exclude_ops,
         bounding_box_format=None,
         seed=None,
         **kwargs,
     ):
         policy = create_rand_augment_policy(
-            magnitude, magnitude_stddev, translation_multiplier
+            magnitude,
+            magnitude_stddev,
+            translation_multiplier,
+            cutout_multiplier,
         )
-
-        identity = augmentation.Identity(**policy["identity"], **kwargs)
-        auto_contrast = augmentation.AutoContrast(
-            **policy["auto_contrast"],
-            value_range=(0, 255),
-            seed=seed,
-            **kwargs,
-        )
-        equalize = augmentation.Equalize(
-            **policy["equalize"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        invert = augmentation.Invert(
-            **policy["invert"], value_range=(0, 255), **kwargs
-        )
-        posterize = augmentation.RandomPosterize(
-            **policy["posterize"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        solarize = augmentation.RandomSolarize(
-            **policy["solarize"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        color = augmentation.RandomColorJitter(
-            **policy["color"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        contrast = augmentation.RandomColorJitter(
-            **policy["contrast"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        brightness = augmentation.RandomColorJitter(
-            **policy["brightness"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        sharpness = augmentation.RandomSharpness(
-            **policy["sharpness"], value_range=(0, 255), seed=seed, **kwargs
-        )
-        # TODO: CutOut layer
-        solarize_add = augmentation.RandomSolarize(
-            **policy["solarize_add"],
-            value_range=(0, 255),
-            seed=seed,
-            **kwargs,
-        )
-        layers = [
-            identity,
-            auto_contrast,
-            equalize,
-            invert,
-            posterize,
-            solarize,
-            color,
-            contrast,
-            brightness,
-            sharpness,
-            solarize_add,
-        ]
-
-        if use_geometry:
-            rotate = augmentation.RandomAffine(
-                **policy["rotate"],
-                interpolation=self.interpolation,
-                fill_mode=self.fill_mode,
-                fill_value=self.fill_value,
-                bounding_box_format=bounding_box_format,
-                seed=seed,
-                **kwargs,
-            )
-            shear_x = augmentation.RandomAffine(
-                **policy["shear_x"],
-                interpolation=self.interpolation,
-                fill_mode=self.fill_mode,
-                fill_value=self.fill_value,
-                bounding_box_format=bounding_box_format,
-                seed=seed,
-                **kwargs,
-            )
-            shear_y = augmentation.RandomAffine(
-                **policy["shear_y"],
-                interpolation=self.interpolation,
-                fill_mode=self.fill_mode,
-                fill_value=self.fill_value,
-                bounding_box_format=bounding_box_format,
-                seed=seed,
-                **kwargs,
-            )
-            translate_x = augmentation.RandomAffine(
-                **policy["translate_x"],
-                interpolation=self.interpolation,
-                fill_mode=self.fill_mode,
-                fill_value=self.fill_value,
-                bounding_box_format=bounding_box_format,
-                seed=seed,
-                **kwargs,
-            )
-            translate_y = augmentation.RandomAffine(
-                **policy["translate_y"],
-                interpolation=self.interpolation,
-                fill_mode=self.fill_mode,
-                fill_value=self.fill_value,
-                bounding_box_format=bounding_box_format,
-                seed=seed,
-                **kwargs,
-            )
-            layers.extend([rotate, shear_x, shear_y, translate_x, translate_y])
+        layers = []
+        if exclude_ops is not None:
+            for op in exclude_ops:
+                policy.pop(op)
+        for key in policy.keys():
+            if key == "identity":
+                layers.append(
+                    augmentation.Identity(**policy["identity"], **kwargs)
+                )
+            elif key == "auto_contrast":
+                layers.append(
+                    augmentation.AutoContrast(
+                        **policy["auto_contrast"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "equalize":
+                layers.append(
+                    augmentation.Equalize(
+                        **policy["equalize"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "invert":
+                layers.append(
+                    augmentation.Invert(
+                        **policy["invert"], value_range=(0, 255), **kwargs
+                    )
+                )
+            elif key == "posterize":
+                layers.append(
+                    augmentation.RandomPosterize(
+                        **policy["posterize"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "solarize":
+                layers.append(
+                    augmentation.RandomSolarize(
+                        **policy["solarize"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "color":
+                layers.append(
+                    augmentation.RandomColorJitter(
+                        **policy["color"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "contrast":
+                layers.append(
+                    augmentation.RandomColorJitter(
+                        **policy["contrast"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "brightness":
+                layers.append(
+                    augmentation.RandomColorJitter(
+                        **policy["brightness"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "sharpness":
+                layers.append(
+                    augmentation.RandomSharpness(
+                        **policy["sharpness"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "cutout":
+                layers.append(
+                    augmentation.RandomCutout(
+                        **policy["cutout"],
+                        fill_mode="constant",
+                        fill_value=self.fill_value,
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "solarize_add":
+                layers.append(
+                    augmentation.RandomSolarize(
+                        **policy["solarize_add"],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
+                    )
+                )
+            elif key == "rotate":
+                if use_geometry:
+                    layers.append(
+                        augmentation.RandomAffine(
+                            **policy["rotate"],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
+            elif key == "shear_x":
+                if use_geometry:
+                    layers.append(
+                        augmentation.RandomAffine(
+                            **policy["shear_x"],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
+            elif key == "shear_y":
+                if use_geometry:
+                    layers.append(
+                        augmentation.RandomAffine(
+                            **policy["shear_y"],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
+            elif key == "translate_x":
+                if use_geometry:
+                    layers.append(
+                        augmentation.RandomAffine(
+                            **policy["translate_x"],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
+            elif key == "translate_y":
+                if use_geometry:
+                    layers.append(
+                        augmentation.RandomAffine(
+                            **policy["translate_y"],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
+            else:
+                if key not in exclude_ops:
+                    raise ValueError(f"Not recognized policy key: {key}")
         return layers
 
     def rand_augment_single_input(self, inputs):
@@ -311,7 +382,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                 "interpolation": self.interpolation,
                 "fill_mode": self.fill_mode,
                 "fill_value": self.fill_value,
-                "batchwise": self.batchwise,
+                "exclude_ops": self.exclude_ops,
                 "bounding_box_format": self.bounding_box_format,
                 "seed": self.seed,
             }
@@ -324,19 +395,17 @@ class RandAugment(VectorizedBaseRandomLayer):
 
 
 def create_rand_augment_policy(
-    magnitude, magnitude_stddev, translation_multiplier
+    magnitude, magnitude_stddev, translation_multiplier, cutout_multiplier
 ):
     """Create RandAugment Policy.
-
-    TODO: CutOut
 
     Notes:
         This policy adopts relative translatation instead of pixel adjustment.
         See discussion below:
         https://github.com/tensorflow/tpu/issues/637#issuecomment-568093430
         https://github.com/tensorflow/tpu/issues/637#issuecomment-571286096
-        Author: image_size / 3
-
+        Author: image_size / 3.
+        The cutout multiplier is about ``0.18``.
     """
     max_level = 10.0
     max_magnitude = 30.0  # AA: 10.0; RA: 30.0
@@ -478,7 +547,20 @@ def create_rand_augment_policy(
         ),
         "shear_width_factor": 0,
     }
-    policy["cutout"] = {}  # TODO
+    policy["cutout"] = {
+        "height_factor": NormalFactorSampler(
+            mean=magnitude / max_level * cutout_multiplier,
+            stddev=magnitude_stddev,
+            min_value=0,
+            max_value=max_magnitude / max_level * cutout_multiplier,
+        ),
+        "width_factor": NormalFactorSampler(
+            mean=magnitude / max_level * cutout_multiplier,
+            stddev=magnitude_stddev,
+            min_value=0,
+            max_value=max_magnitude / max_level * cutout_multiplier,
+        ),
+    }
     policy["solarize_add"] = {
         "threshold_factor": (128, 128),
         "addition_factor": NormalFactorSampler(
