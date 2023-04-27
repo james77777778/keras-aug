@@ -9,7 +9,7 @@ from keras_aug.augmentation import Resize
 
 def main():
     dataset = demo_utils.load_voc_dataset(bounding_box_format="xyxy")
-    resize = Resize(331, 331, bounding_box_format="xyxy")
+    resize = Resize(224, 224, bounding_box_format="xyxy")
     layer = RandAugment(
         value_range=(0, 255),
         fill_mode="constant",

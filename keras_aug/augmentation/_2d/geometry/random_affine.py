@@ -218,30 +218,30 @@ class RandomAffine(VectorizedBaseRandomLayer):
             axis=1,
         )
         combined_matrixes = tf.reshape(identity_matrixes, (batch_size, 3, 3))
-        # process rotations
-        if self._enable_rotation:
-            rotation_matrixes = augmentation_utils.get_rotation_matrix(
-                angles, heights, widths, to_square=True
-            )
-            combined_matrixes = combined_matrixes @ rotation_matrixes
-        # process translations
-        if self._enable_translation:
-            translation_matrixes = augmentation_utils.get_translation_matrix(
-                translations, heights, widths, to_square=True
-            )
-            combined_matrixes = combined_matrixes @ translation_matrixes
         # process zoom
         if self._enable_zoom:
             zoom_matrixes = augmentation_utils.get_zoom_matrix(
                 zooms, heights, widths, to_square=True
             )
-            combined_matrixes = combined_matrixes @ zoom_matrixes
+            combined_matrixes = zoom_matrixes @ combined_matrixes
+        # process rotations
+        if self._enable_rotation:
+            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+                angles, heights, widths, to_square=True
+            )
+            combined_matrixes = rotation_matrixes @ combined_matrixes
         # process shear
         if self._enable_shear:
             shear_matrixes = augmentation_utils.get_shear_matrix(
                 shears, to_square=True
             )
-            combined_matrixes = combined_matrixes @ shear_matrixes
+            combined_matrixes = shear_matrixes @ combined_matrixes
+        # process translations
+        if self._enable_translation:
+            translation_matrixes = augmentation_utils.get_translation_matrix(
+                translations, heights, widths, to_square=True
+            )
+            combined_matrixes = translation_matrixes @ combined_matrixes
         return {
             "angles": angles,
             "translations": translations,
