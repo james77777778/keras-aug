@@ -13,7 +13,7 @@ from keras_aug.utils import augmentation as augmentation_utils
 @keras.utils.register_keras_serializable(package="keras_aug")
 class RandomBrightnessContrast(VectorizedBaseRandomLayer):
     """Randomly applies brightness and contrast image processing operation
-    sequentially and randomly on the input.
+    sequentially and randomly on the input. It expects input as RGB image.
 
     Args:
         value_range ((int|float, int|float)): The range of values the incoming
@@ -142,22 +142,28 @@ class RandomBrightnessContrast(VectorizedBaseRandomLayer):
         contrast_factors = transformations["contrast_factors"]
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         degenerates = tf.image.rgb_to_grayscale(images)
-        degenerates = tf.transpose(degenerates, [0, 3, 1, 2])
-        degenerates = tf.reshape(degenerates, shape=(batch_size, 1, -1))
-        means = tf.vectorized_map(self.compute_hist_single_image, degenerates)
+
+        # compute historams
+        degenerates = tf.cast(degenerates, dtype=tf.int32)
+        degenerates = tf.reshape(degenerates, shape=(batch_size, -1))
+        degenerates = tf.transpose(degenerates, (1, 0))
+        hists = tf.math.reduce_sum(
+            tf.one_hot(degenerates, depth=256, on_value=1, off_value=0, axis=0),
+            axis=1,
+        )
+        hists = tf.transpose(hists, (1, 0))
+
+        # compute means of historams
+        means = tf.reduce_mean(tf.cast(hists, dtype=self.compute_dtype), axis=1)
+        means = means / 256.0
         means = means[..., tf.newaxis, tf.newaxis, tf.newaxis]
-        degenerates = tf.ones_like(images, dtype=tf.float32) * means
-        degenerates = tf.cast(degenerates, dtype=images.dtype)
+        degenerates = tf.ones_like(images, dtype=self.compute_dtype) * means
         degenerates = tf.clip_by_value(degenerates, 0, 255)
+
         images = augmentation_utils.blend(
             degenerates, images, contrast_factors, (0, 255)
         )
         return images
-
-    def compute_hist_single_image(self, image):
-        image = tf.cast(image, dtype=tf.int32)
-        hist = tf.math.bincount(image, minlength=256, axis=-1)
-        return tf.reduce_mean(tf.cast(hist, dtype=tf.float32)) / 256.0
 
     def get_config(self):
         config = super().get_config()

@@ -194,8 +194,6 @@ NO_XLA_SUPPORT_LAYERS = [
     augmentation.ResizeByLongestSide,  # tf.image.resize
     augmentation.ResizeBySmallestSide,  # tf.image.resize
     augmentation.RandomBlur,  # tf.map_fn
-    augmentation.RandomBrightnessContrast,  # Contrast: tf.math.bincount
-    augmentation.RandomColorJitter,  # Contrast: tf.math.bincount
     augmentation.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     augmentation.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
     augmentation.MosaicYOLOV8,  # tf.map_fn
