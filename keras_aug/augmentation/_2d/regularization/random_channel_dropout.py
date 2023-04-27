@@ -8,7 +8,7 @@ from keras_aug.augmentation._2d.base.vectorized_base_random_layer import (
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ChannelDropout(VectorizedBaseRandomLayer):
+class RandomChannelDropout(VectorizedBaseRandomLayer):
     """Randomly drop channels of the input images.
 
     Args:

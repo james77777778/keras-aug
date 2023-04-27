@@ -3,21 +3,21 @@ import tensorflow as tf
 from keras_aug import augmentation
 
 
-class ChannelDropoutTest(tf.test.TestCase):
+class RandomChannelDropoutTest(tf.test.TestCase):
     regular_args = {"factor": (0, 2)}
 
     def test_layer_created_with_invalid_factor(self):
         images = tf.ones(shape=(2, 32, 32, 3))
         args = self.regular_args.copy()
         args.update({"factor": (5, 5)})
-        layer = augmentation.ChannelDropout(**args)
+        layer = augmentation.RandomChannelDropout(**args)
 
         with self.assertRaises(ValueError):
             _ = layer(images)
 
     def test_partially_zeros_out(self):
         images = tf.ones(shape=(2, 32, 32, 3))
-        layer = augmentation.ChannelDropout(**self.regular_args)
+        layer = augmentation.RandomChannelDropout(**self.regular_args)
 
         results = layer(images)
 

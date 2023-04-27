@@ -52,8 +52,8 @@ from keras_aug.augmentation._2d.intensity.random_solarize import RandomSolarize
 from keras_aug.augmentation._2d.intensity.rescale import Rescale
 from keras_aug.augmentation._2d.mix.mix_up import MixUp
 from keras_aug.augmentation._2d.mix.mosaic_yolov8 import MosaicYOLOV8
-from keras_aug.augmentation._2d.regularization.channel_dropout import (
-    ChannelDropout,
+from keras_aug.augmentation._2d.regularization.random_channel_dropout import (
+    RandomChannelDropout,
 )
 from keras_aug.augmentation._2d.utility.identity import Identity
 from keras_aug.augmentation._2d.utility.random_apply import RandomApply

@@ -169,15 +169,15 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
-        "ChannelDropout",
-        augmentation.ChannelDropout,
+        "RandomChannelDropout",
+        augmentation.RandomChannelDropout,
         {},
     ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,
-        {"layer": augmentation.ChannelDropout()},
+        {"layer": augmentation.RandomChannelDropout()},
     ),
 ]
 

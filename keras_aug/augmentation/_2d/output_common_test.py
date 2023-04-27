@@ -167,15 +167,15 @@ TEST_CONFIGURATIONS = [
         {"height": 20, "width": 20},
     ),
     (
-        "ChannelDropout",
-        augmentation.ChannelDropout,
+        "RandomChannelDropout",
+        augmentation.RandomChannelDropout,
         {},
     ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
         augmentation.RandomApply,
-        {"layer": augmentation.ChannelDropout()},
+        {"layer": augmentation.RandomChannelDropout()},
     ),
 ]
 
