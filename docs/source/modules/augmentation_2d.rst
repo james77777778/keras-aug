@@ -66,7 +66,8 @@ Mix
 Regularization
 ---------------
 
-.. autoclass:: ChannelDropout(factor=(0, 2), fill_value=0, seed=None, **kwargs)
+.. autoclass:: RandomChannelDropout(factor=(0, 2), fill_value=0, seed=None, **kwargs)
+.. autoclass:: RandomCutout(height_factor, width_factor, fill_mode="constant", fill_value=0, seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Utility
@@ -77,7 +78,6 @@ Utility
 
 .. autoclass:: Identity(**kwargs)
 .. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
-
 
 .. -----------------------------------------------------------
 ..                        Auto

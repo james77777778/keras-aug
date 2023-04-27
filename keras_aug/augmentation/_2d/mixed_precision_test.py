@@ -173,6 +173,11 @@ TEST_CONFIGURATIONS = [
         augmentation.RandomChannelDropout,
         {},
     ),
+    (
+        "RandomCutout",
+        augmentation.RandomCutout,
+        {"height_factor": 0.3, "width_factor": 0.3},
+    ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
