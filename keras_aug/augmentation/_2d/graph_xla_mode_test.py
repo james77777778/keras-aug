@@ -186,19 +186,19 @@ TEST_CONFIGURATIONS = [
 
 NO_XLA_SUPPORT_LAYERS = [
     augmentation.RandAugment,
-    augmentation.RandomAffine,
-    augmentation.RandomCrop,
-    augmentation.RandomCropAndResize,
-    augmentation.RandomRotate,
-    augmentation.ResizeAndCrop,
-    augmentation.ResizeByLongestSide,
-    augmentation.ResizeBySmallestSide,
-    augmentation.RandomBlur,
-    augmentation.RandomBrightnessContrast,
-    augmentation.RandomColorJitter,
-    augmentation.RandomJpegQuality,
+    augmentation.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
+    augmentation.RandomCrop,  # tf.image.crop_and_resize
+    augmentation.RandomCropAndResize,  # tf.image.crop_and_resize
+    augmentation.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
+    augmentation.ResizeAndCrop,  # tf.image.crop_and_resize
+    augmentation.ResizeByLongestSide,  # tf.image.resize
+    augmentation.ResizeBySmallestSide,  # tf.image.resize
+    augmentation.RandomBlur,  # tf.map_fn
+    augmentation.RandomBrightnessContrast,  # Contrast: tf.math.bincount
+    augmentation.RandomColorJitter,  # Contrast: tf.math.bincount
+    augmentation.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     augmentation.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
-    augmentation.MosaicYOLOV8,
+    augmentation.MosaicYOLOV8,  # tf.map_fn
 ]
 
 SKIP_XLA_TEST_LAYERS = [
