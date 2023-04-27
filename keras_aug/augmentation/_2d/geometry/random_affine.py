@@ -154,24 +154,29 @@ class RandomAffine(VectorizedBaseRandomLayer):
         self._enable_rotation = augmentation_utils.is_factor_working(
             self.rotation_factor, not_working_value=0.0
         )
-        self._enable_translation_height = augmentation_utils.is_factor_working(
+        _enable_translation_height = augmentation_utils.is_factor_working(
             self.translation_height_factor, not_working_value=0.0
         )
-        self._enable_translation_width = augmentation_utils.is_factor_working(
+        _enable_translation_width = augmentation_utils.is_factor_working(
             self.translation_width_factor, not_working_value=0.0
         )
-        self._enable_zoom_height = augmentation_utils.is_factor_working(
+        self._enable_translation = (
+            _enable_translation_height or _enable_translation_width
+        )
+        _enable_zoom_height = augmentation_utils.is_factor_working(
             self.zoom_height_factor, not_working_value=0.0
         )
-        self._enable_zoom_width = augmentation_utils.is_factor_working(
+        _enable_zoom_width = augmentation_utils.is_factor_working(
             self.zoom_width_factor, not_working_value=0.0
         )
-        self._enable_shear_height = augmentation_utils.is_factor_working(
+        self._enable_zoom = _enable_zoom_height or _enable_zoom_width
+        _enable_shear_height = augmentation_utils.is_factor_working(
             self.shear_height_factor, not_working_value=0.0
         )
-        self._enable_shear_width = augmentation_utils.is_factor_working(
+        _enable_shear_width = augmentation_utils.is_factor_working(
             self.shear_width_factor, not_working_value=0.0
         )
+        self._enable_shear = _enable_shear_height or _enable_shear_width
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
@@ -198,33 +203,51 @@ class RandomAffine(VectorizedBaseRandomLayer):
         shear_widths = self.shear_width_factor(shape=(batch_size, 1))
         shears = tf.concat([shear_widths, shear_heights], axis=1)
 
-        # combine matrix
-        rotation_matrixes = augmentation_utils.get_rotation_matrix(
-            angles, heights, widths, to_square=True
+        # start from identity matrixes:
+        #     [[1 0 0]
+        #      [0 1 0]
+        #      [0 0 1]]
+        identity_matrixes = tf.concat(
+            [
+                tf.ones((batch_size, 1)),
+                tf.zeros((batch_size, 3)),
+                tf.ones((batch_size, 1)),
+                tf.zeros((batch_size, 3)),
+                tf.ones((batch_size, 1)),
+            ],
+            axis=1,
         )
-        translation_matrixes = augmentation_utils.get_translation_matrix(
-            translations, heights, widths, to_square=True
-        )
-        zoom_matrixes = augmentation_utils.get_zoom_matrix(
-            zooms, heights, widths, to_square=True
-        )
-        shear_matrixes = augmentation_utils.get_shear_matrix(
-            shears, to_square=True
-        )
-        # (batch_size, 3, 3)
-        combined_matrixes = (
-            translation_matrixes
-            @ shear_matrixes
-            @ zoom_matrixes
-            @ rotation_matrixes
-        )
-
+        combined_matrixes = tf.reshape(identity_matrixes, (batch_size, 3, 3))
+        # process rotations
+        if self._enable_rotation:
+            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+                angles, heights, widths, to_square=True
+            )
+            combined_matrixes = combined_matrixes @ rotation_matrixes
+        # process translations
+        if self._enable_translation:
+            translation_matrixes = augmentation_utils.get_translation_matrix(
+                translations, heights, widths, to_square=True
+            )
+            combined_matrixes = combined_matrixes @ translation_matrixes
+        # process zoom
+        if self._enable_zoom:
+            zoom_matrixes = augmentation_utils.get_zoom_matrix(
+                zooms, heights, widths, to_square=True
+            )
+            combined_matrixes = combined_matrixes @ zoom_matrixes
+        # process shear
+        if self._enable_shear:
+            shear_matrixes = augmentation_utils.get_shear_matrix(
+                shears, to_square=True
+            )
+            combined_matrixes = combined_matrixes @ shear_matrixes
         return {
             "angles": angles,
             "translations": translations,
             "zooms": zooms,
             "shears": shears,
-            "combined_matrixes": combined_matrixes,
+            "combined_matrixes": combined_matrixes,  # (batch_size, 3, 3)
         }
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -279,7 +302,6 @@ class RandomAffine(VectorizedBaseRandomLayer):
             dtype=tf.float32,
         )
         boxes = bounding_boxes["boxes"]
-
         # process rotations
         if self._enable_rotation:
             origin_x = widths / 2
@@ -289,10 +311,10 @@ class RandomAffine(VectorizedBaseRandomLayer):
             # points: (batch_size, max_num_boxes, 4, 2)
             points = tf.stack(
                 [
-                    tf.stack([boxes[:, :, 0], boxes[:, :, 1]], axis=2),
-                    tf.stack([boxes[:, :, 2], boxes[:, :, 1]], axis=2),
-                    tf.stack([boxes[:, :, 2], boxes[:, :, 3]], axis=2),
-                    tf.stack([boxes[:, :, 0], boxes[:, :, 3]], axis=2),
+                    tf.stack([boxes[..., 0], boxes[..., 1]], axis=2),
+                    tf.stack([boxes[..., 2], boxes[..., 1]], axis=2),
+                    tf.stack([boxes[..., 2], boxes[..., 3]], axis=2),
+                    tf.stack([boxes[..., 0], boxes[..., 3]], axis=2),
                 ],
                 axis=2,
             )
@@ -312,28 +334,26 @@ class RandomAffine(VectorizedBaseRandomLayer):
             min_cordinates = tf.math.reduce_min(out, axis=2)
             max_cordinates = tf.math.reduce_max(out, axis=2)
             boxes = tf.concat([min_cordinates, max_cordinates], axis=2)
-
         # process translations
-        if self._enable_translation_height or self._enable_translation_width:
+        if self._enable_translation:
             translations = transformations["translations"]
-            translation_widths = translations[:, 0:1] * widths
-            translation_heights = translations[:, 1:2] * heights
-            translation_widths = translation_widths[..., tf.newaxis]
-            translation_heights = translation_heights[..., tf.newaxis]
+            translation_widths = tf.expand_dims(
+                translations[:, 0:1] * widths, axis=-1
+            )
+            translation_heights = tf.expand_dims(
+                translations[:, 1:2] * heights, axis=-1
+            )
             x1s, y1s, x2s, y2s = tf.split(boxes, 4, axis=-1)
             x1s = x1s + translation_widths
             y1s = y1s + translation_heights
             x2s = x2s + translation_widths
             y2s = y2s + translation_heights
             boxes = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
-
         # process shear
-        if self._enable_shear_height or self._enable_shear_width:
+        if self._enable_shear:
             shears = transformations["shears"]
-            shear_widths = shears[:, 0:1]
-            shear_heights = shears[:, 1:2]
-            shear_widths = shear_widths[..., tf.newaxis]
-            shear_heights = shear_heights[..., tf.newaxis]
+            shear_widths = tf.expand_dims(shears[:, 0:1], axis=-1)
+            shear_heights = tf.expand_dims(shears[:, 1:2], axis=-1)
             _x1s, _y1s, _x2s, _y2s = tf.split(boxes, 4, axis=-1)
             # x1, x2
             x1_tops = _x1s - (shear_widths * _y1s)
@@ -350,19 +370,18 @@ class RandomAffine(VectorizedBaseRandomLayer):
             y2_rights = _y2s - (shear_heights * _x2s)
             y2s = tf.where(shear_heights > 0, y2_lefts, y2_rights)
             boxes = tf.concat([x1s, y1s, x2s, y2s], axis=-1)
-
         # process zoom
-        if self._enable_zoom_height or self._enable_zoom_width:
+        if self._enable_zoom:
             zooms = transformations["zooms"]
-            zoom_widths = zooms[:, 0:1]
-            zoom_heights = zooms[:, 1:2]
+            zoom_widths = tf.expand_dims(zooms[:, 0:1], axis=-1)
+            zoom_heights = tf.expand_dims(zooms[:, 1:2], axis=-1)
             x1s, y1s, x2s, y2s = tf.split(boxes, 4, axis=-1)
-            x_offsets = ((widths - 1.0) / 2.0) * (1.0 - zoom_widths)
-            y_offsets = ((heights - 1.0) / 2.0) * (1.0 - zoom_heights)
-            zoom_widths = zoom_widths[..., tf.newaxis]
-            zoom_heights = zoom_heights[..., tf.newaxis]
-            x_offsets = x_offsets[..., tf.newaxis]
-            y_offsets = y_offsets[..., tf.newaxis]
+            x_offsets = ((tf.expand_dims(widths, axis=-1) - 1.0) / 2.0) * (
+                1.0 - zoom_widths
+            )
+            y_offsets = ((tf.expand_dims(heights, axis=-1) - 1.0) / 2.0) * (
+                1.0 - zoom_heights
+            )
             x1s = (x1s - x_offsets) / zoom_widths
             x2s = (x2s - x_offsets) / zoom_widths
             y1s = (y1s - y_offsets) / zoom_heights
