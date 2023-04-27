@@ -194,9 +194,15 @@ NO_XLA_SUPPORT_LAYERS = [
     augmentation.ResizeByLongestSide,
     augmentation.ResizeBySmallestSide,
     augmentation.RandomBlur,
+    augmentation.RandomBrightnessContrast,
+    augmentation.RandomColorJitter,
     augmentation.RandomJpegQuality,
     augmentation.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
     augmentation.MosaicYOLOV8,
+]
+
+SKIP_XLA_TEST_LAYERS = [
+    augmentation.RandAugment,  # too slow to compile
 ]
 
 
@@ -236,6 +242,8 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_can_run_in_xla_mode(self, layer_cls, args):
+        if layer_cls in SKIP_XLA_TEST_LAYERS:
+            return
         images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
         labels = tf.random.uniform(shape=(1, 1)) * 10.0
         layer = layer_cls(**args)

@@ -43,8 +43,10 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             ``None``.
 
     References:
-        - `torchvision <https://github.com/pytorch/vision>`_
-    """
+        - `Torchvision <https://github.com/pytorch/vision>`_
+        - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/master/official/vision/ops/augment.py>`
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -175,12 +177,19 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     def adjust_contrast(self, images, transformations):
         if not self._enable_contrast:
             return images
+        batch_size = tf.shape(images)[0]
         contrast_factors = transformations["contrast_factors"]
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
-        means = tf.image.rgb_to_grayscale(images)
-        means = tf.image.grayscale_to_rgb(means)
+        degenerates = tf.image.rgb_to_grayscale(images)
+        degenerates = tf.transpose(degenerates, [0, 3, 1, 2])
+        degenerates = tf.reshape(degenerates, shape=(batch_size, 1, -1))
+        means = tf.vectorized_map(self.compute_hist_single_image, degenerates)
+        means = means[..., tf.newaxis, tf.newaxis, tf.newaxis]
+        degenerates = tf.ones_like(images, dtype=tf.float32) * means
+        degenerates = tf.cast(degenerates, dtype=images.dtype)
+        degenerates = tf.clip_by_value(degenerates, 0, 255)
         images = augmentation_utils.blend(
-            means, images, contrast_factors, (0, 255)
+            degenerates, images, contrast_factors, (0, 255)
         )
         return images
 
@@ -217,6 +226,11 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             images, (0, 1), (0, 255), self.compute_dtype
         )
         return images
+
+    def compute_hist_single_image(self, image):
+        image = tf.cast(image, dtype=tf.int32)
+        hist = tf.math.bincount(image, minlength=256, axis=-1)
+        return tf.reduce_mean(tf.cast(hist, dtype=tf.float32)) / 256.0
 
     def get_config(self):
         config = super().get_config()
