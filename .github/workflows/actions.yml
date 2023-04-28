@@ -40,11 +40,11 @@ jobs:
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
-    - name: Install repo project
-      shell: bash
-      run: source ./.venv/bin/activate
     - name: Lint
-      run: bash shell/lint.sh
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        bash shell/lint.sh
   test:
     needs: format
     name: Test the code
@@ -72,8 +72,8 @@ jobs:
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
-    - name: Install repo project
-      shell: bash
-      run: source ./.venv/bin/activate
     - name: Test with pytest
-      run: bash shell/pytest.sh
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        bash shell/pytest.sh
