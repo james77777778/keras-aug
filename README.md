@@ -1,7 +1,7 @@
 # KerasAug
 
 ![Python](https://img.shields.io/badge/python-v3.8.0+-success.svg)
-![Tensorflow](https://img.shields.io/badge/tensorflow-v2.11.0+-success.svg)
+![Tensorflow](https://img.shields.io/badge/tensorflow-v2.12.0+-success.svg)
 
 ## Description
 

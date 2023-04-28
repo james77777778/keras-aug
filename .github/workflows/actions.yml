@@ -1,0 +1,80 @@
+# Ref: https://mckornfield.medium.com/caching-python-installs-in-github-actions-8309e12a15e6
+# Ref: https://github.com/keras-team/keras-cv/blob/master/.github/workflows/actions.yml
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [created]
+jobs:
+  format:
+    name: Check the code format
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v4
+      id: setup-python
+      with:
+        python-version: '3.8'
+    - name: Cache virtualenv
+      uses: actions/cache@v3
+      id: cache-venv
+      with:
+        path: ./.venv/
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m venv ./.venv
+        source ./.venv/bin/activate
+        pip install --upgrade pip setuptools
+        pip install tensorflow-cpu==2.12.0
+        pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
+        pip install -e ".[tests]" --progress-bar off --upgrade
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Lint
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        bash shell/lint.sh
+  test:
+    needs: format
+    name: Test the code
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v4
+      id: setup-python
+      with:
+        python-version: '3.8'
+    - name: Cache virtualenv
+      uses: actions/cache@v3
+      id: cache-venv
+      with:
+        path: ./.venv/
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m venv ./.venv
+        source ./.venv/bin/activate
+        pip install tensorflow-cpu==2.12.0
+        pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
+        pip install -e ".[tests]" --progress-bar off --upgrade
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Test with pytest
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        bash shell/pytest.sh
