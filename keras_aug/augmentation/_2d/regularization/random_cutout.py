@@ -131,7 +131,10 @@ class RandomCutout(VectorizedBaseRandomLayer):
         return labels
 
     def augment_bounding_boxes(self, bounding_boxes, transformations, **kwargs):
-        return bounding_boxes
+        raise NotImplementedError(
+            "The effect of RandomCutout for bounding boxes is not clear."
+            "Feel free to file the issue if you have the idea about it."
+        )
 
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
@@ -142,7 +145,10 @@ class RandomCutout(VectorizedBaseRandomLayer):
         )
 
     def augment_keypoints(self, keypoints, transformations, **kwargs):
-        return keypoints
+        raise NotImplementedError(
+            "The effect of RandomCutout for keypoints is not clear."
+            "Feel free to file the issue if you have the idea about it."
+        )
 
     def compute_rectangle_fills(self, inputs):
         input_shape = tf.shape(inputs)
