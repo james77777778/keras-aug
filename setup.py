@@ -41,6 +41,7 @@ setup(
             "isort",
             "black[jupyter]",
             "pytest",
+            "pytest-cov",
             "pycocotools",
             "tensorflow",
             "keras-cv @ git+https://github.com/keras-team/keras-cv.git",
