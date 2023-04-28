@@ -31,7 +31,7 @@ then
 fi
 [ $# -eq 0 ] && echo "no issues with flake8"
 
-black --check -v $files
+black --check $files
 if ! [ $? -eq 0 ]
 then
   echo "Please run \"sh shell/format.sh\" to format the code."
