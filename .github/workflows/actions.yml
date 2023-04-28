@@ -1,3 +1,5 @@
+# Ref: https://mckornfield.medium.com/caching-python-installs-in-github-actions-8309e12a15e6
+# Ref: https://github.com/keras-team/keras-cv/blob/master/.github/workflows/actions.yml
 name: Tests
 
 on:
@@ -13,27 +15,31 @@ jobs:
     - uses: actions/checkout@v3
     - name: Set up Python 3.8
       uses: actions/setup-python@v4
+      id: setup-python
       with:
         python-version: '3.8'
-    - name: Get pip cache dir
-      id: get-pip-cache-dir
-      run: |
-        python -m pip install --upgrade pip setuptools
-        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-    - name: Cache pip
+    - name: Cache virtualenv
       uses: actions/cache@v3
-      id: cache-pip
+      id: cache-venv
       with:
-        path: ${{ steps.get-pip-cache-dir.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
+        path: ./.venv/
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
     - name: Install dependencies
-      if: steps.cache-pip.outputs.cache-hit != 'true'
+      shell: bash
       run: |
-        pip install tensorflow==2.12.0
+        python -m venv ./.venv
+        source ./.venv/bin/activate
+        pip install tensorflow-cpu==2.12.0
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Install repo project
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        python -m pip install -U -e ./python
     - name: Lint
       run: bash shell/lint.sh
   test:
@@ -46,24 +52,27 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.8'
-    - name: Get pip cache dir
-      id: get-pip-cache-dir
-      run: |
-        python -m pip install --upgrade pip setuptools
-        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-    - name: Cache pip
+    - name: Cache virtualenv
       uses: actions/cache@v3
-      id: cache-pip
+      id: cache-venv
       with:
-        path: ${{ steps.get-pip-cache-dir.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}-test
+        path: ./.venv/
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
         restore-keys: |
-          ${{ runner.os }}-pip-test-
+          ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
     - name: Install dependencies
-      if: steps.cache-pip.outputs.cache-hit != 'true'
+      shell: bash
       run: |
+        python -m venv ./.venv
+        source ./.venv/bin/activate
         pip install tensorflow-cpu==2.12.0
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Install repo project
+      shell: bash
+      run: |
+        source ./.venv/bin/activate
+        python -m pip install -U -e ./python
     - name: Test with pytest
       run: bash shell/pytest.sh
