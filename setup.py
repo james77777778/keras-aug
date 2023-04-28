@@ -34,7 +34,7 @@ setup(
     author_email="",
     license="Apache License 2.0",
     install_requires=["packaging", "absl-py", "regex", "tensorflow-datasets"],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     extras_require={
         "tests": [
             "flake8",
@@ -50,7 +50,7 @@ setup(
     distclass=BinaryDistribution,
     classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Operating System :: Unix",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS",
