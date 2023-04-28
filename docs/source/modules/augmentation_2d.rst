@@ -77,6 +77,7 @@ Regularization
 
 .. autoclass:: RandomChannelDropout(factor=(0, 2), fill_value=0, seed=None, **kwargs)
 .. autoclass:: RandomCutout(height_factor, width_factor, fill_mode="constant", fill_value=0, seed=None, **kwargs)
+.. autoclass:: RandomErase(area_factor=(0.02, 0.4), aspect_ratio_factor=(0.3, 1.0 / 0.3), fill_mode="constant", fill_value=(125, 123, 114), seed=None, **kwargs)
 
 .. -----------------------------------------------------------
 ..                        Utility

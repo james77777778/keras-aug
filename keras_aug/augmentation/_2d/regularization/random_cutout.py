@@ -33,6 +33,7 @@ class RandomCutout(VectorizedBaseRandomLayer):
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
+        - `Cutout <https://arxiv.org/abs/1708.04552>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 

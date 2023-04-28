@@ -176,6 +176,11 @@ TEST_CONFIGURATIONS = [
         augmentation.RandomCutout,
         {"height_factor": 0.3, "width_factor": 0.3},
     ),
+    (
+        "RandomErase",
+        augmentation.RandomErase,
+        {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
+    ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
