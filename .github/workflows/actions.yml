@@ -4,7 +4,11 @@ name: Tests
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
   release:
     types: [created]
 jobs:
@@ -31,15 +35,14 @@ jobs:
       run: |
         python -m venv ./.venv
         source ./.venv/bin/activate
+        pip install --upgrade pip setuptools
         pip install tensorflow-cpu==2.12.0
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
     - name: Install repo project
       shell: bash
-      run: |
-        source ./.venv/bin/activate
-        python -m pip install -U -e ./python
+      run: source ./.venv/bin/activate
     - name: Lint
       run: bash shell/lint.sh
   test:
@@ -71,8 +74,6 @@ jobs:
       if: steps.cache-venv.outputs.cache-hit != 'true'
     - name: Install repo project
       shell: bash
-      run: |
-        source ./.venv/bin/activate
-        python -m pip install -U -e ./python
+      run: source ./.venv/bin/activate
     - name: Test with pytest
       run: bash shell/pytest.sh
