@@ -3,7 +3,7 @@ from keras_cv.core.factor_sampler.factor_sampler import FactorSampler
 from tensorflow import keras
 
 
-@keras.utils.register_keras_serializable(package="keras_cv")
+@keras.utils.register_keras_serializable(package="keras_aug")
 class SignedConstantFactorSampler(FactorSampler):
     """SignedConstantFactorSampler samples the same factor for every call to
     ``__call__()`` and randomly inverts the sampled factors.
@@ -41,11 +41,15 @@ class SignedConstantFactorSampler(FactorSampler):
         return factors * negates
 
     def get_config(self):
-        return {
-            "value": self.value,
-            "rate": self.rate,
-            "seed": self.seed,
-        }
+        config = super().get_config()
+        config.update(
+            {
+                "value": self.value,
+                "rate": self.rate,
+                "seed": self.seed,
+            }
+        )
+        return config
 
     @classmethod
     def from_config(cls, config):

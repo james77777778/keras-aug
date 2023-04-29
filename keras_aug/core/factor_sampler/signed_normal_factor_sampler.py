@@ -3,7 +3,7 @@ from keras_cv.core.factor_sampler.factor_sampler import FactorSampler
 from tensorflow import keras
 
 
-@keras.utils.register_keras_serializable(package="keras_cv")
+@keras.utils.register_keras_serializable(package="keras_aug")
 class SignedNormalFactorSampler(FactorSampler):
     """SignedNormalFactorSampler samples factors from a normal distribution and
     randomly inverts the sampled factors.
@@ -65,14 +65,18 @@ class SignedNormalFactorSampler(FactorSampler):
         return factors * negates
 
     def get_config(self):
-        return {
-            "mean": self.mean,
-            "stddev": self.stddev,
-            "min_value": self.min_value,
-            "max_value": self.max_value,
-            "rate": self.rate,
-            "seed": self.seed,
-        }
+        config = super().get_config()
+        config.update(
+            {
+                "mean": self.mean,
+                "stddev": self.stddev,
+                "min_value": self.min_value,
+                "max_value": self.max_value,
+                "rate": self.rate,
+                "seed": self.seed,
+            }
+        )
+        return config
 
     @classmethod
     def from_config(cls, config):
