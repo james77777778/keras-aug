@@ -50,6 +50,11 @@ TEST_CONFIGURATIONS = [
     ("RandomFlip", augmentation.RandomFlip, {"mode": "horizontal"}),
     ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
+        "RandomZoomAndCrop",
+        augmentation.RandomZoomAndCrop,
+        {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+    ),
+    (
         "Resize",
         augmentation.Resize,
         {"height": 2, "width": 2},
@@ -200,6 +205,7 @@ NO_XLA_SUPPORT_LAYERS = [
     augmentation.RandomCrop,  # tf.image.crop_and_resize
     augmentation.RandomCropAndResize,  # tf.image.crop_and_resize
     augmentation.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
+    augmentation.RandomZoomAndCrop,  # tf.image.resize
     augmentation.ResizeAndCrop,  # tf.image.crop_and_resize
     augmentation.ResizeByLongestSide,  # tf.image.resize
     augmentation.ResizeBySmallestSide,  # tf.image.resize

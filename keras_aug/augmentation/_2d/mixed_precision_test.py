@@ -47,6 +47,11 @@ TEST_CONFIGURATIONS = [
     ("RandomFlip", augmentation.RandomFlip, {"mode": "horizontal"}),
     ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
+        "RandomZoomAndCrop",
+        augmentation.RandomZoomAndCrop,
+        {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+    ),
+    (
         "Resize",
         augmentation.Resize,
         {"height": 2, "width": 2},

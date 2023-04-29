@@ -51,6 +51,11 @@ TEST_CONFIGURATIONS = [
     ),
     ("RandomRotate", augmentation.RandomRotate, {"factor": 10}),
     (
+        "RandomZoomAndCrop",
+        augmentation.RandomZoomAndCrop,
+        {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+    ),
+    (
         "Resize",
         augmentation.Resize,
         {"height": 2, "width": 2},
@@ -196,6 +201,7 @@ NO_PRESERVED_SHAPE_LAYERS = [
     augmentation.MosaicYOLOV8,
     augmentation.RandomCrop,
     augmentation.RandomCropAndResize,
+    augmentation.RandomZoomAndCrop,
     augmentation.Resize,
     augmentation.ResizeAndCrop,
     augmentation.ResizeAndPad,
@@ -213,6 +219,7 @@ NO_BFLOAT16_DTYPE_LAYERS = [
 
 NO_UINT8_DTYPE_LAYERS = [
     augmentation.RandAugment,
+    augmentation.RandomZoomAndCrop,
     augmentation.AutoContrast,
     augmentation.Normalize,
     augmentation.RandomBrightnessContrast,

@@ -11,6 +11,9 @@ from keras_aug.augmentation._2d.geometry.random_crop_and_resize import (
 )
 from keras_aug.augmentation._2d.geometry.random_flip import RandomFlip
 from keras_aug.augmentation._2d.geometry.random_rotate import RandomRotate
+from keras_aug.augmentation._2d.geometry.random_zoom_and_crop import (
+    RandomZoomAndCrop,
+)
 from keras_aug.augmentation._2d.geometry.resize import Resize
 from keras_aug.augmentation._2d.geometry.resize_and_crop import ResizeAndCrop
 from keras_aug.augmentation._2d.geometry.resize_and_pad import ResizeAndPad
