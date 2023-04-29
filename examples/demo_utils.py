@@ -25,7 +25,7 @@ def preprocess_voc(inputs, format=None):
         bounding_boxes = {"classes": classes, "boxes": boxes}
         return {"images": image, "bounding_boxes": bounding_boxes}
     else:
-        return image
+        return {"images": image}
 
 
 def load_voc_dataset(

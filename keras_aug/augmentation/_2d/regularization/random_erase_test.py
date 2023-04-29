@@ -38,19 +38,19 @@ class RandomEraseTest(tf.test.TestCase):
 
         self.assertEqual(xs.shape, [40, 40, 3])
 
-    def test_random_cutout_single_float(self):
+    def test_random_erase_single_float(self):
         self._run_test(0.5, 0.5)
 
-    def test_random_cutout_tuple_float(self):
+    def test_random_erase_tuple_float(self):
         self._run_test((0.4, 0.9), (0.1, 0.3))
 
-    def test_random_cutout_fail_mix_bad_param_values(self):
+    def test_random_erase_fail_mix_bad_param_values(self):
         self.assertRaises(ValueError, lambda: self._run_test(0.5, (-1.0, 30)))
 
-    def test_random_cutout_fail_reverse_lower_upper_float(self):
+    def test_random_erase_fail_reverse_lower_upper_float(self):
         self.assertRaises(ValueError, lambda: self._run_test(0.5, (0.9, 0.4)))
 
-    def test_random_cutout_call_results_one_channel(self):
+    def test_random_erase_call_results_one_channel(self):
         xs = tf.cast(
             tf.stack(
                 [2 * tf.ones((40, 40, 1)), tf.ones((40, 40, 1))],
@@ -75,7 +75,7 @@ class RandomEraseTest(tf.test.TestCase):
         self.assertTrue(tf.math.reduce_any(xs[1] == patch_value))
         self.assertTrue(tf.math.reduce_any(xs[1] == 1.0))
 
-    def test_random_cutout_call_tiny_image(self):
+    def test_random_erase_call_tiny_image(self):
         img_shape = (4, 4, 3)
         xs = tf.stack(
             [2 * tf.ones(img_shape), tf.ones(img_shape)],

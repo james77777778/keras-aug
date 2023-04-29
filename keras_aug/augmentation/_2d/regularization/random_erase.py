@@ -79,7 +79,7 @@ class RandomErase(VectorizedBaseRandomLayer):
         self, batch_size, images=None, **kwargs
     ):
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
+            images, dtype=self.compute_dtype
         )
         areas = heights * widths
 
@@ -87,11 +87,11 @@ class RandomErase(VectorizedBaseRandomLayer):
         for _ in range(self.max_attemp):
             if not is_success:
                 erasing_areas = self.area_factor(
-                    shape=(batch_size, 1), dtype=tf.float32
+                    shape=(batch_size, 1), dtype=self.compute_dtype
                 )
                 erasing_areas = erasing_areas * areas
                 erasing_aspect_ratios = self.aspect_ratio_factor(
-                    shape=(batch_size, 1), dtype=tf.float32
+                    shape=(batch_size, 1), dtype=self.compute_dtype
                 )
                 erasing_heights = tf.round(
                     tf.sqrt(erasing_areas * erasing_aspect_ratios)
@@ -105,17 +105,15 @@ class RandomErase(VectorizedBaseRandomLayer):
                     is_success = True
 
         center_xs = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
         )
         center_ys = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
         )
-        center_xs = tf.cast(
-            tf.round(center_xs * (widths - erasing_widths)), dtype=tf.int32
-        )
-        center_ys = tf.cast(
-            tf.round(center_ys * (heights - erasing_heights)), dtype=tf.int32
-        )
+        center_xs = tf.round(center_xs * (widths - erasing_widths))
+        center_xs = tf.cast(center_xs + erasing_widths / 2, dtype=tf.int32)
+        center_ys = tf.round(center_ys * (heights - erasing_heights))
+        center_ys = tf.cast(center_ys + erasing_heights / 2, dtype=tf.int32)
 
         return {
             "center_xs": center_xs,

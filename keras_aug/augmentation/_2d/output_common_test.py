@@ -225,6 +225,7 @@ NO_UINT8_DTYPE_LAYERS = [
     augmentation.RandomSolarize,
     augmentation.MixUp,
     augmentation.MosaicYOLOV8,
+    augmentation.RandomErase,
 ]
 
 SKIP_DTYPE_LAYERS = [
