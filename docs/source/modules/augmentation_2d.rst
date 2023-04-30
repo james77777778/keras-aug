@@ -26,6 +26,7 @@ Geometry
 .. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomFlip(mode="horizontal", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomRotate(factor, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: RandomZoomAndCrop(height, width, scale_factor, crop_height=None, crop_width=None, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: Resize(height, width, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: ResizeAndCrop(height, width, interpolation="bilinear", antialias=False, postion="center", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: ResizeAndPad(height, width, interpolation="bilinear", antialias=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
