@@ -41,6 +41,9 @@ from keras_aug.augmentation._2d.intensity.random_color_jitter import (
     RandomColorJitter,
 )
 from keras_aug.augmentation._2d.intensity.random_gamma import RandomGamma
+from keras_aug.augmentation._2d.intensity.random_gaussian_blur import (
+    RandomGaussianBlur,
+)
 from keras_aug.augmentation._2d.intensity.random_hsv import RandomHSV
 from keras_aug.augmentation._2d.intensity.random_jpeg_quality import (
     RandomJpegQuality,

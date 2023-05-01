@@ -123,6 +123,11 @@ TEST_CONFIGURATIONS = [
         {"value_range": (0, 255), "factor": 0.1},
     ),
     (
+        "RandomGaussianBlur",
+        augmentation.RandomGaussianBlur,
+        {"kernel_size": 3, "factor": 2.0},
+    ),
+    (
         "RandomHSV",
         augmentation.RandomHSV,
         {
@@ -226,6 +231,7 @@ NO_UINT8_DTYPE_LAYERS = [
     augmentation.RandomChannelShift,
     augmentation.RandomColorJitter,
     augmentation.RandomGamma,
+    augmentation.RandomGaussianBlur,
     augmentation.RandomHSV,
     augmentation.RandomJpegQuality,
     augmentation.RandomSharpness,

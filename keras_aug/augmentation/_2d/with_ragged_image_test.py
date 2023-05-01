@@ -82,6 +82,11 @@ TEST_CONFIGURATIONS = [
         {"value_range": (0, 255), "factor": 0.1},
     ),
     (
+        "RandomGaussianBlur",
+        augmentation.RandomGaussianBlur,
+        {"kernel_size": 3, "factor": 2.0},
+    ),
+    (
         "RandomHSV",
         augmentation.RandomHSV,
         {
