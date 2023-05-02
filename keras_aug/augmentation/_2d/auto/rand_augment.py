@@ -185,91 +185,65 @@ class RandAugment(VectorizedBaseRandomLayer):
                 policy.pop(op)
         for key in policy.keys():
             if key == "identity":
-                layers.append(
-                    augmentation.Identity(**policy["identity"], **kwargs)
-                )
+                layers.append(augmentation.Identity(**policy[key], **kwargs))
             elif key == "auto_contrast":
                 layers.append(
                     augmentation.AutoContrast(
-                        **policy["auto_contrast"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "equalize":
                 layers.append(
                     augmentation.Equalize(
-                        **policy["equalize"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "invert":
                 layers.append(
                     augmentation.Invert(
-                        **policy["invert"], value_range=(0, 255), **kwargs
+                        **policy[key], value_range=(0, 255), **kwargs
                     )
                 )
             elif key == "posterize":
                 layers.append(
                     augmentation.RandomPosterize(
-                        **policy["posterize"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "solarize":
                 layers.append(
                     augmentation.RandomSolarize(
-                        **policy["solarize"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "color":
                 layers.append(
                     augmentation.RandomColorJitter(
-                        **policy["color"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "contrast":
                 layers.append(
                     augmentation.RandomColorJitter(
-                        **policy["contrast"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "brightness":
                 layers.append(
                     augmentation.RandomColorJitter(
-                        **policy["brightness"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "sharpness":
                 layers.append(
                     augmentation.RandomSharpness(
-                        **policy["sharpness"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "cutout":
                 layers.append(
                     augmentation.RandomCutout(
-                        **policy["cutout"],
+                        **policy[key],
                         fill_mode="constant",
                         fill_value=self.fill_value,
                         seed=seed,
@@ -279,17 +253,14 @@ class RandAugment(VectorizedBaseRandomLayer):
             elif key == "solarize_add":
                 layers.append(
                     augmentation.RandomSolarize(
-                        **policy["solarize_add"],
-                        value_range=(0, 255),
-                        seed=seed,
-                        **kwargs,
+                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
             elif key == "rotate":
                 if use_geometry:
                     layers.append(
                         augmentation.RandomAffine(
-                            **policy["rotate"],
+                            **policy[key],
                             interpolation=self.interpolation,
                             fill_mode=self.fill_mode,
                             fill_value=self.fill_value,
@@ -302,7 +273,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                 if use_geometry:
                     layers.append(
                         augmentation.RandomAffine(
-                            **policy["shear_x"],
+                            **policy[key],
                             interpolation=self.interpolation,
                             fill_mode=self.fill_mode,
                             fill_value=self.fill_value,
@@ -315,7 +286,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                 if use_geometry:
                     layers.append(
                         augmentation.RandomAffine(
-                            **policy["shear_y"],
+                            **policy[key],
                             interpolation=self.interpolation,
                             fill_mode=self.fill_mode,
                             fill_value=self.fill_value,
@@ -328,7 +299,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                 if use_geometry:
                     layers.append(
                         augmentation.RandomAffine(
-                            **policy["translate_x"],
+                            **policy[key],
                             interpolation=self.interpolation,
                             fill_mode=self.fill_mode,
                             fill_value=self.fill_value,
@@ -341,7 +312,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                 if use_geometry:
                     layers.append(
                         augmentation.RandomAffine(
-                            **policy["translate_y"],
+                            **policy[key],
                             interpolation=self.interpolation,
                             fill_mode=self.fill_mode,
                             fill_value=self.fill_value,

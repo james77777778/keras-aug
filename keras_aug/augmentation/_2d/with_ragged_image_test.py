@@ -7,7 +7,7 @@ from keras_aug.augmentation import _2d as augmentation
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
-TEST_CONFIGURATIONS = [
+CONSISTENT_OUTPUTS_LAYERS = [
     (
         "RandAugment",
         augmentation.RandAugment,
@@ -226,7 +226,7 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
             if issubclass(item[1], base_cls) and item[1] is not base_cls
         ]
         all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        test_conf_names = set(item[0] for item in TEST_CONFIGURATIONS)
+        test_conf_names = set(item[0] for item in CONSISTENT_OUTPUTS_LAYERS)
         force_dense_names = set(item[0] for item in FORCE_DENSE_IMAGES_LAYERS)
         all_test_conf_names = test_conf_names.union(force_dense_names)
 
@@ -237,7 +237,7 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
                 msg=f"{name} not found in TEST_CONFIGURATIONS",
             )
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    @parameterized.named_parameters(*CONSISTENT_OUTPUTS_LAYERS)
     def test_preserves_ragged_status(self, layer_cls, args):
         layer = layer_cls(**args)
         # MixUp needs two same shape image
