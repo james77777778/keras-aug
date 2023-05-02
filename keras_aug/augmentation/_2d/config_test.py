@@ -187,6 +187,15 @@ TEST_CONFIGURATIONS = [
         augmentation.RandomErase,
         {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
     ),
+    (
+        "RandomGridMask",
+        augmentation.RandomGridMask,
+        {
+            "size_factor": (0.5, 1.0),
+            "ratio_factor": (0.6, 0.6),
+            "rotation_factor": (-10, 10),
+        },
+    ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
@@ -228,6 +237,10 @@ class ConfigTest(tf.test.TestCase, parameterized.TestCase):
             if isinstance(config[key], core.UniformFactorSampler):
                 self.assertTrue(
                     isinstance(config[key], core.UniformFactorSampler)
+                )
+            elif isinstance(config[key], core.ConstantFactorSampler):
+                self.assertTrue(
+                    isinstance(config[key], core.ConstantFactorSampler)
                 )
             else:
                 self.assertEqual(config[key], args[key])

@@ -196,6 +196,15 @@ TEST_CONFIGURATIONS = [
         augmentation.RandomErase,
         {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
     ),
+    (
+        "RandomGridMask",
+        augmentation.RandomGridMask,
+        {
+            "size_factor": (0.5, 1.0),
+            "ratio_factor": (0.6, 0.6),
+            "rotation_factor": (-10, 10),
+        },
+    ),
     ("Identity", augmentation.Identity, {}),
     (
         "RandomApply",
@@ -218,6 +227,7 @@ NO_XLA_SUPPORT_LAYERS = [
     augmentation.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     augmentation.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
     augmentation.MosaicYOLOV8,  # tf.map_fn
+    augmentation.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
 ]
 
 SKIP_XLA_TEST_LAYERS = [
