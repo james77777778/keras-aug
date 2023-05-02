@@ -63,5 +63,8 @@ from keras_aug.augmentation._2d.regularization.random_channel_dropout import (
 )
 from keras_aug.augmentation._2d.regularization.random_cutout import RandomCutout
 from keras_aug.augmentation._2d.regularization.random_erase import RandomErase
+from keras_aug.augmentation._2d.regularization.random_grid_mask import (
+    RandomGridMask,
+)
 from keras_aug.augmentation._2d.utility.identity import Identity
 from keras_aug.augmentation._2d.utility.random_apply import RandomApply
