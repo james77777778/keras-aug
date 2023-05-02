@@ -212,6 +212,14 @@ FORCE_DENSE_IMAGES_LAYERS = [
     ),
 ]
 
+NO_RAGGED_IMAGES_SUPPORT = [
+    (
+        "CutMix",
+        augmentation.CutMix,
+        {"alpha": 1.0},
+    ),
+]
+
 
 class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
@@ -226,9 +234,12 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
             if issubclass(item[1], base_cls) and item[1] is not base_cls
         ]
         all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        test_conf_names = set(item[0] for item in CONSISTENT_OUTPUTS_LAYERS)
+        cosistent_names = set(item[0] for item in CONSISTENT_OUTPUTS_LAYERS)
         force_dense_names = set(item[0] for item in FORCE_DENSE_IMAGES_LAYERS)
-        all_test_conf_names = test_conf_names.union(force_dense_names)
+        no_ragged_names = set(item[0] for item in NO_RAGGED_IMAGES_SUPPORT)
+        all_test_conf_names = cosistent_names.union(force_dense_names).union(
+            no_ragged_names
+        )
 
         for name in all_2d_aug_layer_names:
             self.assertIn(

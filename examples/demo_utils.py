@@ -10,6 +10,12 @@ import tensorflow_datasets as tfds
 from keras_cv import bounding_box
 
 
+def resize(image, label, img_size=(224, 224), num_classes=10):
+    image = tf.image.resize(image, img_size)
+    label = tf.one_hot(label, num_classes)
+    return {"images": image, "labels": label}
+
+
 def preprocess_voc(inputs, format=None):
     image = inputs["image"]
     image = tf.cast(image, tf.float32)
@@ -46,6 +52,21 @@ def load_voc_dataset(
     return dataset
 
 
+def load_oxford_dataset(
+    name="oxford_flowers102",
+    batch_size=9,
+    img_size=(224, 224),
+    as_supervised=True,
+):
+    data, ds_info = tfds.load(name, as_supervised=as_supervised, with_info=True)
+    train_ds = data["train"]
+    num_classes = ds_info.features["label"].num_classes
+    train_ds = train_ds.map(
+        lambda x, y: resize(x, y, img_size=img_size, num_classes=num_classes)
+    ).batch(batch_size)
+    return train_ds
+
+
 def visualize_data(data, bounding_box_format, output_path=None):
     data = next(iter(data))
     images = data["images"]
@@ -58,6 +79,10 @@ def visualize_data(data, bounding_box_format, output_path=None):
         if isinstance(images, tf.RaggedTensor):
             images = images.to_tensor(0)
         output_images = images.numpy()
+    if "labels" in data:
+        mask = tf.greater(data["labels"][0], 0)
+        non_zero_array = tf.boolean_mask(data["labels"][0], mask)
+        print(f"Nonzero labels of the first image:\n{non_zero_array}")
     gallery_show(output_images.astype(int), output_path)
 
 

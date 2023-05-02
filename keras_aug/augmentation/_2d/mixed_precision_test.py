@@ -166,6 +166,11 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     (
+        "CutMix",
+        augmentation.CutMix,
+        {"alpha": 1.0},
+    ),
+    (
         "MixUp",
         augmentation.MixUp,
         {},
