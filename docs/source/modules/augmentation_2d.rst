@@ -52,6 +52,7 @@ Intensity
 .. autoclass:: RandomCLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
 .. autoclass:: RandomColorJitter(value_range, brightness_factor, contrast_factor, saturation_factor, hue_factor, seed=None, **kwargs)
 .. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
+.. autoclass:: RandomGaussianBlur(kernel_size, factor, seed=None, **kwargs)
 .. autoclass:: RandomHSV(value_range, hue_factor, saturation_factor, value_factor, seed=None, **kwargs)
 .. autoclass:: RandomJpegQuality(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomPosterize(value_range, factor, seed=None, **kwargs)
