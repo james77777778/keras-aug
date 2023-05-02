@@ -167,6 +167,11 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     (
+        "CutMix",
+        augmentation.CutMix,
+        {"alpha": 1.0},
+    ),
+    (
         "MixUp",
         augmentation.MixUp,
         {},
@@ -245,6 +250,7 @@ NO_UINT8_DTYPE_LAYERS = [
     augmentation.RandomJpegQuality,
     augmentation.RandomSharpness,
     augmentation.RandomSolarize,
+    augmentation.CutMix,
     augmentation.MixUp,
     augmentation.MosaicYOLOV8,
     augmentation.RandomErase,
@@ -272,7 +278,8 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     augmentation.Invert,
     augmentation.Normalize,
     augmentation.Rescale,
-    augmentation.MixUp,
+    augmentation.CutMix,  # cannot test CutMix with same images
+    augmentation.MixUp,  # cannot test MixUp with same images
     augmentation.Identity,
     augmentation.RandomApply,
 ]

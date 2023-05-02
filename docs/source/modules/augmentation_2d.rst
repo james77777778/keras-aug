@@ -67,6 +67,7 @@ Intensity
 Mix
 ---------------
 
+.. autoclass:: CutMix(alpha=1.0, seed=None, **kwargs)
 .. autoclass:: MixUp(alpha=0.2, seed=None, **kwargs)
 .. autoclass:: MosaicYOLOV8(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
 

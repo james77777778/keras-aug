@@ -169,6 +169,11 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     (
+        "CutMix",
+        augmentation.CutMix,
+        {"alpha": 1.0},
+    ),
+    (
         "MixUp",
         augmentation.MixUp,
         {},
@@ -225,6 +230,7 @@ NO_XLA_SUPPORT_LAYERS = [
     augmentation.ResizeBySmallestSide,  # tf.image.resize
     augmentation.RandomBlur,  # tf.map_fn
     augmentation.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
+    augmentation.CutMix,  # tf.random.gamma / tf.random.stateless_gamma
     augmentation.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
     augmentation.MosaicYOLOV8,  # tf.map_fn
     augmentation.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3

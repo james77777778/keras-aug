@@ -56,6 +56,7 @@ from keras_aug.augmentation._2d.intensity.random_sharpness import (
 )
 from keras_aug.augmentation._2d.intensity.random_solarize import RandomSolarize
 from keras_aug.augmentation._2d.intensity.rescale import Rescale
+from keras_aug.augmentation._2d.mix.cut_mix import CutMix
 from keras_aug.augmentation._2d.mix.mix_up import MixUp
 from keras_aug.augmentation._2d.mix.mosaic_yolov8 import MosaicYOLOV8
 from keras_aug.augmentation._2d.regularization.random_channel_dropout import (
