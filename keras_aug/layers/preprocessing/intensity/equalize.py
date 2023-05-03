@@ -40,12 +40,14 @@ class Equalize(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-        images = tf.transpose(images, [0, 3, 1, 2])
-        images = tf.vectorized_map(
+        images = tf.cast(images, dtype=tf.int32)
+        images = tf.transpose(images, (0, 3, 1, 2))
+        images = tf.map_fn(
             self.equalize_single_image,
             images,
         )
-        images = tf.transpose(images, [0, 2, 3, 1])
+        images = tf.transpose(images, (0, 2, 3, 1))
+        images = tf.cast(images, dtype=self.compute_dtype)
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
@@ -67,57 +69,31 @@ class Equalize(VectorizedBaseRandomLayer):
         return keypoints
 
     def equalize_single_image(self, image):
-        # Compute the histogram of the image channel.
-        scaled_image = (image / 255) * (self.bins - 1)
-        scaled_image = tf.cast(scaled_image, dtype=tf.int32)
-        scaled_image = tf.clip_by_value(scaled_image, 0, self.bins - 1)
-        hist = tf.math.bincount(
-            tf.reshape(scaled_image, shape=(tf.shape(scaled_image)[0], -1)),
-            minlength=self.bins,
-            axis=-1,
+        return tf.map_fn(self.equalize_single_channel, image)
+
+    def equalize_single_channel(self, image):
+        histogram = tf.histogram_fixed_width(image, [0, 255], nbins=self.bins)
+        histogram_without_zeroes = tf.boolean_mask(
+            histogram, tf.not_equal(histogram, 0)
         )
-        # For the purposes of computing the step, filter out the non-zeros.
-        # Zeroes are replaced by a big number while calculating min to keep
-        # shape constant across input sizes
-        big_number = 1410065408
-        hist_without_zeroes = tf.where(
-            tf.equal(hist, 0),
-            big_number,
-            hist,
-        )
-        step = (
-            tf.reduce_sum(hist, axis=-1)
-            - tf.reduce_min(hist_without_zeroes, axis=-1)
-        ) // (self.bins - 1)
+        step = (tf.reduce_sum(histogram_without_zeroes[:-1])) // (self.bins - 1)
 
         def build_mapping(histogram, step):
-            step = step[:, tf.newaxis]
-            # avoid division by zero
-            step = tf.where(step == 0, 1, step)
             # Compute the cumulative sum, shifting by step // 2
             # and then normalization by step.
-            lookup_table = (tf.cumsum(histogram, axis=-1) + (step // 2)) // step
+            lookup_table = (tf.cumsum(histogram) + (step // 2)) // step
             # Shift lookup_table, prepending with 0.
-            lookup_table = tf.concat(
-                [
-                    tf.zeros(
-                        shape=(tf.shape(lookup_table)[0], 1), dtype=tf.int32
-                    ),
-                    lookup_table[:, :-1],
-                ],
-                axis=1,
-            )
+            lookup_table = tf.concat([[0], lookup_table[:-1]], 0)
             # Clip the counts to be in range. This is done
             # in the C code for image.point.
             return tf.clip_by_value(lookup_table, 0, 255)
 
         # If step is zero, return the original image. Otherwise, build
         # lookup table from the full histogram and step and then index from it.
-        image = tf.cast(image, dtype=tf.int32)
-        image = tf.where(
-            step[:, tf.newaxis, tf.newaxis] == 0,
-            image,
-            tf.gather(build_mapping(hist, step), image, batch_dims=1),
+        image = tf.cond(
+            tf.equal(step, 0),
+            lambda: image,
+            lambda: tf.gather(build_mapping(histogram, step), image),
         )
         return image
 
