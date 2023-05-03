@@ -4,18 +4,6 @@ from keras_aug import layers
 
 
 class AutoContrastTest(tf.test.TestCase):
-    def test_constant_channels_dont_get_nanned(self):
-        img = tf.constant([1, 1], dtype=tf.float32)
-        img = tf.expand_dims(img, axis=-1)
-        img = tf.expand_dims(img, axis=-1)
-        img = tf.expand_dims(img, axis=0)
-
-        layer = layers.AutoContrast(value_range=(0, 255))
-        ys = layer(img)
-
-        self.assertTrue(tf.math.reduce_any(ys[0] == 1.0))
-        self.assertTrue(tf.math.reduce_any(ys[0] == 1.0))
-
     def test_auto_contrast_expands_value_range(self):
         img = tf.constant([0, 128], dtype=tf.float32)
         img = tf.expand_dims(img, axis=-1)

@@ -231,6 +231,7 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.ResizeByLongestSide,  # tf.image.resize
     layers.ResizeBySmallestSide,  # tf.image.resize
     layers.RandomBlur,  # tf.map_fn
+    layers.RandomColorJitter,  # tf.histogram_fixed_width
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     layers.CutMix,  # tf.random.gamma / tf.random.stateless_gamma
     layers.MixUp,  # tf.random.gamma / tf.random.stateless_gamma

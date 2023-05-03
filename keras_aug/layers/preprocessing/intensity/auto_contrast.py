@@ -37,7 +37,6 @@ class AutoContrast(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        original_images = tf.cast(images, dtype=self.compute_dtype)
         images = preprocessing_utils.transform_value_range(
             images,
             original_range=self.value_range,
@@ -46,9 +45,7 @@ class AutoContrast(VectorizedBaseRandomLayer):
         )
         lows = tf.reduce_min(images, axis=(1, 2), keepdims=True)
         highs = tf.reduce_max(images, axis=(1, 2), keepdims=True)
-        scales = 255.0 / (highs - lows)
-        offsets = -lows * scales
-        images = images * scales + offsets
+        images = (images - lows) * 255.0 / (highs - lows)
         images = tf.clip_by_value(images, 0, 255)
         images = preprocessing_utils.transform_value_range(
             images,
@@ -56,8 +53,6 @@ class AutoContrast(VectorizedBaseRandomLayer):
             target_range=self.value_range,
             dtype=self.compute_dtype,
         )
-        # don't process NaN channels
-        images = tf.where(tf.math.is_nan(images), original_images, images)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
