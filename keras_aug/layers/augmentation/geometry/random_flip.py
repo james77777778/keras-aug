@@ -122,16 +122,18 @@ class RandomFlip(VectorizedBaseRandomLayer):
         # broadcast
         flip_horizontals = flip_horizontals[:, tf.newaxis, :]
         flip_verticals = flip_verticals[:, tf.newaxis, :]
-        boxes = tf.where(
-            flip_horizontals > (1.0 - self.rate),
-            self.flip_boxes_horizontal(boxes),
-            boxes,
-        )
-        boxes = tf.where(
-            flip_verticals > (1.0 - self.rate),
-            self.flip_boxes_vertical(boxes),
-            boxes,
-        )
+        if self.horizontal:
+            boxes = tf.where(
+                flip_horizontals > (1.0 - self.rate),
+                self.flip_boxes_horizontal(boxes),
+                boxes,
+            )
+        if self.vertical:
+            boxes = tf.where(
+                flip_verticals > (1.0 - self.rate),
+                self.flip_boxes_vertical(boxes),
+                boxes,
+            )
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
         bounding_boxes = bounding_box.clip_to_image(
@@ -160,16 +162,18 @@ class RandomFlip(VectorizedBaseRandomLayer):
         # broadcast
         flip_horizontals = flip_horizontals[:, tf.newaxis, tf.newaxis, :]
         flip_verticals = flip_verticals[:, tf.newaxis, tf.newaxis, :]
-        images = tf.where(
-            flip_horizontals > (1.0 - self.rate),
-            tf.image.flip_left_right(images),
-            images,
-        )
-        images = tf.where(
-            flip_verticals > (1.0 - self.rate),
-            tf.image.flip_up_down(images),
-            images,
-        )
+        if self.horizontal:
+            images = tf.where(
+                flip_horizontals > (1.0 - self.rate),
+                tf.image.flip_left_right(images),
+                images,
+            )
+        if self.vertical:
+            images = tf.where(
+                flip_verticals > (1.0 - self.rate),
+                tf.image.flip_up_down(images),
+                images,
+            )
         images.set_shape(original_shape)
         return images
 
