@@ -13,7 +13,9 @@ Welcome to KerasAug's documentation!
 .. toctree::
    :maxdepth: 2
 
-   modules/augmentation_2d.rst
+   modules/layers_preprocessing.rst
+   modules/layers_augmentation.rst
+   modules/layers_base.rst
    modules/utils_augmentation.rst
 
 🚀 Benchmarks
