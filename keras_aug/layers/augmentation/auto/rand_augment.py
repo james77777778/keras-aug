@@ -1,11 +1,11 @@
 from functools import partial
 
 import tensorflow as tf
-from keras_cv.core import NormalFactorSampler
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import layers
+from keras_aug.core import NormalFactorSampler
 from keras_aug.core import SignedNormalFactorSampler
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,

@@ -8,13 +8,13 @@ import enum
 from typing import Sequence
 
 import tensorflow as tf
-from keras_cv.core import ConstantFactorSampler
-from keras_cv.core import FactorSampler
-from keras_cv.core import NormalFactorSampler
-from keras_cv.core import UniformFactorSampler
 from tensorflow import keras
 
+from keras_aug.core import ConstantFactorSampler
+from keras_aug.core import FactorSampler
+from keras_aug.core import NormalFactorSampler
 from keras_aug.core import SignedNormalFactorSampler
+from keras_aug.core import UniformFactorSampler
 
 H_AXIS = -3
 W_AXIS = -2
