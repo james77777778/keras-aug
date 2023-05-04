@@ -44,6 +44,7 @@ setup(
             "pytest-cov",
             "pycocotools",
             "tensorflow",
+            "tensorflow_probability",
             "keras-cv @ git+https://github.com/keras-team/keras-cv.git",
         ],
         "examples": ["tensorflow-datasets", "matplotlib"],

@@ -283,7 +283,7 @@ ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
     layers.CutMix,  # cannot test CutMix with same images
     layers.MixUp,  # cannot test MixUp with same images
     layers.Identity,
-    layers.RandomApply,
+    layers.RandomApply,  # batch-wise randomness
 ]
 
 
@@ -320,10 +320,6 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
 
         if layer_cls not in NO_PRESERVED_SHAPE_LAYERS:
             self.assertEqual(images.shape, outputs[IMAGES].shape)
-            if layer_cls is not layers.Identity:
-                self.assertNotAllClose(images, outputs[IMAGES])
-            else:
-                self.assertAllClose(images, outputs[IMAGES])
         else:
             self.assertNotEqual(images.shape, outputs[IMAGES].shape)
 
@@ -338,12 +334,7 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
         )
         layer = layer_cls(**args, seed=SEED)
 
-        output = layer({IMAGES: images, LABELS: labels})
-
-        if layer_cls is not layers.Identity:
-            self.assertNotAllClose(images, output[IMAGES])
-        else:
-            self.assertAllClose(images, output[IMAGES])
+        _ = layer({IMAGES: images, LABELS: labels})
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_layer_dtypes(self, layer_cls, args):

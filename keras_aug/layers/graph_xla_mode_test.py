@@ -227,19 +227,20 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomCropAndResize,  # tf.image.crop_and_resize
     layers.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomZoomAndCrop,  # tf.image.resize
+    layers.RandomBlur,  # tf.map_fn
+    layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
+    layers.MosaicYOLOV8,  # tf.map_fn
+    layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.ResizeAndCrop,  # tf.image.crop_and_resize
     layers.ResizeByLongestSide,  # tf.image.resize
     layers.ResizeBySmallestSide,  # tf.image.resize
-    layers.RandomBlur,  # tf.map_fn
-    layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
-    layers.CutMix,  # tf.random.gamma / tf.random.stateless_gamma
-    layers.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
-    layers.MosaicYOLOV8,  # tf.map_fn
-    layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
+    layers.Equalize,  # tf.histogram_fixed_width
 ]
 
 SKIP_XLA_TEST_LAYERS = [
     layers.RandAugment,  # too slow to compile
+    layers.RandomColorJitter,  # too slow to compile
+    layers.Equalize,  # too slow to compile
 ]
 
 

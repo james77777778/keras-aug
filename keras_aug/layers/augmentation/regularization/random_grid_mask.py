@@ -87,6 +87,11 @@ class RandomGridMask(VectorizedBaseRandomLayer):
         self.fill_value = fill_value
         self.seed = seed
 
+        # decide whether to enable the rotation
+        self._enable_rotation = augmentation_utils.is_factor_working(
+            self.rotation_factor, not_working_value=0.0
+        )
+
     def _check_parameter_values(self, fill_mode):
         if fill_mode not in ["constant", "gaussian_noise", "random"]:
             raise ValueError(
@@ -159,21 +164,22 @@ class RandomGridMask(VectorizedBaseRandomLayer):
         )
         masks = tf.expand_dims(masks, axis=-1)
         # masks (batch_size, height, width, 1)
-        # randomly rotate masks
-        heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
-        )
-        angles = transformations.get("angles", None)
-        rotation_matrixes = augmentation_utils.get_rotation_matrix(
-            angles, heights, widths
-        )
-        masks = preprocessing_utils.transform(
-            tf.cast(masks, dtype=tf.float32),
-            rotation_matrixes,
-            fill_mode="constant",
-            fill_value=0,
-            interpolation="nearest",
-        )
+
+        if self._enable_rotation:
+            angles = transformations.get("angles", None)
+            heights, widths = augmentation_utils.get_images_shape(
+                images, dtype=tf.float32
+            )
+            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+                angles, heights, widths
+            )
+            masks = preprocessing_utils.transform(
+                tf.cast(masks, dtype=tf.float32),
+                rotation_matrixes,
+                fill_mode="constant",
+                fill_value=0,
+                interpolation="nearest",
+            )
         # center crop mask
         height = tf.shape(images)[H_AXIS]
         width = tf.shape(images)[W_AXIS]

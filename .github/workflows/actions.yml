@@ -1,7 +1,10 @@
 # Ref: https://mckornfield.medium.com/caching-python-installs-in-github-actions-8309e12a15e6
 # Ref: https://github.com/keras-team/keras-cv/blob/master/.github/workflows/actions.yml
 name: Tests
-
+env:
+  PYTHON_VERSION: '3.8'
+  TF_VERSION: '2.12.0'
+  TFP_VERSION: '0.19.0'
 on:
   push:
     branches:
@@ -17,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.8
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       id: setup-python
       with:
-        python-version: '3.8'
+        python-version: ${{ env.PYTHON_VERSION }}
     - name: Cache virtualenv
       uses: actions/cache@v3
       id: cache-venv
@@ -36,7 +39,8 @@ jobs:
         python -m venv ./.venv
         source ./.venv/bin/activate
         pip install --upgrade pip setuptools
-        pip install tensorflow-cpu==2.12.0
+        pip install tensorflow-cpu==${{ env.TF_VERSION }}
+        pip install tensorflow_probability==${{ env.TFP_VERSION }}
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -51,11 +55,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.8
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       id: setup-python
       with:
-        python-version: '3.8'
+        python-version: ${{ env.PYTHON_VERSION }}
     - name: Cache virtualenv
       uses: actions/cache@v3
       id: cache-venv
@@ -69,7 +73,8 @@ jobs:
       run: |
         python -m venv ./.venv
         source ./.venv/bin/activate
-        pip install tensorflow-cpu==2.12.0
+        pip install tensorflow-cpu==${{ env.TF_VERSION }}
+        pip install tensorflow_probability==${{ env.TFP_VERSION }}
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'

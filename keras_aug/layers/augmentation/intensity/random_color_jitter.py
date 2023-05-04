@@ -177,20 +177,17 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     def adjust_contrast(self, images, transformations):
         if not self._enable_contrast:
             return images
-        batch_size = tf.shape(images)[0]
+        original_shape = images.shape
         contrast_factors = transformations["contrast_factors"]
         contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         degenerates = tf.image.rgb_to_grayscale(images)
 
         # compute historams
         degenerates = tf.cast(degenerates, dtype=tf.int32)
-        degenerates = tf.reshape(degenerates, shape=(batch_size, -1))
-        degenerates = tf.transpose(degenerates, (1, 0))
-        hists = tf.math.reduce_sum(
-            tf.one_hot(degenerates, depth=256, on_value=1, off_value=0, axis=0),
-            axis=1,
+        degenerates = tf.reshape(degenerates, shape=(original_shape[0], -1))
+        hists = tf.math.bincount(
+            degenerates, minlength=256, maxlength=256, axis=-1
         )
-        hists = tf.transpose(hists, (1, 0))
 
         # compute means of historams
         means = tf.reduce_mean(tf.cast(hists, dtype=self.compute_dtype), axis=1)
@@ -202,6 +199,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         images = augmentation_utils.blend(
             degenerates, images, contrast_factors, (0, 255)
         )
+        images.set_shape(original_shape)
         return images
 
     def adjust_saturation(self, images, transformations):

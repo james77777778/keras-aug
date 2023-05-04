@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 from keras_cv.utils import fill_utils
 from tensorflow import keras
 
@@ -36,11 +37,12 @@ class CutMix(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        # CutMix layer uses stateless rng generator for following random
-        # operations
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.alpha = alpha
         self.seed = seed
+
+        # beta distribution
+        self.beta_dist = tfp.distributions.Beta(self.alpha, self.alpha)
 
         # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
         # to process images in batch.
@@ -57,9 +59,10 @@ class CutMix(VectorizedBaseRandomLayer):
             maxval=batch_size,
             dtype=tf.int32,
         )
-        lambda_samples = self.sample_from_beta(
-            self.alpha, self.alpha, (batch_size,)
+        seed = tf.cast(
+            self._random_generator.make_seed_for_stateless_op(), dtype=tf.int32
         )
+        lambda_samples = self.beta_dist.sample((batch_size,), seed=seed)
         lambda_samples = tf.cast(lambda_samples, dtype=self.compute_dtype)
         ratios = tf.math.sqrt(1.0 - lambda_samples)
         height = tf.cast(tf.shape(images)[H_AXIS], dtype=self.compute_dtype)
@@ -149,19 +152,6 @@ class CutMix(VectorizedBaseRandomLayer):
                 "the classification labels. "
                 "For example, `cut_mix({'images': images, 'labels': labels})`."
             )
-
-    def sample_from_beta(self, alpha, beta, shape):
-        sample_alpha = tf.random.stateless_gamma(
-            shape,
-            alpha=alpha,
-            seed=self._random_generator.make_seed_for_stateless_op(),
-        )
-        sample_beta = tf.random.stateless_gamma(
-            shape,
-            alpha=beta,
-            seed=self._random_generator.make_seed_for_stateless_op(),
-        )
-        return sample_alpha / (sample_alpha + sample_beta)
 
     def get_config(self):
         config = super().get_config()

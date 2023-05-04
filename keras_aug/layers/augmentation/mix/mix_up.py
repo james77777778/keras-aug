@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 from keras_cv import bounding_box
 from tensorflow import keras
 
@@ -34,24 +35,26 @@ class MixUp(VectorizedBaseRandomLayer):
     """  # noqa: E501
 
     def __init__(self, alpha=0.2, seed=None, **kwargs):
-        # MixUp layer uses stateless rng generator for following random
-        # operations
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         self.alpha = alpha
         self.seed = seed
 
+        # beta distribution
+        self.beta_dist = tfp.distributions.Beta(self.alpha, self.alpha)
+
+        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
+        # to process images in batch.
         self.force_no_unwrap_ragged_image_call = True
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         permutation_order = tf.argsort(
             self._random_generator.random_uniform((batch_size,)), axis=-1
         )
-        lambda_samples = self.sample_from_beta(
-            self.alpha, self.alpha, (batch_size, 1)
+        seed = tf.cast(
+            self._random_generator.make_seed_for_stateless_op(), dtype=tf.int32
         )
-        lambda_samples = tf.cast(
-            tf.reshape(lambda_samples, [-1, 1, 1, 1]), dtype=self.compute_dtype
-        )
+        lambda_samples = self.beta_dist.sample((batch_size, 1, 1, 1), seed=seed)
+        lambda_samples = tf.cast(lambda_samples, dtype=self.compute_dtype)
         return {
             "permutation_order": permutation_order,
             "lambda_samples": lambda_samples,

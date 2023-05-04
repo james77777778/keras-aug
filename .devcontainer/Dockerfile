@@ -1,4 +1,6 @@
 ARG PYTHON_VERSION
+ARG TF_VERSION
+ARG TFP_VERSION
 FROM mcr.microsoft.com/vscode/devcontainers/python:${PYTHON_VERSION}
 
 RUN apt update && apt install -y locales git clang-format \
@@ -6,9 +8,9 @@ RUN apt update && apt install -y locales git clang-format \
 
 RUN pip install --upgrade pip
 
-ARG TF_VERSION
 RUN pip install \
     tensorflow-cpu==${TF_VERSION} \
+    tensorflow_probability==${TFP_VERSION} \
     git+https://github.com/keras-team/keras-cv.git \
     matplotlib \
     flake8 \
