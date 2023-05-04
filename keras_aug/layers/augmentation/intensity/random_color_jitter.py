@@ -1,5 +1,3 @@
-from functools import partial
-
 import tensorflow as tf
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
@@ -89,30 +87,20 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         )
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        # orders determine the augmentation order which is the same across
-        # single batch
-        orders = tf.argsort(
-            self._random_generator.random_uniform((4,)), axis=-1
-        )
-        orders = tf.reshape(
-            tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 4)
-        )
-
         brightness_factors = self.brightness_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
+            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
         )
         contrast_factors = self.contrast_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
+            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
         )
         saturation_factors = self.saturation_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
+            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
         )
         hue_factors = self.hue_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
+            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
         )
 
         return {
-            "orders": orders,
             "brightness_factors": brightness_factors,
             "contrast_factors": contrast_factors,
             "saturation_factors": saturation_factors,
@@ -133,17 +121,14 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-        orders = transformations["orders"][0]
-        for order in orders:
-            images = tf.switch_case(
-                order,
-                branch_fns={
-                    0: partial(self.adjust_brightness, images, transformations),
-                    1: partial(self.adjust_contrast, images, transformations),
-                    2: partial(self.adjust_saturation, images, transformations),
-                    3: partial(self.adjust_hue, images, transformations),
-                },
-            )
+        if self._enable_brightness:
+            images = self.adjust_brightness(images, transformations)
+        if self._enable_contrast:
+            images = self.adjust_contrast(images, transformations)
+        if self._enable_saturation:
+            images = self.adjust_saturation(images, transformations)
+        if self._enable_hue:
+            images = self.adjust_hue(images, transformations)
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
@@ -164,76 +149,34 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         return keypoints
 
     def adjust_brightness(self, images, transformations):
-        if not self._enable_brightness:
-            return images
         brightness_factors = transformations["brightness_factors"]
-        brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
-        images = augmentation_utils.blend(
-            tf.zeros_like(images), images, brightness_factors, (0, 255)
-        )
+        images *= brightness_factors
         images = tf.clip_by_value(images, 0, 255)
         return images
 
     def adjust_contrast(self, images, transformations):
-        if not self._enable_contrast:
-            return images
-        original_shape = images.shape
         contrast_factors = transformations["contrast_factors"]
-        contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
         degenerates = tf.image.rgb_to_grayscale(images)
-
-        # compute historams
-        degenerates = tf.cast(degenerates, dtype=tf.int32)
-        degenerates = tf.reshape(degenerates, shape=(original_shape[0], -1))
-        hists = tf.math.bincount(
-            degenerates, minlength=256, maxlength=256, axis=-1
-        )
-
-        # compute means of historams
-        means = tf.reduce_mean(tf.cast(hists, dtype=self.compute_dtype), axis=1)
-        means = means / 256.0
-        means = means[..., tf.newaxis, tf.newaxis, tf.newaxis]
-        degenerates = tf.ones_like(images, dtype=self.compute_dtype) * means
-        degenerates = tf.clip_by_value(degenerates, 0, 255)
-
-        images = augmentation_utils.blend(
-            degenerates, images, contrast_factors, (0, 255)
-        )
-        images.set_shape(original_shape)
+        degenerates = tf.reduce_mean(degenerates, axis=(1, 2, 3), keepdims=True)
+        images = augmentation_utils.blend(degenerates, images, contrast_factors)
         return images
 
     def adjust_saturation(self, images, transformations):
-        if not self._enable_saturation:
-            return images
         saturation_factors = transformations["saturation_factors"]
-        saturation_factors = saturation_factors[..., tf.newaxis, tf.newaxis]
-        means = tf.image.rgb_to_grayscale(images)
-        means = tf.image.grayscale_to_rgb(means)
+        degenerates = tf.image.rgb_to_grayscale(images)
         images = augmentation_utils.blend(
-            means, images, saturation_factors, (0, 255)
+            degenerates, images, saturation_factors, (0, 255)
         )
         return images
 
     def adjust_hue(self, images, transformations):
-        if not self._enable_hue:
-            return tf.cast(images, dtype=self.compute_dtype)
-        # The output is only well defined if the value in images are in [0,1].
-        # https://www.tensorflow.org/api_docs/python/tf/image/rgb_to_hsv
-        images = preprocessing_utils.transform_value_range(
-            images, (0, 255), (0, 1), self.compute_dtype
-        )
         images = tf.image.rgb_to_hsv(images)
-        # adjust hue
         hue_factors = transformations["hue_factors"]
-        hue_factors = hue_factors[..., tf.newaxis]
-        h_channels = images[..., 0] + hue_factors
-        h_channels = tf.where(h_channels > 1.0, h_channels - 1.0, h_channels)
-        h_channels = tf.where(h_channels < 0.0, h_channels + 1.0, h_channels)
-        images = tf.stack([h_channels, images[..., 1], images[..., 2]], axis=-1)
-        images = tf.image.hsv_to_rgb(images)
-        images = preprocessing_utils.transform_value_range(
-            images, (0, 1), (0, 255), self.compute_dtype
+        h_channels = tf.math.floormod(images[..., 0:1] + hue_factors, 1.0)
+        images = tf.concat(
+            [h_channels, images[..., 1:2], images[..., 2:3]], axis=-1
         )
+        images = tf.image.hsv_to_rgb(images)
         return images
 
     def get_config(self):

@@ -212,9 +212,7 @@ def blend(images_1, images_2, factors, value_range=None):
     Returns:
       A blended image Tensor.
     """
-    differences = images_2 - images_1
-    scaled = factors * differences
-    results = images_1 + scaled
+    results = images_1 + factors * (images_2 - images_1)
     if value_range is not None:
         results = tf.clip_by_value(results, value_range[0], value_range[1])
     return results
