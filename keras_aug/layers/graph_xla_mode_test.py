@@ -228,10 +228,7 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomZoomAndCrop,  # tf.image.resize
     layers.RandomBlur,  # tf.map_fn
-    layers.RandomColorJitter,  # tf.histogram_fixed_width
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
-    layers.CutMix,  # tf.random.gamma / tf.random.stateless_gamma
-    layers.MixUp,  # tf.random.gamma / tf.random.stateless_gamma
     layers.MosaicYOLOV8,  # tf.map_fn
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.ResizeAndCrop,  # tf.image.crop_and_resize

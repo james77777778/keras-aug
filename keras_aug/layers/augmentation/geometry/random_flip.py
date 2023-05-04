@@ -43,7 +43,7 @@ class RandomFlip(VectorizedBaseRandomLayer):
         seed=None,
         **kwargs,
     ):
-        super().__init__(seed=seed, force_generator=True, **kwargs)
+        super().__init__(seed=seed, **kwargs)
         if mode == HORIZONTAL:
             self.horizontal = True
             self.vertical = False

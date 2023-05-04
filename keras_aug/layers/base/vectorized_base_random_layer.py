@@ -98,8 +98,16 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
-    def __init__(self, seed=None, **kwargs):
-        super().__init__(seed=seed, **kwargs)
+    def __init__(
+        self, seed=None, force_generator=True, rng_type="stateless", **kwargs
+    ):
+        # Defaults to stateless random operations
+        super().__init__(
+            seed=seed,
+            force_generator=force_generator,
+            rng_type=rng_type,
+            **kwargs,
+        )
 
     @property
     def force_no_unwrap_ragged_image_call(self):

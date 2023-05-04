@@ -37,6 +37,7 @@ jobs:
         source ./.venv/bin/activate
         pip install --upgrade pip setuptools
         pip install tensorflow-cpu==2.12.0
+        pip install tensorflow_probability==0.19.0
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -70,6 +71,7 @@ jobs:
         python -m venv ./.venv
         source ./.venv/bin/activate
         pip install tensorflow-cpu==2.12.0
+        pip install tensorflow_probability==0.19.0
         pip install "keras-cv @ git+https://github.com/keras-team/keras-cv.git"
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
