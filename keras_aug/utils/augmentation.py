@@ -203,9 +203,6 @@ def blend(images_1, images_2, factors, value_range=None):
         value_range ((int|float, int|float), optional) The value range of the
             results. Defaults to ``None``.
 
-    Returns:
-        A blended image Tensor.
-
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
@@ -228,14 +225,6 @@ def get_rotation_matrix(
         to_square (bool, optional): Whether to append ones to last dimension
             and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
         name (str, optional): The name of the op. Defaults to ``None``.
-
-    Returns:
-        A tensor of shape (num_images, 8). Projective transforms which can be
-            given to operation `image_projective_transform_v2`. If one row of
-            transforms is [a0, a1, a2, b0, b1, b2, c0, c1], then it maps the
-            *output* point `(x, y)` to a transformed *input* point
-            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
-            where `k = c0 x + c1 y + 1`.
 
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
@@ -286,10 +275,6 @@ def get_translation_matrix(
             and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
         name (str, optional): The name of the op. Defaults to ``None``.
 
-    Returns:
-        A tensor of shape `(num_images, 8)` projective transforms which can be
-        given to `transform`.
-
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
@@ -335,15 +320,6 @@ def get_zoom_matrix(
             and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
         name (str, optional): The name of the op. Defaults to ``None``.
 
-    Returns:
-        A tensor of shape `(num_images, 8)`. Projective transforms which can be
-            given to operation `image_projective_transform_v2`.
-            If one row of transforms is
-            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the *output* point
-            `(x, y)` to a transformed *input* point
-            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
-            where `k = c0 x + c1 y + 1`.
-
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
@@ -388,15 +364,6 @@ def get_shear_matrix(shears, to_square=False, name=None):
         to_square (bool, optional): Whether to append ones to last dimension
             and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
         name (str, optional): The name of the op. Defaults to ``None``.
-
-    Returns:
-        A tensor of shape `(num_images, 8)`. Projective transforms which can be
-            given to operation `image_projective_transform_v2`.
-            If one row of transforms is
-            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the *output* point
-            `(x, y)` to a transformed *input* point
-            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
-            where `k = c0 x + c1 y + 1`.
 
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
