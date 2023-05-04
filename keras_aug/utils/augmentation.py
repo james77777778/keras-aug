@@ -1,9 +1,3 @@
-"""
-References:
-- https://github.com/keras-team/keras-cv/blob/master/keras_cv/layers/preprocessing/vectorized_base_image_augmentation_layer.py
-- https://github.com/keras-team/keras-cv/blob/master/keras_cv/utils/preprocessing.py
-"""  # noqa: E501
-
 import enum
 from typing import Sequence
 
@@ -203,14 +197,17 @@ def blend(images_1, images_2, factors, value_range=None):
     clipped into ``value_range``
 
     Args:
-      image1 (tf.Tensor): First image(s).
-      image2 (tf.Tensor): Second image(s).
-      factor (float|tf.Tensor): The blend factor(s).
-      value_range ((int|float, int|float), optional) The value range of the
-        results. Defaults to ``None``.
+        image1 (tf.Tensor): First image(s).
+        image2 (tf.Tensor): Second image(s).
+        factor (float|tf.Tensor): The blend factor(s).
+        value_range ((int|float, int|float), optional) The value range of the
+            results. Defaults to ``None``.
 
     Returns:
-      A blended image Tensor.
+        A blended image Tensor.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
     results = images_1 + factors * (images_2 - images_1)
     if value_range is not None:
@@ -221,18 +218,16 @@ def blend(images_1, images_2, factors, value_range=None):
 def get_rotation_matrix(
     angles, image_height, image_width, to_square=False, name=None
 ):
-    """Returns projective transform(s) for the given angle(s).
+    """Returns projective transforms for the given angles.
 
     Args:
-        angles: A scalar angle to rotate all images by, or
-            (for batches of images) a vector with an angle to rotate each image
-            in the batch. The rank must be statically known
-            (the shape is not `TensorShape(None)`).
-        image_height: Height of the image(s) to be transformed.
-        image_width: Width of the image(s) to be transformed.
-        to_square: Whether to append ones to last dimension and reshape to
-            (batch_size, 3, 3), defaults to False.
-        name: The name of the op.
+        angles (tf.Tensor): a vector with the angles to rotate each image
+            in the batch.
+        image_height (tf.Tensor): Height of the images to be transformed.
+        image_width (tf.Tensor): Width of the images to be transformed.
+        to_square (bool, optional): Whether to append ones to last dimension
+            and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
+        name (str, optional): The name of the op. Defaults to ``None``.
 
     Returns:
         A tensor of shape (num_images, 8). Projective transforms which can be
@@ -241,6 +236,9 @@ def get_rotation_matrix(
             *output* point `(x, y)` to a transformed *input* point
             `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
             where `k = c0 x + c1 y + 1`.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
     with keras.backend.name_scope(name or "rotation_matrix"):
         x_offset = (image_width - 1) - (
@@ -277,20 +275,23 @@ def get_rotation_matrix(
 def get_translation_matrix(
     translations, image_height, image_width, to_square=False, name=None
 ):
-    """Returns projective transform(s) for the given translation(s).
+    """Returns projective transforms for the given translations.
 
     Args:
-        translations: A matrix of 2-element lists representing `[dx, dy]`
-            to translate for each image (for a batch of images).
-        image_height: Height of the image(s) to be transformed.
-        image_width: Width of the image(s) to be transformed.
-        to_square: Whether to append ones to last dimension and reshape to
-            (batch_size, 3, 3), defaults to False.
-        name: The name of the op.
+        translations (tf.Tensor): A matrix of 2-element lists representing
+            ``[dx, dy]`` to translate for a batch of images.
+        image_height (tf.Tensor): Height of the images to be transformed.
+        image_width (tf.Tensor): Width of the images to be transformed.
+        to_square (bool, optional): Whether to append ones to last dimension
+            and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
+        name (str, optional): The name of the op. Defaults to ``None``.
 
     Returns:
         A tensor of shape `(num_images, 8)` projective transforms which can be
         given to `transform`.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
     with keras.backend.name_scope(name or "translation_matrix"):
         num_translations = tf.shape(translations)[0]
@@ -323,16 +324,16 @@ def get_translation_matrix(
 def get_zoom_matrix(
     zooms, image_height, image_width, to_square=False, name=None
 ):
-    """Returns projective transform(s) for the given zoom(s).
+    """Returns projective transforms for the given zooms.
 
     Args:
-        zooms: A matrix of 2-element lists representing `[zx, zy]` to zoom for
-            each image (for a batch of images).
-        image_height: Height of the image(s) to be transformed.
-        image_width: Width of the image(s) to be transformed.
-        to_square: Whether to append ones to last dimension and reshape to
-            (batch_size, 3, 3), defaults to False.
-        name: The name of the op.
+        zooms (tf.Tensor): A matrix of 2-element lists representing
+            ``[zx, zy]`` to zoom for a batch of images.
+        image_height (tf.Tensor): Height of the images to be transformed.
+        image_width (tf.Tensor): Width of the images to be transformed.
+        to_square (bool, optional): Whether to append ones to last dimension
+            and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
+        name (str, optional): The name of the op. Defaults to ``None``.
 
     Returns:
         A tensor of shape `(num_images, 8)`. Projective transforms which can be
@@ -342,6 +343,9 @@ def get_zoom_matrix(
             `(x, y)` to a transformed *input* point
             `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
             where `k = c0 x + c1 y + 1`.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
     with keras.backend.name_scope(name or "zoom_matrix"):
         num_zooms = tf.shape(zooms)[0]
@@ -376,14 +380,14 @@ def get_zoom_matrix(
 
 
 def get_shear_matrix(shears, to_square=False, name=None):
-    """Returns projective transform(s) for the given shear(s).
+    """Returns projective transforms for the given shears.
 
     Args:
-        shears: A matrix of 2-element lists representing `[sx, sy]` to shear for
-            each image (for a batch of images).
-        to_square: Whether to append ones to last dimension and reshape to
-            (batch_size, 3, 3), defaults to False.
-        name: The name of the op.
+        shears (tf.Tensor): A matrix of 2-element lists representing `[sx, sy]`
+            to shear for a batch of images.
+        to_square (bool, optional): Whether to append ones to last dimension
+            and reshape to ``(batch_size, 3, 3)``. Defaults to ``False``.
+        name (str, optional): The name of the op. Defaults to ``None``.
 
     Returns:
         A tensor of shape `(num_images, 8)`. Projective transforms which can be
@@ -393,6 +397,9 @@ def get_shear_matrix(shears, to_square=False, name=None):
             `(x, y)` to a transformed *input* point
             `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
             where `k = c0 x + c1 y + 1`.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
     with keras.backend.name_scope(name or "shear_matrix"):
         num_shears = tf.shape(shears)[0]
