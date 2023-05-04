@@ -27,4 +27,5 @@ class NormalFactorTest(tf.test.TestCase):
         factor2 = keras_aug.NormalFactorSampler.from_config(config)
         config = factor2.get_config()
 
-        self.assertEqual(config["value"], 0.3)
+        self.assertEqual(config["mean"], 0.5)
+        self.assertEqual(config["stddev"], 0.2)
