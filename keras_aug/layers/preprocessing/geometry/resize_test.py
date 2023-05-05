@@ -15,6 +15,28 @@ class ResizeTest(tf.test.TestCase, parameterized.TestCase):
         "antialias": False,
         "bounding_box_format": "rel_xyxy",
     }
+    resize_with_crop_args = {
+        "height": 224,
+        "width": 224,
+        "interpolation": "bilinear",
+        "antialias": False,
+        "crop_to_aspect_ratio": True,
+        "position": "center",
+        "padding_value": 0,
+        "bounding_box_format": "rel_xyxy",
+    }
+    resize_with_pad_args = {
+        "height": 224,
+        "width": 224,
+        "interpolation": "bilinear",
+        "antialias": False,
+        "pad_to_aspect_ratio": True,
+        "position": "center",
+        "padding_value": 0,
+        "bounding_box_format": "rel_xyxy",
+    }
+
+    """Resize"""
 
     def test_augments_image(self):
         input_image_shape = (4, 200, 300, 3)
@@ -189,3 +211,346 @@ class ResizeTest(tf.test.TestCase, parameterized.TestCase):
     )
     def test_up_sampling(self, kwargs, expected_height, expected_width):
         self._run_output_shape_test(kwargs, expected_height, expected_width)
+
+    """Resize with crop_to_aspect_ratio"""
+
+    def test_crop_augments_image(self):
+        input_image_shape = (4, 200, 300, 3)
+        image = tf.random.uniform(shape=input_image_shape)
+        layer = layers.Resize(**self.resize_with_crop_args, seed=2023)
+        input_image_resized = tf.image.resize(image, [self.height, self.width])
+
+        output = layer(image)
+
+        self.assertNotAllClose(output, input_image_resized)
+
+    def test_crop_augment_sparse_segmentation_mask(self):
+        num_classes = 8
+        input_image_shape = (1, 300, 300, 3)
+        mask_shape = (1, 300, 300, 1)
+        image = tf.random.uniform(shape=input_image_shape, seed=2023)
+        mask = np.random.randint(2, size=mask_shape) * (num_classes - 1)
+        inputs = {"images": image, "segmentation_masks": mask}
+
+        # Crop-only to exactly 1/2 of the size
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 150, "width": 150})
+        layer = layers.Resize(**args, seed=2023)
+        input_mask_resized = tf.image.resize(mask, (150, 150), "nearest")
+
+        output = layer(inputs)
+
+        self.assertAllClose(output["segmentation_masks"], input_mask_resized)
+
+        # Crop to an arbitrary size and make sure we don't do bad interpolation
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 233, "width": 233})
+        layer = layers.Resize(**args, seed=2023)
+
+        output = layer(inputs)
+
+        self.assertAllInSet(output["segmentation_masks"], [0, 7])
+
+    def test_crop_augment_bounding_box_single(self):
+        image = tf.zeros([20, 20, 3])
+        boxes = {
+            "boxes": tf.convert_to_tensor([[0, 0, 1, 1]]),
+            "classes": tf.convert_to_tensor([0]),
+        }
+        input = {"images": image, "bounding_boxes": boxes}
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 10, "width": 10})
+        layer = layers.Resize(**args, seed=2023)
+        expected_output = {
+            "boxes": tf.convert_to_tensor([[0, 0, 1, 1]], dtype=tf.float32),
+            "classes": tf.convert_to_tensor([0], dtype=tf.float32),
+        }
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_crop_augment_boxes_batched_input(self):
+        image = tf.zeros([20, 20, 3])
+        boxes = {
+            "boxes": tf.convert_to_tensor(
+                [
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                ]
+            ),
+            "classes": tf.convert_to_tensor([[0, 0], [0, 0]]),
+        }
+        input = {"images": [image, image], "bounding_boxes": boxes}
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 18, "width": 18})
+        layer = layers.Resize(**args, seed=2023)
+        expected_output = {
+            "boxes": tf.convert_to_tensor(
+                [
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                ]
+            ),
+            "classes": tf.convert_to_tensor([[0, 0], [0, 0]]),
+        }
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_crop_augment_boxes_ragged(self):
+        image = tf.zeros([2, 20, 20, 3])
+        boxes = {
+            "boxes": tf.ragged.constant(
+                [[[0, 0, 1, 1], [0, 0, 1, 1]], [[0, 0, 1, 1]]], dtype=tf.float32
+            ),
+            "classes": tf.ragged.constant([[0, 0], [0]]),
+        }
+        input = {"images": image, "bounding_boxes": boxes}
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 18, "width": 18})
+        layer = layers.Resize(**args, seed=2023)
+        # the result boxes will still have the entire image in them
+        expected_output = {
+            "boxes": tf.ragged.constant(
+                [[[0, 0, 1, 1], [0, 0, 1, 1]], [[0, 0, 1, 1]]], dtype=tf.float32
+            ),
+            "classes": tf.ragged.constant([[0, 0], [0]]),
+        }
+        expected_output = bounding_box.to_dense(expected_output)
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_cropping_center(self):
+        inputs = tf.random.uniform((1, 4, 8, 3))
+        args = self.resize_with_crop_args.copy()
+        args.update({"height": 4, "width": 4, "position": "center"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 4, 4, 3))
+        self.assertAllEqual(outputs, inputs[:, :, 2:-2, :])
+
+    """Resize with pad_to_aspect_ratio"""
+
+    def test_pad_augments_image(self):
+        input_image_shape = (4, 200, 300, 3)
+        image = tf.random.uniform(shape=input_image_shape)
+        layer = layers.Resize(**self.resize_with_pad_args, seed=2023)
+        input_image_resized = tf.image.resize(image, [self.height, self.width])
+
+        output = layer(image)
+
+        self.assertNotAllClose(output, input_image_resized)
+
+    def test_pad_augment_sparse_segmentation_mask(self):
+        num_classes = 8
+        input_image_shape = (1, 300, 300, 3)
+        mask_shape = (1, 300, 300, 1)
+        image = tf.random.uniform(shape=input_image_shape, seed=2023)
+        mask = np.random.randint(2, size=mask_shape) * (num_classes - 1)
+        inputs = {"images": image, "segmentation_masks": mask}
+
+        # Crop-only to exactly 1/2 of the size
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 150, "width": 150})
+        layer = layers.Resize(**args, seed=2023)
+        input_mask_resized = tf.image.resize(mask, (150, 150), "nearest")
+
+        output = layer(inputs)
+
+        self.assertAllClose(output["segmentation_masks"], input_mask_resized)
+
+        # Crop to an arbitrary size and make sure we don't do bad interpolation
+        args = self.regular_args.copy()
+        args.update({"height": 233, "width": 233})
+        layer = layers.Resize(**args, seed=2023)
+
+        output = layer(inputs)
+
+        self.assertAllInSet(output["segmentation_masks"], [0, 7])
+
+    def test_pad_augment_bounding_box_single(self):
+        image = tf.zeros([20, 20, 3])
+        boxes = {
+            "boxes": tf.convert_to_tensor([[0, 0, 1, 1]]),
+            "classes": tf.convert_to_tensor([0]),
+        }
+        input = {"images": image, "bounding_boxes": boxes}
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 10, "width": 10})
+        layer = layers.Resize(**args, seed=2023)
+        expected_output = {
+            "boxes": tf.convert_to_tensor([[0, 0, 1, 1]], dtype=tf.float32),
+            "classes": tf.convert_to_tensor([0], dtype=tf.float32),
+        }
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_pad_augment_boxes_batched_input(self):
+        image = tf.zeros([20, 20, 3])
+        boxes = {
+            "boxes": tf.convert_to_tensor(
+                [
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                ]
+            ),
+            "classes": tf.convert_to_tensor([[0, 0], [0, 0]]),
+        }
+        input = {"images": [image, image], "bounding_boxes": boxes}
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 18, "width": 18})
+        layer = layers.Resize(**args, seed=2023)
+        expected_output = {
+            "boxes": tf.convert_to_tensor(
+                [
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                ]
+            ),
+            "classes": tf.convert_to_tensor([[0, 0], [0, 0]]),
+        }
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_pad_augment_boxes_ragged(self):
+        image = tf.zeros([2, 20, 20, 3])
+        boxes = {
+            "boxes": tf.ragged.constant(
+                [[[0, 0, 1, 1], [0, 0, 1, 1]], [[0, 0, 1, 1]]], dtype=tf.float32
+            ),
+            "classes": tf.ragged.constant([[0, 0], [0]]),
+        }
+        input = {"images": image, "bounding_boxes": boxes}
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 18, "width": 18})
+        layer = layers.Resize(**args, seed=2023)
+        # the result boxes will still have the entire image in them
+        expected_output = {
+            "boxes": tf.ragged.constant(
+                [[[0, 0, 1, 1], [0, 0, 1, 1]], [[0, 0, 1, 1]]], dtype=tf.float32
+            ),
+            "classes": tf.ragged.constant([[0, 0], [0]]),
+        }
+        expected_output = bounding_box.to_dense(expected_output)
+
+        output = layer(input)
+        output["bounding_boxes"] = bounding_box.to_dense(
+            output["bounding_boxes"]
+        )
+
+        self.assertAllClose(
+            expected_output["boxes"], output["bounding_boxes"]["boxes"]
+        )
+        self.assertAllClose(
+            expected_output["classes"], output["bounding_boxes"]["classes"]
+        )
+
+    def test_padding_center(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 8, "width": 8, "position": "center"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, 0:2, :, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, -2:, :, :]), 0.0)
+
+    def test_padding_top(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_left"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertNotEqual(tf.reduce_mean(outputs[:, 0:2, :, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, -4:, :, :]), 0.0)
+
+    def test_padding_bottom(self):
+        inputs = tf.ones((1, 4, 8, 3))
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 8, "width": 8, "position": "bottom_left"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, 0:4, :, :]), 0.0)
+        self.assertNotEqual(tf.reduce_mean(outputs[:, -2:, :, :]), 0.0)
+
+    def test_padding_left(self):
+        inputs = tf.ones((1, 8, 4, 3))
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_left"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertNotEqual(tf.reduce_mean(outputs[:, :, 0:2, :]), 0.0)
+        self.assertEqual(tf.reduce_mean(outputs[:, :, -2:, :]), 0.0)
+
+    def test_padding_right(self):
+        inputs = tf.ones((1, 8, 4, 3))
+        args = self.resize_with_pad_args.copy()
+        args.update({"height": 8, "width": 8, "position": "top_right"})
+        layer = layers.Resize(**args)
+
+        outputs = layer(inputs)
+
+        self.assertEqual(outputs.shape, (1, 8, 8, 3))
+        self.assertEqual(tf.reduce_mean(outputs[:, :, 0:4, :]), 0.0)
+        self.assertNotEqual(tf.reduce_mean(outputs[:, :, -2:, :]), 0.0)

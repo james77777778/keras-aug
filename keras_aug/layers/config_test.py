@@ -58,16 +58,6 @@ TEST_CONFIGURATIONS = [
         {"height": 2, "width": 2},
     ),
     (
-        "ResizeAndCrop",
-        layers.ResizeAndCrop,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeAndPad",
-        layers.ResizeAndPad,
-        {"height": 2, "width": 2},
-    ),
-    (
         "ResizeByLongestSide",
         layers.ResizeByLongestSide,
         {"max_size": [2]},

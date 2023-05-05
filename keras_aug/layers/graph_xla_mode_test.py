@@ -62,16 +62,6 @@ TEST_CONFIGURATIONS = [
         {"height": 2, "width": 2},
     ),
     (
-        "ResizeAndCrop",
-        layers.ResizeAndCrop,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeAndPad",
-        layers.ResizeAndPad,
-        {"height": 2, "width": 2},
-    ),
-    (
         "ResizeByLongestSide",
         layers.ResizeByLongestSide,
         {"max_size": [2]},
@@ -222,7 +212,6 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     layers.MosaicYOLOV8,  # tf.map_fn
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.ResizeAndCrop,  # tf.image.crop_and_resize
     layers.ResizeByLongestSide,  # tf.image.resize
     layers.ResizeBySmallestSide,  # tf.image.resize
     layers.Equalize,  # tf.histogram_fixed_width

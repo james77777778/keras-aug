@@ -1,10 +1,6 @@
 from keras_aug.layers.preprocessing.geometry.center_crop import CenterCrop
 from keras_aug.layers.preprocessing.geometry.pad_if_needed import PadIfNeeded
 from keras_aug.layers.preprocessing.geometry.resize import Resize
-from keras_aug.layers.preprocessing.geometry.resize_and_crop import (
-    ResizeAndCrop,
-)
-from keras_aug.layers.preprocessing.geometry.resize_and_pad import ResizeAndPad
 from keras_aug.layers.preprocessing.geometry.resize_by_longest_side import (
     ResizeByLongestSide,
 )

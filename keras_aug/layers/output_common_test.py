@@ -186,16 +186,6 @@ FORCE_DENSE_IMAGES_LAYERS = [
         {"height": 2, "width": 2},
     ),
     (
-        "ResizeAndCrop",
-        layers.ResizeAndCrop,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeAndPad",
-        layers.ResizeAndPad,
-        {"height": 2, "width": 2},
-    ),
-    (
         "MosaicYOLOV8",
         layers.MosaicYOLOV8,
         {
