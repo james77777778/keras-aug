@@ -17,3 +17,32 @@ pip install git+https://github.com/keras-team/keras-cv.git tensorflow tensorflow
 ```
 
 ## Usage
+
+## Benchmark
+
+See [benchmarks/README.md](benchmarks/README.md) for details.
+
+Unit: FPS (frame per second)
+
+||KerasAug|KerasCV|
+|-|-|-|
+|HorizontalFlip|2325|1769|
+|VerticalFlip|2012|1923|
+|RandomRotate|1896|1782|
+|RandomAffine|1901|818|
+|RandomBrightness|3054|2925|
+|RandomContrast\*|2941|3086|
+|RandomBrighnessContrast\*|3009|629|
+|RandomColorJitter\*|2201|1120|
+|Grayscale|3072|2762|
+|Resize (224, 224)|2593|210|
+|RandomCropAndResize|2480|210|
+|Equalize|204|140|
+|RandomGaussianBlur|2632|196|
+|CutMix|2352|2780|
+|MixUp|2596|2962|
+|AutoContrast|2873|2744|
+|Posterize|3081|2929|
+|Solarize|2828|2560|
+|Sharpness|2554|2560|
+|Invert|2933|X|

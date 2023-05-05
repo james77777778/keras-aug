@@ -4,6 +4,7 @@ from tensorflow import keras
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -41,7 +42,7 @@ class Grayscale(VectorizedBaseRandomLayer):
         )
 
     def augment_images(self, images, transformations=None, **kwargs):
-        grayscales = tf.image.rgb_to_grayscale(images)
+        grayscales = augmentation_utils.rgb_to_grayscale(images)
         if self.output_channels == 1:
             return grayscales
         elif self.output_channels == 3:

@@ -165,7 +165,7 @@ class RandomHSV(VectorizedBaseRandomLayer):
 
     def adjust_saturation(self, images, transformations):
         saturation_factors = transformations["saturation_factors"]
-        degenerates = tf.image.rgb_to_grayscale(images)
+        degenerates = augmentation_utils.rgb_to_grayscale(images)
         images = augmentation_utils.blend(
             degenerates, images, saturation_factors, (0, 255)
         )

@@ -43,7 +43,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
-        - `Torchvision <https://github.com/pytorch/vision>`_
+        - `torchvision <https://github.com/pytorch/vision>`_
         - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/master/official/vision/ops/augment.py>`
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
@@ -179,14 +179,14 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
 
     def adjust_contrast(self, images, transformations):
         contrast_factors = transformations["contrast_factors"]
-        degenerates = tf.image.rgb_to_grayscale(images)
+        degenerates = augmentation_utils.rgb_to_grayscale(images)
         degenerates = tf.reduce_mean(degenerates, axis=(1, 2, 3), keepdims=True)
         images = augmentation_utils.blend(degenerates, images, contrast_factors)
         return images
 
     def adjust_saturation(self, images, transformations):
         saturation_factors = transformations["saturation_factors"]
-        degenerates = tf.image.rgb_to_grayscale(images)
+        degenerates = augmentation_utils.rgb_to_grayscale(images)
         images = augmentation_utils.blend(
             degenerates, images, saturation_factors, (0, 255)
         )

@@ -214,6 +214,27 @@ def blend(images_1, images_2, factors, value_range=None):
     return results
 
 
+def rgb_to_grayscale(images):
+    """Converts images from RGB to Grayscale.
+
+    Compared to ``tf.image.rgb_to_grayscale``, this function replaces
+    ``tf.tensordot`` with ``tf.math.multiply`` and ``tf.math.add`` to reduce
+    memory usage.
+
+    Args:
+        images (tf.Tensor): The RGB tensor to convert. The last dimension must
+            have size 3 and should contain RGB values.
+
+    References:
+        - `torchvision <https://github.com/pytorch/vision>`_
+    """
+    return (
+        images[..., 0:1] * 0.2989
+        + images[..., 1:2] * 0.587
+        + images[..., 2:3] * 0.114
+    )
+
+
 def get_rotation_matrix(
     angles, image_height, image_width, to_square=False, name=None
 ):
