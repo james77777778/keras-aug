@@ -56,7 +56,3 @@ class Rescale(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"scale": self.scale, "offset": self.offset})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

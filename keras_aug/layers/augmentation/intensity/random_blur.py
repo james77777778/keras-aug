@@ -112,7 +112,3 @@ class RandomBlur(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"factor": self.factor_input, "seed": self.seed})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

@@ -24,34 +24,37 @@ class RandomAffine(VectorizedBaseRandomLayer):
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A positive value means rotating
             counter clock-wise, while a negative value means clock-wise.
+            Defaults to ``None``.
         translation_height_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random vertical translation. When represented as a single
             float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting image
             up, while a positive value means shifting image down.
+            Defaults to ``None``.
         translation_width_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random horizontal translation. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting
             image left, while a positive value means shifting image right.
+            Defaults to ``None``.
         zoom_height_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random vertical zoom. When represented as a
             single float, the factor will be picked between
             ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
-            while a positive value means zooming out.
+            while a positive value means zooming out. Defaults to ``None``.
         zoom_width_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random horizontal zoom. When represented as a
             single float, the factor will be picked between
             ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
-            while a positive value means zooming out.
+            while a positive value means zooming out. Defaults to ``None``.
         shear_height_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random vertical shear. When represented as a
             single float, the factor will be picked between
-            ``[0.0 - lower, 0.0 + upper]``.
+            ``[0.0 - lower, 0.0 + upper]``. Defaults to ``None``.
         shear_width_factor (float|(float, float)|keras_cv.FactorSampler): The
             range for random horizontal shear. When represented as a
             single float, the factor will be picked between
-            ``[0.0 - lower, 0.0 + upper]``.
+            ``[0.0 - lower, 0.0 + upper]``. Defaults to ``None``.
         interpolation (str, optional): The interpolation mode. Supported values:
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
         fill_mode (str, optional): The fill mode. Supported values:
@@ -63,8 +66,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
@@ -72,13 +74,13 @@ class RandomAffine(VectorizedBaseRandomLayer):
 
     def __init__(
         self,
-        rotation_factor,
-        translation_height_factor,
-        translation_width_factor,
-        zoom_height_factor,
-        zoom_width_factor,
-        shear_height_factor,
-        shear_width_factor,
+        rotation_factor=None,
+        translation_height_factor=None,
+        translation_width_factor=None,
+        zoom_height_factor=None,
+        zoom_width_factor=None,
+        shear_height_factor=None,
+        shear_width_factor=None,
         interpolation="bilinear",
         fill_mode="constant",
         fill_value=0,
@@ -87,59 +89,73 @@ class RandomAffine(VectorizedBaseRandomLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
+        self.rotation_factor = None
+        self.translation_height_factor = None
+        self.translation_width_factor = None
+        self.zoom_height_factor = None
+        self.zoom_width_factor = None
+        self.shear_height_factor = None
+        self.shear_width_factor = None
         # rotation
-        self.rotation_factor = augmentation_utils.parse_factor(
-            rotation_factor,
-            min_value=-180,
-            max_value=180,
-            center_value=0,
-            seed=seed,
-        )
+        if rotation_factor is not None:
+            self.rotation_factor = augmentation_utils.parse_factor(
+                rotation_factor,
+                min_value=-180,
+                max_value=180,
+                center_value=0,
+                seed=seed,
+            )
         # translation
-        self.translation_height_factor = augmentation_utils.parse_factor(
-            translation_height_factor,
-            min_value=-1,
-            max_value=1,
-            center_value=0.0,
-            seed=seed,
-        )
-        self.translation_width_factor = augmentation_utils.parse_factor(
-            translation_width_factor,
-            min_value=-1,
-            max_value=1,
-            center_value=0.0,
-            seed=seed,
-        )
+        if translation_height_factor is not None:
+            self.translation_height_factor = augmentation_utils.parse_factor(
+                translation_height_factor,
+                min_value=-1,
+                max_value=1,
+                center_value=0.0,
+                seed=seed,
+            )
+        if translation_width_factor is not None:
+            self.translation_width_factor = augmentation_utils.parse_factor(
+                translation_width_factor,
+                min_value=-1,
+                max_value=1,
+                center_value=0.0,
+                seed=seed,
+            )
         # zoom
-        self.zoom_height_factor = augmentation_utils.parse_factor(
-            zoom_height_factor,
-            min_value=0,
-            max_value=None,
-            center_value=1.0,
-            seed=seed,
-        )
-        self.zoom_width_factor = augmentation_utils.parse_factor(
-            zoom_width_factor,
-            min_value=0,
-            max_value=None,
-            center_value=1.0,
-            seed=seed,
-        )
+        if zoom_height_factor is not None:
+            self.zoom_height_factor = augmentation_utils.parse_factor(
+                zoom_height_factor,
+                min_value=0,
+                max_value=None,
+                center_value=1.0,
+                seed=seed,
+            )
+        if zoom_width_factor is not None:
+            self.zoom_width_factor = augmentation_utils.parse_factor(
+                zoom_width_factor,
+                min_value=0,
+                max_value=None,
+                center_value=1.0,
+                seed=seed,
+            )
         # shear
-        self.shear_height_factor = augmentation_utils.parse_factor(
-            shear_height_factor,
-            min_value=-1,
-            max_value=1,
-            center_value=0.0,
-            seed=seed,
-        )
-        self.shear_width_factor = augmentation_utils.parse_factor(
-            shear_width_factor,
-            min_value=-1,
-            max_value=1,
-            center_value=0.0,
-            seed=seed,
-        )
+        if shear_height_factor is not None:
+            self.shear_height_factor = augmentation_utils.parse_factor(
+                shear_height_factor,
+                min_value=-1,
+                max_value=1,
+                center_value=0.0,
+                seed=seed,
+            )
+        if shear_width_factor is not None:
+            self.shear_width_factor = augmentation_utils.parse_factor(
+                shear_width_factor,
+                min_value=-1,
+                max_value=1,
+                center_value=0.0,
+                seed=seed,
+            )
 
         preprocessing_utils.check_fill_mode_and_interpolation(
             fill_mode, interpolation
@@ -184,23 +200,33 @@ class RandomAffine(VectorizedBaseRandomLayer):
         heights, widths = augmentation_utils.get_images_shape(
             images, dtype=tf.float32
         )
+        factor_shape = (batch_size, 1)
+        # dummy
+        angles = tf.zeros(factor_shape)
+        translation_heights = tf.zeros(factor_shape)
+        translation_widths = tf.zeros(factor_shape)
+        zoom_heights = tf.zeros(factor_shape)
+        zoom_widths = tf.zeros(factor_shape)
+        shear_heights = tf.zeros(factor_shape)
+        shear_widths = tf.zeros(factor_shape)
 
-        angles = self.rotation_factor(shape=(batch_size, 1))
+        if self._enable_rotation:
+            angles = self.rotation_factor(factor_shape)
+        if self._enable_translation:
+            translation_heights = self.translation_height_factor(factor_shape)
+            translation_widths = self.translation_width_factor(factor_shape)
+        if self._enable_zoom:
+            zoom_heights = self.zoom_height_factor(factor_shape)
+            zoom_widths = self.zoom_width_factor(factor_shape)
+        if self._enable_shear:
+            shear_heights = self.shear_height_factor(factor_shape)
+            shear_widths = self.shear_width_factor(factor_shape)
+
         angles = angles / 360.0 * 2.0 * math.pi
-        translation_heights = self.translation_height_factor(
-            shape=(batch_size, 1)
-        )
-        translation_widths = self.translation_width_factor(
-            shape=(batch_size, 1)
-        )
         translations = tf.concat(
             [translation_widths, translation_heights], axis=1
         )
-        zoom_heights = self.zoom_height_factor(shape=(batch_size, 1))
-        zoom_widths = self.zoom_width_factor(shape=(batch_size, 1))
         zooms = tf.concat([zoom_widths, zoom_heights], axis=1)
-        shear_heights = self.shear_height_factor(shape=(batch_size, 1))
-        shear_widths = self.shear_width_factor(shape=(batch_size, 1))
         shears = tf.concat([shear_widths, shear_heights], axis=1)
 
         # start from identity matrixes:
@@ -443,7 +469,3 @@ class RandomAffine(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

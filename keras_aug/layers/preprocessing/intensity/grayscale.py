@@ -67,7 +67,3 @@ class Grayscale(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"output_channels": self.output_channels})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

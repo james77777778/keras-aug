@@ -18,27 +18,29 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         value_range ((int|float, int|float)): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        brightness_factor (float|(float, float)|keras_cv.FactorSampler): The
+        brightness_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
             range of the brightness factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` will make image be black. ``1.0`` will make image be white.
-        contrast_factor (float|(float, float)|keras_cv.FactorSampler): The range
+            Defaults to ``None``.
+        contrast_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range
             of the contrast factor. When represented as a single float, the
             factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` gives solid gray image. ``1.0`` gives the original image
             while ``2.0`` increases the contrast by a factor of 2.
-        saturation_factor (float|(float, float)|keras_cv.FactorSampler): The
+            Defaults to ``None``.
+        saturation_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
             range of the saturation factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image. ``0.0`` makes the image to be
             fully grayscale. ``2.0`` will enhance the saturation by a factor of
-            2.
-        hue_factor (float|(float, float)|keras_cv.FactorSampler): The range of
+            2. Defaults to ``None``.
+        hue_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range of
             the hue factor. When represented as a single float, the factor will
             be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
             shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+            Defaults to ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `Torchvision <https://github.com/pytorch/vision>`_
@@ -49,26 +51,38 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     def __init__(
         self,
         value_range,
-        brightness_factor,
-        contrast_factor,
-        saturation_factor,
-        hue_factor,
+        brightness_factor=None,
+        contrast_factor=None,
+        saturation_factor=None,
+        hue_factor=None,
         seed=None,
         **kwargs
     ):
         super().__init__(seed=seed, **kwargs)
-        self.brightness_factor = augmentation_utils.parse_factor(
-            brightness_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.contrast_factor = augmentation_utils.parse_factor(
-            contrast_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.saturation_factor = augmentation_utils.parse_factor(
-            saturation_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.hue_factor = augmentation_utils.parse_factor(
-            hue_factor, min_value=-0.5, max_value=0.5, center_value=0, seed=seed
-        )
+        self.brightness_factor = None
+        self.contrast_factor = None
+        self.saturation_factor = None
+        self.hue_factor = None
+        if brightness_factor:
+            self.brightness_factor = augmentation_utils.parse_factor(
+                brightness_factor, max_value=None, center_value=1, seed=seed
+            )
+        if contrast_factor is not None:
+            self.contrast_factor = augmentation_utils.parse_factor(
+                contrast_factor, max_value=None, center_value=1, seed=seed
+            )
+        if saturation_factor is not None:
+            self.saturation_factor = augmentation_utils.parse_factor(
+                saturation_factor, max_value=None, center_value=1, seed=seed
+            )
+        if hue_factor is not None:
+            self.hue_factor = augmentation_utils.parse_factor(
+                hue_factor,
+                min_value=-0.5,
+                max_value=0.5,
+                center_value=0,
+                seed=seed,
+            )
         self.value_range = value_range
         self.seed = seed
 
@@ -87,19 +101,28 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         )
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        brightness_factors = self.brightness_factor(
-            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
-        )
-        contrast_factors = self.contrast_factor(
-            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
-        )
-        saturation_factors = self.saturation_factor(
-            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
-        )
-        hue_factors = self.hue_factor(
-            shape=(batch_size, 1, 1, 1), dtype=self.compute_dtype
-        )
-
+        factor_shape = (batch_size, 1, 1, 1)
+        # dummy
+        brightness_factors = tf.zeros(factor_shape)
+        contrast_factors = tf.zeros(factor_shape)
+        saturation_factors = tf.zeros(factor_shape)
+        hue_factors = tf.zeros(factor_shape)
+        if self._enable_brightness:
+            brightness_factors = self.brightness_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_contrast:
+            contrast_factors = self.contrast_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_saturation:
+            saturation_factors = self.saturation_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_hue:
+            hue_factors = self.hue_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
         return {
             "brightness_factors": brightness_factors,
             "contrast_factors": contrast_factors,
@@ -192,7 +215,3 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

@@ -116,7 +116,3 @@ class Equalize(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"value_range": self.value_range, "bins": self.bins})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

@@ -358,10 +358,6 @@ class RandAugment(VectorizedBaseRandomLayer):
         )
         return config
 
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
-
 
 def create_rand_augment_policy(
     magnitude, magnitude_stddev, translation_multiplier, cutout_multiplier

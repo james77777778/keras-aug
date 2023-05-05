@@ -105,6 +105,8 @@ def get_position_params(
 
 
 def is_factor_working(factor, not_working_value=0.0):
+    if factor is None:
+        return False
     if isinstance(factor, (int, float)):
         if factor == not_working_value:
             return False

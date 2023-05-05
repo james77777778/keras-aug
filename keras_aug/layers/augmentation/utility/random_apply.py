@@ -61,7 +61,3 @@ class RandomApply(VectorizedBaseRandomLayer):
             {"layer": self.layer, "rate": self.rate, "seed": self.seed}
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
