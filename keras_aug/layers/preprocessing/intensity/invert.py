@@ -49,7 +49,3 @@ class Invert(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"value_range": self.value_range})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

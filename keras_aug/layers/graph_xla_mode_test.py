@@ -89,15 +89,6 @@ TEST_CONFIGURATIONS = [
     ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
     (
-        "RandomBrightnessContrast",
-        layers.RandomBrightnessContrast,
-        {
-            "value_range": (0, 255),
-            "brightness_factor": 0.1,
-            "contrast_factor": 0.1,
-        },
-    ),
-    (
         "RandomChannelShift",
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},

@@ -41,7 +41,6 @@ class Equalize(VectorizedBaseRandomLayer):
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         images = tf.cast(images, dtype=tf.int32)
-        images = tf.transpose(images, (0, 3, 1, 2))
         images = tf.map_fn(
             self.equalize_single_image,
             images,
@@ -69,14 +68,30 @@ class Equalize(VectorizedBaseRandomLayer):
         return keypoints
 
     def equalize_single_image(self, image):
-        return tf.map_fn(self.equalize_single_channel, image)
-
-    def equalize_single_channel(self, image):
-        histogram = tf.histogram_fixed_width(image, [0, 255], nbins=self.bins)
-        histogram_without_zeroes = tf.boolean_mask(
-            histogram, tf.not_equal(histogram, 0)
+        return tf.map_fn(
+            lambda channel_index: self.equalize_single_channel(
+                image, channel_index
+            ),
+            tf.range(tf.shape(image)[-1]),
         )
-        step = (tf.reduce_sum(histogram_without_zeroes[:-1])) // (self.bins - 1)
+
+    def equalize_single_channel(self, image, channel_index):
+        image = image[..., channel_index]
+        # Compute the histogram of the image channel.
+        histogram = tf.histogram_fixed_width(image, [0, 255], nbins=self.bins)
+        # For the purposes of computing the step, filter out the non-zeros.
+        # Zeroes are replaced by a big number while calculating min to keep
+        # shape constant across input sizes for compatibility with
+        # vectorized_map
+        big_number = 1410065408
+        histogram_without_zeroes = tf.where(
+            tf.equal(histogram, 0),
+            big_number,
+            histogram,
+        )
+        step = (
+            tf.reduce_sum(histogram) - tf.reduce_min(histogram_without_zeroes)
+        ) // (self.bins - 1)
 
         def build_mapping(histogram, step):
             # Compute the cumulative sum, shifting by step // 2
@@ -101,7 +116,3 @@ class Equalize(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"value_range": self.value_range, "bins": self.bins})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

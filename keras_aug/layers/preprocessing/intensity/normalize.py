@@ -82,7 +82,3 @@ class Normalize(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

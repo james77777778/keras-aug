@@ -128,7 +128,3 @@ class RandomGaussianBlur(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"factor": self.factor, "kernel_size": self.kernel_size})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

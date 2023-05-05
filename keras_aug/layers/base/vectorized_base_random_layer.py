@@ -552,3 +552,7 @@ class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
                 "rank 3 (HWC) or 4D (NHWC) tensors. Got shape: "
                 f"{images.shape}"
             )
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)

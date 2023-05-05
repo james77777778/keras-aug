@@ -2,9 +2,10 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
-from keras_cv import core
 
 from keras_aug import layers
+from keras_aug.core import ConstantFactorSampler
+from keras_aug.core import UniformFactorSampler
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
 
@@ -83,15 +84,6 @@ TEST_CONFIGURATIONS = [
     ("Invert", layers.Invert, {"value_range": (0, 255)}),
     ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
-    (
-        "RandomBrightnessContrast",
-        layers.RandomBrightnessContrast,
-        {
-            "value_range": (0, 255),
-            "brightness_factor": 0.1,
-            "contrast_factor": 0.1,
-        },
-    ),
     (
         "RandomChannelShift",
         layers.RandomChannelShift,
@@ -242,14 +234,10 @@ class ConfigTest(tf.test.TestCase, parameterized.TestCase):
         config = layer.get_config()
 
         for key in args.keys():
-            if isinstance(config[key], core.UniformFactorSampler):
-                self.assertTrue(
-                    isinstance(config[key], core.UniformFactorSampler)
-                )
-            elif isinstance(config[key], core.ConstantFactorSampler):
-                self.assertTrue(
-                    isinstance(config[key], core.ConstantFactorSampler)
-                )
+            if isinstance(config[key], UniformFactorSampler):
+                self.assertTrue(isinstance(config[key], UniformFactorSampler))
+            elif isinstance(config[key], ConstantFactorSampler):
+                self.assertTrue(isinstance(config[key], ConstantFactorSampler))
             else:
                 self.assertEqual(config[key], args[key])
 

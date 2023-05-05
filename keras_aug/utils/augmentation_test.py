@@ -1,8 +1,8 @@
 import tensorflow as tf
 from absl.testing import parameterized
 from keras.backend import RandomGenerator
-from keras_cv import core
 
+from keras_aug import core
 from keras_aug.utils import augmentation as augmentation_utils
 
 

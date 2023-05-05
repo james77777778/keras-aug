@@ -139,7 +139,3 @@ class MixUp(VectorizedBaseRandomLayer):
         config = super().get_config()
         config.update({"alpha": self.alpha, "seed": self.seed})
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

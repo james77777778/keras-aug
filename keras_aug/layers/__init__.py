@@ -13,9 +13,6 @@ from keras_aug.layers.augmentation.intensity.channel_shuffle import (
     ChannelShuffle,
 )
 from keras_aug.layers.augmentation.intensity.random_blur import RandomBlur
-from keras_aug.layers.augmentation.intensity.random_brightness_contrast import (
-    RandomBrightnessContrast,
-)
 from keras_aug.layers.augmentation.intensity.random_channel_shift import (
     RandomChannelShift,
 )

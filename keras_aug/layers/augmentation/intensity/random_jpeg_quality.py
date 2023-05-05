@@ -1,10 +1,10 @@
 from typing import Sequence
 
 import tensorflow as tf
-from keras_cv import core
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug import core
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -126,7 +126,3 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

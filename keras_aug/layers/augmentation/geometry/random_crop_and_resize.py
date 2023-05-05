@@ -1,8 +1,8 @@
 import tensorflow as tf
 from keras_cv import bounding_box
-from keras_cv import core
 from tensorflow import keras
 
+from keras_aug import core
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -279,7 +279,3 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)

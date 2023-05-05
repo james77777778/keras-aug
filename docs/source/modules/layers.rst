@@ -22,7 +22,6 @@ Table of Layers
     RandomZoomAndCrop
     ChannelShuffle
     RandomBlur
-    RandomBrightnessContrast
     RandomChannelShift
     RandomCLAHE
     RandomColorJitter
@@ -90,7 +89,7 @@ Augmentation 2D
 
 ----
 
-.. autoclass:: RandomAffine(rotation_factor, translation_height_factor, translation_width_factor, zoom_height_factor, zoom_width_factor, shear_height_factor, shear_width_factor, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: RandomAffine(rotation_factor=None, translation_height_factor=None, translation_width_factor=None, zoom_height_factor=None, zoom_width_factor=None, shear_height_factor=None, shear_width_factor=None, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomCrop(height, width, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomFlip(mode="horizontal", bounding_box_format=None, seed=None, **kwargs)
@@ -103,13 +102,12 @@ Augmentation 2D
 
 .. autoclass:: ChannelShuffle(groups=3, seed=None, **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)
-.. autoclass:: RandomBrightnessContrast(value_range, brightness_factor, contrast_factor, seed=None, **kwargs)
 .. autoclass:: RandomChannelShift(value_range, factor, channels=3, seed=None, **kwargs)
 .. autoclass:: RandomCLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
-.. autoclass:: RandomColorJitter(value_range, brightness_factor, contrast_factor, saturation_factor, hue_factor, seed=None, **kwargs)
+.. autoclass:: RandomColorJitter(value_range, brightness_factor=None, contrast_factor=None, saturation_factor=None, hue_factor=None, seed=None, **kwargs)
 .. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomGaussianBlur(kernel_size, factor, seed=None, **kwargs)
-.. autoclass:: RandomHSV(value_range, hue_factor, saturation_factor, value_factor, seed=None, **kwargs)
+.. autoclass:: RandomHSV(value_range, hue_factor=None, saturation_factor=None, value_factor=None, seed=None, **kwargs)
 .. autoclass:: RandomJpegQuality(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomPosterize(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomSharpness(value_range, factor, seed=None, **kwargs)

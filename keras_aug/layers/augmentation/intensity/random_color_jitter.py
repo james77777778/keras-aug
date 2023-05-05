@@ -1,5 +1,3 @@
-from functools import partial
-
 import tensorflow as tf
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
@@ -20,30 +18,32 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         value_range ((int|float, int|float)): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        brightness_factor (float|(float, float)|keras_cv.FactorSampler): The
+        brightness_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
             range of the brightness factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` will make image be black. ``1.0`` will make image be white.
-        contrast_factor (float|(float, float)|keras_cv.FactorSampler): The range
+            Defaults to ``None``.
+        contrast_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range
             of the contrast factor. When represented as a single float, the
             factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` gives solid gray image. ``1.0`` gives the original image
             while ``2.0`` increases the contrast by a factor of 2.
-        saturation_factor (float|(float, float)|keras_cv.FactorSampler): The
+            Defaults to ``None``.
+        saturation_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
             range of the saturation factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image. ``0.0`` makes the image to be
             fully grayscale. ``2.0`` will enhance the saturation by a factor of
-            2.
-        hue_factor (float|(float, float)|keras_cv.FactorSampler): The range of
+            2. Defaults to ``None``.
+        hue_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range of
             the hue factor. When represented as a single float, the factor will
             be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
             shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+            Defaults to ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
-        - `Torchvision <https://github.com/pytorch/vision>`_
+        - `torchvision <https://github.com/pytorch/vision>`_
         - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/master/official/vision/ops/augment.py>`
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
@@ -51,26 +51,38 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     def __init__(
         self,
         value_range,
-        brightness_factor,
-        contrast_factor,
-        saturation_factor,
-        hue_factor,
+        brightness_factor=None,
+        contrast_factor=None,
+        saturation_factor=None,
+        hue_factor=None,
         seed=None,
         **kwargs
     ):
         super().__init__(seed=seed, **kwargs)
-        self.brightness_factor = augmentation_utils.parse_factor(
-            brightness_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.contrast_factor = augmentation_utils.parse_factor(
-            contrast_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.saturation_factor = augmentation_utils.parse_factor(
-            saturation_factor, max_value=None, center_value=1, seed=seed
-        )
-        self.hue_factor = augmentation_utils.parse_factor(
-            hue_factor, min_value=-0.5, max_value=0.5, center_value=0, seed=seed
-        )
+        self.brightness_factor = None
+        self.contrast_factor = None
+        self.saturation_factor = None
+        self.hue_factor = None
+        if brightness_factor:
+            self.brightness_factor = augmentation_utils.parse_factor(
+                brightness_factor, max_value=None, center_value=1, seed=seed
+            )
+        if contrast_factor is not None:
+            self.contrast_factor = augmentation_utils.parse_factor(
+                contrast_factor, max_value=None, center_value=1, seed=seed
+            )
+        if saturation_factor is not None:
+            self.saturation_factor = augmentation_utils.parse_factor(
+                saturation_factor, max_value=None, center_value=1, seed=seed
+            )
+        if hue_factor is not None:
+            self.hue_factor = augmentation_utils.parse_factor(
+                hue_factor,
+                min_value=-0.5,
+                max_value=0.5,
+                center_value=0,
+                seed=seed,
+            )
         self.value_range = value_range
         self.seed = seed
 
@@ -89,30 +101,29 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         )
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
-        # orders determine the augmentation order which is the same across
-        # single batch
-        orders = tf.argsort(
-            self._random_generator.random_uniform((4,)), axis=-1
-        )
-        orders = tf.reshape(
-            tf.tile(orders, multiples=(batch_size,)), shape=(batch_size, 4)
-        )
-
-        brightness_factors = self.brightness_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
-        contrast_factors = self.contrast_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
-        saturation_factors = self.saturation_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
-        hue_factors = self.hue_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
-
+        factor_shape = (batch_size, 1, 1, 1)
+        # dummy
+        brightness_factors = tf.zeros(factor_shape)
+        contrast_factors = tf.zeros(factor_shape)
+        saturation_factors = tf.zeros(factor_shape)
+        hue_factors = tf.zeros(factor_shape)
+        if self._enable_brightness:
+            brightness_factors = self.brightness_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_contrast:
+            contrast_factors = self.contrast_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_saturation:
+            saturation_factors = self.saturation_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
+        if self._enable_hue:
+            hue_factors = self.hue_factor(
+                shape=factor_shape, dtype=self.compute_dtype
+            )
         return {
-            "orders": orders,
             "brightness_factors": brightness_factors,
             "contrast_factors": contrast_factors,
             "saturation_factors": saturation_factors,
@@ -133,17 +144,14 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-        orders = transformations["orders"][0]
-        for order in orders:
-            images = tf.switch_case(
-                order,
-                branch_fns={
-                    0: partial(self.adjust_brightness, images, transformations),
-                    1: partial(self.adjust_contrast, images, transformations),
-                    2: partial(self.adjust_saturation, images, transformations),
-                    3: partial(self.adjust_hue, images, transformations),
-                },
-            )
+        if self._enable_brightness:
+            images = self.adjust_brightness(images, transformations)
+        if self._enable_contrast:
+            images = self.adjust_contrast(images, transformations)
+        if self._enable_saturation:
+            images = self.adjust_saturation(images, transformations)
+        if self._enable_hue:
+            images = self.adjust_hue(images, transformations)
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
@@ -164,76 +172,34 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         return keypoints
 
     def adjust_brightness(self, images, transformations):
-        if not self._enable_brightness:
-            return images
         brightness_factors = transformations["brightness_factors"]
-        brightness_factors = brightness_factors[..., tf.newaxis, tf.newaxis]
-        images = augmentation_utils.blend(
-            tf.zeros_like(images), images, brightness_factors, (0, 255)
-        )
+        images *= brightness_factors
         images = tf.clip_by_value(images, 0, 255)
         return images
 
     def adjust_contrast(self, images, transformations):
-        if not self._enable_contrast:
-            return images
-        original_shape = images.shape
         contrast_factors = transformations["contrast_factors"]
-        contrast_factors = contrast_factors[..., tf.newaxis, tf.newaxis]
-        degenerates = tf.image.rgb_to_grayscale(images)
-
-        # compute historams
-        degenerates = tf.cast(degenerates, dtype=tf.int32)
-        degenerates = tf.reshape(degenerates, shape=(original_shape[0], -1))
-        hists = tf.math.bincount(
-            degenerates, minlength=256, maxlength=256, axis=-1
-        )
-
-        # compute means of historams
-        means = tf.reduce_mean(tf.cast(hists, dtype=self.compute_dtype), axis=1)
-        means = means / 256.0
-        means = means[..., tf.newaxis, tf.newaxis, tf.newaxis]
-        degenerates = tf.ones_like(images, dtype=self.compute_dtype) * means
-        degenerates = tf.clip_by_value(degenerates, 0, 255)
-
-        images = augmentation_utils.blend(
-            degenerates, images, contrast_factors, (0, 255)
-        )
-        images.set_shape(original_shape)
+        degenerates = augmentation_utils.rgb_to_grayscale(images)
+        degenerates = tf.reduce_mean(degenerates, axis=(1, 2, 3), keepdims=True)
+        images = augmentation_utils.blend(degenerates, images, contrast_factors)
         return images
 
     def adjust_saturation(self, images, transformations):
-        if not self._enable_saturation:
-            return images
         saturation_factors = transformations["saturation_factors"]
-        saturation_factors = saturation_factors[..., tf.newaxis, tf.newaxis]
-        means = tf.image.rgb_to_grayscale(images)
-        means = tf.image.grayscale_to_rgb(means)
+        degenerates = augmentation_utils.rgb_to_grayscale(images)
         images = augmentation_utils.blend(
-            means, images, saturation_factors, (0, 255)
+            degenerates, images, saturation_factors, (0, 255)
         )
         return images
 
     def adjust_hue(self, images, transformations):
-        if not self._enable_hue:
-            return tf.cast(images, dtype=self.compute_dtype)
-        # The output is only well defined if the value in images are in [0,1].
-        # https://www.tensorflow.org/api_docs/python/tf/image/rgb_to_hsv
-        images = preprocessing_utils.transform_value_range(
-            images, (0, 255), (0, 1), self.compute_dtype
-        )
         images = tf.image.rgb_to_hsv(images)
-        # adjust hue
         hue_factors = transformations["hue_factors"]
-        hue_factors = hue_factors[..., tf.newaxis]
-        h_channels = images[..., 0] + hue_factors
-        h_channels = tf.where(h_channels > 1.0, h_channels - 1.0, h_channels)
-        h_channels = tf.where(h_channels < 0.0, h_channels + 1.0, h_channels)
-        images = tf.stack([h_channels, images[..., 1], images[..., 2]], axis=-1)
-        images = tf.image.hsv_to_rgb(images)
-        images = preprocessing_utils.transform_value_range(
-            images, (0, 1), (0, 255), self.compute_dtype
+        h_channels = tf.math.floormod(images[..., 0:1] + hue_factors, 1.0)
+        images = tf.concat(
+            [h_channels, images[..., 1:2], images[..., 2:3]], axis=-1
         )
+        images = tf.image.hsv_to_rgb(images)
         return images
 
     def get_config(self):
@@ -249,7 +215,3 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             }
         )
         return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
