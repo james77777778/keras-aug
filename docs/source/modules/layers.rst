@@ -51,8 +51,6 @@ Table of Layers
     CenterCrop
     PadIfNeeded
     Resize
-    ResizeAndCrop
-    ResizeAndPad
     ResizeByLongestSide
     ResizeBySmallestSide
     AutoContrast
@@ -145,9 +143,7 @@ Preprocessing 2D
 
 .. autoclass:: CenterCrop(height, width, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: PadIfNeeded(min_height=None, min_width=None, height_divisor=None, width_divisor=None, position="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: Resize(height, width, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: ResizeAndCrop(height, width, interpolation="bilinear", antialias=False, postion="center", bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: ResizeAndPad(height, width, interpolation="bilinear", antialias=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: Resize(height, width, interpolation="bilinear", antialias=False, crop_to_aspect_ratio=False, pad_to_aspect_ratio=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: ResizeByLongestSide(max_size, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: ResizeBySmallestSide(min_size, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 
