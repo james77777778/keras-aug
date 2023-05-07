@@ -40,6 +40,7 @@ Table of Layers
     RandomErase
     RandomGridMask
     RandomApply
+    RandomChoice
 
 **Preprocessing 2D**
 
@@ -133,6 +134,7 @@ Augmentation 2D
 ----
 
 .. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
+.. autoclass:: RandomChoice(layers, batchwise=False, seed=None, **kwargs)    
 
 Preprocessing 2D
 ****************

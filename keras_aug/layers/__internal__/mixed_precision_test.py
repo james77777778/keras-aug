@@ -2,6 +2,7 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
+from tensorflow import keras
 
 from keras_aug import layers
 from keras_aug.layers import augmentation
@@ -10,21 +11,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
-    (
-        "RandAugment",
-        layers.RandAugment,
-        {"value_range": (0, 255), "seed": 2023},
-    ),
-    (
-        "CenterCrop",
-        layers.CenterCrop,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "PadIfNeeded",
-        layers.PadIfNeeded,
-        {"min_height": 2, "min_width": 2},
-    ),
+    ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
     (
         "RandomAffine",
         layers.RandomAffine,
@@ -56,27 +43,7 @@ TEST_CONFIGURATIONS = [
         layers.RandomZoomAndCrop,
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
     ),
-    (
-        "Resize",
-        layers.Resize,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
-    ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
     (
         "RandomChannelShift",
@@ -147,11 +114,6 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
-        "Rescale",
-        layers.Rescale,
-        {"scale": 1.0 / 255.0},
-    ),
-    (
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
@@ -193,38 +155,62 @@ TEST_CONFIGURATIONS = [
             "rotation_factor": (-10, 10),
         },
     ),
-    ("Identity", layers.Identity, {}),
+    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
+    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
+    ("Invert", layers.Invert, {"value_range": (0, 255)}),
+    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     (
         "RandomApply",
         layers.RandomApply,
         {"layer": layers.RandomChannelDropout()},
     ),
+    (
+        "RandomChoice",
+        layers.RandomChoice,
+        {
+            "layers": [
+                layers.RandomChannelDropout(),
+                layers.RandomChannelDropout(),
+            ],
+            "batchwise": True,
+        },
+    ),
+    (
+        "CenterCrop",
+        layers.CenterCrop,
+        {"height": 2, "width": 2},
+    ),
+    (
+        "PadIfNeeded",
+        layers.PadIfNeeded,
+        {"min_height": 2, "min_width": 2},
+    ),
+    (
+        "Resize",
+        layers.Resize,
+        {"height": 2, "width": 2},
+    ),
+    (
+        "ResizeByLongestSide",
+        layers.ResizeByLongestSide,
+        {"max_size": [2]},
+    ),
+    (
+        "ResizeBySmallestSide",
+        layers.ResizeBySmallestSide,
+        {"min_size": [2]},
+    ),
+    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
+    (
+        "Rescale",
+        layers.Rescale,
+        {"scale": 1.0 / 255.0},
+    ),
+    ("Identity", layers.Identity, {}),
 ]
 
-NO_XLA_SUPPORT_LAYERS = [
-    layers.RandAugment,
-    layers.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.RandomCrop,  # tf.image.crop_and_resize
-    layers.RandomCropAndResize,  # tf.image.crop_and_resize
-    layers.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.RandomZoomAndCrop,  # tf.image.resize
-    layers.RandomBlur,  # tf.map_fn
-    layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
-    layers.MosaicYOLOV8,  # tf.map_fn
-    layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.ResizeByLongestSide,  # tf.image.resize
-    layers.ResizeBySmallestSide,  # tf.image.resize
-    layers.Equalize,  # tf.histogram_fixed_width
-]
 
-SKIP_XLA_TEST_LAYERS = [
-    layers.RandAugment,  # too slow to compile
-    layers.RandomColorJitter,  # too slow to compile
-    layers.Equalize,  # too slow to compile
-]
-
-
-class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
+class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
         all_2d_aug_layers = inspect.getmembers(
@@ -248,31 +234,19 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
             )
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_graph_mode(self, layer_cls, args):
-        images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
-        labels = tf.random.uniform(shape=(1, 1)) * 10.0
+    def test_can_run_in_mixed_precision(self, layer_cls, args):
+        keras.mixed_precision.set_global_policy("mixed_float16")
+        images = tf.cast(
+            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
+        )
         layer = layer_cls(**args)
+        layer({IMAGES: images, LABELS: labels})
 
-        @tf.function
-        def fn(inputs):
-            layer(inputs)
-
-        fn({IMAGES: images, LABELS: labels})
-
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_xla_mode(self, layer_cls, args):
-        if layer_cls in SKIP_XLA_TEST_LAYERS:
-            return
-        images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
-        labels = tf.random.uniform(shape=(1, 1)) * 10.0
-        layer = layer_cls(**args)
-
-        @tf.function(jit_compile=True)
-        def fn(inputs):
-            layer(inputs)
-
-        if layer_cls not in NO_XLA_SUPPORT_LAYERS:
-            fn({IMAGES: images, LABELS: labels})
-        else:
-            with self.assertRaises(tf.errors.InvalidArgumentError):
-                fn({IMAGES: images, LABELS: labels})
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Do not affect other tests
+        keras.mixed_precision.set_global_policy("float32")
