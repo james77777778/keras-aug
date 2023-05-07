@@ -16,11 +16,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
         {"value_range": (0, 255), "seed": 2023},
     ),
     (
-        "PadIfNeeded",
-        layers.PadIfNeeded,
-        {"min_height": 2, "min_width": 2},
-    ),
-    (
         "RandomAffine",
         layers.RandomAffine,
         {
@@ -35,22 +30,7 @@ CONSISTENT_OUTPUTS_LAYERS = [
     ),
     ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
     ("RandomRotate", layers.RandomRotate, {"factor": 10}),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
-    ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
     (
         "RandomChannelShift",
@@ -117,11 +97,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
         },
     ),
     (
-        "Rescale",
-        layers.Rescale,
-        {"scale": 1.0 / 255.0},
-    ),
-    (
         "MixUp",
         layers.MixUp,
         {},
@@ -150,12 +125,47 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "rotation_factor": (-10, 10),
         },
     ),
-    ("Identity", layers.Identity, {}),
     (
         "RandomApply",
         layers.RandomApply,
         {"layer": layers.RandomChannelDropout()},
     ),
+    (
+        "RandomChoice",
+        layers.RandomChoice,
+        {
+            "layers": [
+                layers.RandomChannelDropout(),
+                layers.RandomChannelDropout(),
+            ]
+        },
+    ),
+    (
+        "PadIfNeeded",
+        layers.PadIfNeeded,
+        {"min_height": 2, "min_width": 2},
+    ),
+    (
+        "ResizeByLongestSide",
+        layers.ResizeByLongestSide,
+        {"max_size": [2]},
+    ),
+    (
+        "ResizeBySmallestSide",
+        layers.ResizeBySmallestSide,
+        {"min_size": [2]},
+    ),
+    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
+    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
+    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
+    ("Invert", layers.Invert, {"value_range": (0, 255)}),
+    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
+    (
+        "Rescale",
+        layers.Rescale,
+        {"scale": 1.0 / 255.0},
+    ),
+    ("Identity", layers.Identity, {}),
 ]
 
 FORCE_DENSE_IMAGES_LAYERS = [

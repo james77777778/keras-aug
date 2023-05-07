@@ -16,16 +16,6 @@ TEST_CONFIGURATIONS = [
         {"value_range": (0, 255), "seed": 2023},
     ),
     (
-        "CenterCrop",
-        layers.CenterCrop,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "PadIfNeeded",
-        layers.PadIfNeeded,
-        {"min_height": 2, "min_width": 2},
-    ),
-    (
         "RandomAffine",
         layers.RandomAffine,
         {
@@ -56,27 +46,7 @@ TEST_CONFIGURATIONS = [
         layers.RandomZoomAndCrop,
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
     ),
-    (
-        "Resize",
-        layers.Resize,
-        {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
-    ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
     (
         "RandomChannelShift",
@@ -147,11 +117,6 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
-        "Rescale",
-        layers.Rescale,
-        {"scale": 1.0 / 255.0},
-    ),
-    (
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
@@ -193,12 +158,57 @@ TEST_CONFIGURATIONS = [
             "rotation_factor": (-10, 10),
         },
     ),
-    ("Identity", layers.Identity, {}),
     (
         "RandomApply",
         layers.RandomApply,
         {"layer": layers.RandomChannelDropout()},
     ),
+    (
+        "RandomChoice",
+        layers.RandomChoice,
+        {
+            "layers": [
+                layers.RandomChannelDropout(),
+                layers.RandomChannelDropout(),
+            ]
+        },
+    ),
+    (
+        "CenterCrop",
+        layers.CenterCrop,
+        {"height": 2, "width": 2},
+    ),
+    (
+        "PadIfNeeded",
+        layers.PadIfNeeded,
+        {"min_height": 2, "min_width": 2},
+    ),
+    (
+        "Resize",
+        layers.Resize,
+        {"height": 2, "width": 2},
+    ),
+    (
+        "ResizeByLongestSide",
+        layers.ResizeByLongestSide,
+        {"max_size": [2]},
+    ),
+    (
+        "ResizeBySmallestSide",
+        layers.ResizeBySmallestSide,
+        {"min_size": [2]},
+    ),
+    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
+    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
+    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
+    ("Invert", layers.Invert, {"value_range": (0, 255)}),
+    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
+    (
+        "Rescale",
+        layers.Rescale,
+        {"scale": 1.0 / 255.0},
+    ),
+    ("Identity", layers.Identity, {}),
 ]
 
 NO_XLA_SUPPORT_LAYERS = [

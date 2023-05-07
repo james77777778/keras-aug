@@ -53,6 +53,7 @@ from keras_aug.layers.augmentation.regularization.random_grid_mask import (
     RandomGridMask,
 )
 from keras_aug.layers.augmentation.utility.random_apply import RandomApply
+from keras_aug.layers.augmentation.utility.random_choice import RandomChoice
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
