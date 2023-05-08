@@ -36,6 +36,7 @@ TEST_CONFIGURATIONS = [
         },
     ),
     ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
+    ("RandomResize", layers.RandomResize, {"heights": [2]}),
     ("RandomRotate", layers.RandomRotate, {"factor": 10}),
     (
         "RandomZoomAndCrop",
@@ -179,16 +180,6 @@ TEST_CONFIGURATIONS = [
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
-    ),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
     ),
     ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("Equalize", layers.Equalize, {"value_range": (0, 255)}),

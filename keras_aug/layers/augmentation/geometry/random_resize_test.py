@@ -5,78 +5,49 @@ from keras_cv import bounding_box
 from keras_aug import layers
 
 
-class ResizeByLongestSideTest(tf.test.TestCase):
-    max_size = 224
+class RandomResizeTest(tf.test.TestCase):
     height, width = 224, 448
     regular_args = {
-        "max_size": [224],
+        "heights": [224],
         "interpolation": "bilinear",
         "antialias": False,
         "bounding_box_format": "rel_xyxy",
     }
 
     def test_no_adjustment(self):
-        image_shape = (4, self.max_size, self.max_size, 3)
+        image_shape = (4, self.height, self.height, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
 
-        layer = layers.ResizeByLongestSide(**self.regular_args)
+        layer = layers.RandomResize(**self.regular_args)
         output = layer(image)
         self.assertAllClose(image, output)
 
     def test_adjustment_for_non_rgb_value_range(self):
-        image_shape = (4, self.max_size, self.max_size, 3)
+        image_shape = (4, self.height, self.height, 3)
         # Value range (0, 100)
         image = tf.random.uniform(shape=image_shape) * 100.0
 
-        layer = layers.ResizeByLongestSide(**self.regular_args)
+        layer = layers.RandomResize(**self.regular_args)
         output = layer(image)
         self.assertAllClose(image, output)
 
     def test_resize_image(self):
         input_image_shape = (4, self.height, self.width, 3)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = layers.ResizeByLongestSide(**self.regular_args, seed=2023)
+        layer = layers.RandomResize(**self.regular_args, seed=2023)
 
         output = layer(image)
 
-        self.assertAllEqual(
-            output.shape, (4, self.max_size // 2, self.max_size, 3)
-        )
-
-    def test_resize_longest_image(self):
-        input_image_shape = (123, 456, 3)
-        image = tf.random.uniform(shape=input_image_shape)
-        layer = layers.ResizeByLongestSide(**self.regular_args, seed=2023)
-
-        output = layer(image)
-
-        ratio = self.max_size / 456
-        short_side = round(123 * ratio)
-        self.assertAllEqual(tf.reduce_max(output.shape[:2]), self.max_size)
-        self.assertAllEqual(tf.reduce_min(output.shape[:2]), short_side)
-
-    def test_resize_longest2_image(self):
-        input_image_shape = (567, 456, 3)
-        image = tf.random.uniform(shape=input_image_shape)
-        layer = layers.ResizeByLongestSide(**self.regular_args, seed=2023)
-
-        output = layer(image)
-
-        ratio = self.max_size / 567
-        short_side = round(456 * ratio)
-        self.assertAllEqual(tf.reduce_max(output.shape[:2]), self.max_size)
-        self.assertAllEqual(tf.reduce_min(output.shape[:2]), short_side)
+        self.assertAllEqual(output.shape, (4, self.height, self.height, 3))
 
     def test_grayscale(self):
         input_image_shape = (4, self.height, self.width, 1)
         image = tf.random.uniform(shape=input_image_shape)
-        layer = layers.ResizeByLongestSide(**self.regular_args, seed=2023)
+        layer = layers.RandomResize(**self.regular_args, seed=2023)
 
         output = layer(image)
 
-        self.assertAllEqual(
-            output.shape, (4, self.max_size // 2, self.max_size, 1)
-        )
+        self.assertAllEqual(output.shape, (4, self.height, self.height, 1))
 
     def test_augment_sparse_segmentation_mask(self):
         num_classes = 8
@@ -88,8 +59,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
 
         # Crop-only to exactly 1/2 of the size
         args = self.regular_args.copy()
-        args.update({"max_size": 150})
-        layer = layers.ResizeByLongestSide(**args, seed=2023)
+        args.update({"heights": [150]})
+        layer = layers.RandomResize(**args, seed=2023)
         input_mask_resized = tf.image.resize(mask, (150, 150), "nearest")
 
         output = layer(inputs)
@@ -98,8 +69,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
 
         # Crop to an arbitrary size and make sure we don't do bad interpolation
         args = self.regular_args.copy()
-        args.update({"max_size": 233})
-        layer = layers.ResizeByLongestSide(**args, seed=2023)
+        args.update({"heights": [233]})
+        layer = layers.RandomResize(**args, seed=2023)
 
         output = layer(inputs)
 
@@ -113,8 +84,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 10})
-        layer = layers.ResizeByLongestSide(**args, seed=2023)
+        args.update({"heights": [10]})
+        layer = layers.RandomResize(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor([[0, 0, 1, 1]], dtype=tf.float32),
             "classes": tf.convert_to_tensor([0], dtype=tf.float32),
@@ -145,8 +116,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": [image, image], "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 18})
-        layer = layers.ResizeByLongestSide(**args, seed=2023)
+        args.update({"heights": [18]})
+        layer = layers.RandomResize(**args, seed=2023)
         expected_output = {
             "boxes": tf.convert_to_tensor(
                 [
@@ -179,8 +150,8 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         }
         input = {"images": image, "bounding_boxes": boxes}
         args = self.regular_args.copy()
-        args.update({"max_size": 18})
-        layer = layers.ResizeByLongestSide(**args, seed=2023)
+        args.update({"heights": [18]})
+        layer = layers.RandomResize(**args, seed=2023)
         # the result boxes will still have the entire image in them
         expected_output = {
             "boxes": tf.ragged.constant(
@@ -201,3 +172,19 @@ class ResizeByLongestSideTest(tf.test.TestCase):
         self.assertAllClose(
             expected_output["classes"], output["bounding_boxes"]["classes"]
         )
+
+    def test_same_shape_in_the_batch(self):
+        images = tf.ragged.stack(
+            [
+                tf.ones((5, 5, 3)),
+                tf.ones((8, 8, 3)),
+            ]
+        )
+        args = self.regular_args.copy()
+        args.update({"heights": [4, 6, 8, 10]})
+        layer = layers.RandomResize(**args, seed=2023)
+
+        for _ in range(3):
+            output = layer(images)
+            self.assertIn(output.shape[1], [4, 6, 8, 10])
+            self.assertIn(output.shape[2], [4, 6, 8, 10])
