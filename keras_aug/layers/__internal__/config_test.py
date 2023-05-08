@@ -177,6 +177,20 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "RepeatedAugment",
+        layers.RepeatedAugment,
+        {
+            "layers": [
+                layers.RandomColorJitter(
+                    value_range=(0, 255), brightness_factor=(1.5, 1.5)
+                ),
+                layers.RandomColorJitter(
+                    value_range=(0, 255), contrast_factor=(1.5, 1.5)
+                ),
+            ]
+        },
+    ),
+    (
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
