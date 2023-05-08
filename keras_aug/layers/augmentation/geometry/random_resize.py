@@ -1,4 +1,4 @@
-import collections.abc
+import typing
 
 import tensorflow as tf
 from keras_cv import bounding_box
@@ -12,35 +12,35 @@ from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class ResizeBySmallestSide(VectorizedBaseRandomLayer):
-    """Resize images so that smallest side is equal to ``min_size``, keeping the
-    aspect ratio of the initial images.
+class RandomResize(VectorizedBaseRandomLayer):
+    """Randomly resizes the images in a batch manner.
 
-    This layer produces outputs of the same ``min_size`` within a batch but may
-    varying ``min_size`` across different batches if ``min_size`` is a list.
+    This layer is useful for multi-scale training.
+
+    Notes:
+        The aspect ratio might be different from the original images.
 
     Args:
-        min_size (int|list(int)): The size of the smallest side of result image.
-            When using a list, the ``min_size`` will be randomly selected from
-            the list.
-        interpolation (str, optional): The interpolation mode. Supported values:
-            ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
+        heights (list(int)): The heights to be sampled for the result image.
+        widths (list(int), optional): The widths to be sampled for the result
+            image. Defaults to ``None``. If setting ``None``, ``widths`` will
+            be the same as ``heights``.
+        interpolation (str, optional): The interpolation mode.
+            Supported values: ``"nearest", "bilinear"``. Defaults to
+            ``"bilinear"``.
         antialias (bool, optional): Whether to use antialias. Defaults to
             ``False``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
-
-    References:
-        - `Albumentations <https://github.com/albumentations-team/albumentations>`_
+        seed (int|float, optional): The random seed. Defaults to ``None``.
     """  # noqa: E501
 
     def __init__(
         self,
-        min_size,
+        heights,
+        widths=None,
         interpolation="bilinear",
         antialias=False,
         bounding_box_format=None,
@@ -48,21 +48,23 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
         **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
-        if isinstance(min_size, collections.abc.Sequence):
-            if not isinstance(min_size[0], int):
-                raise ValueError(
-                    "`min_size` must a list of int, tuple of int or a int. "
-                    f"Received min_size={min_size}"
-                )
-        elif not isinstance(min_size, int):
+        self.heights = heights
+        if widths is None:
+            self.widths = heights
+        else:
+            self.widths = widths
+        if not isinstance(self.heights, typing.Sequence) or not isinstance(
+            self.widths, typing.Sequence
+        ):
             raise ValueError(
-                "`min_size` must a list of int, tuple of int or a int. "
-                f"Received min_size={min_size}"
+                "RandomResize expects `heights` and `widths` to be a list of "
+                f"int. Received: `heights`={heights}, `widths`={widths}"
             )
-
-        if isinstance(min_size, int):
-            min_size = [min_size]
-        self.min_size = sorted(min_size)
+        if len(self.heights) != len(self.widths):
+            raise ValueError(
+                "RandomResize expects `heights` and `widths` to be same "
+                f"length. Received: `heights`={heights}, `widths`={widths}"
+            )
         self.interpolation = preprocessing_utils.get_interpolation(
             interpolation
         )
@@ -70,41 +72,35 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
+        self._heights = tf.convert_to_tensor(self.heights, dtype=tf.int32)
+        self._widths = tf.convert_to_tensor(self.widths, dtype=tf.int32)
+
+        # set force_output_dense_images=True because the output images must
+        # have same shape (B, height, width, C)
+        self.force_output_dense_images = True
+        self.force_output_dense_segmentation_masks = True
+
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
-        heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
-        )
-
-        # sample 1 min_size for the batch
-        indices = self._random_generator.random_uniform(
+        # sample 1 height and width for the batch
+        indice = self._random_generator.random_uniform(
             shape=(1,),
             minval=0,
-            maxval=len(self.min_size),
+            maxval=len(self.heights),
             dtype=tf.int32,
         )
-        min_sizes = tf.convert_to_tensor(self.min_size, dtype=tf.float32)
-        min_sizes = tf.gather(min_sizes, indices[0])
-        min_sizes = tf.reshape(min_sizes, shape=(1, 1))
-        min_sizes = tf.tile(min_sizes, multiples=(batch_size, 1))
-
-        smaller_sides = tf.cast(
-            tf.where(heights < widths, heights, widths), dtype=tf.float32
-        )
-        scales = min_sizes / smaller_sides
-        new_heights = tf.cast(tf.round(heights * scales), tf.int32)
-        new_widths = tf.cast(tf.round(widths * scales), tf.int32)
-        scaled_sizes = tf.concat((new_heights, new_widths), axis=-1)
-
+        height = tf.gather(self._heights, indice)
+        width = tf.gather(self._widths, indice)
+        scaled_sizes = tf.stack([height, width], axis=-1)
+        scaled_sizes = tf.tile(scaled_sizes, multiples=(batch_size, 1))
         return {"scaled_sizes": scaled_sizes}
 
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)
-        scaled_sizes = transformation["scaled_sizes"]
-        transformation = {
-            "scaled_sizes": tf.expand_dims(scaled_sizes, axis=0),
-        }
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
         image = self.augment_images(
             images=image, transformations=transformation, **kwargs
         )
@@ -138,12 +134,14 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
     ):
         if self.bounding_box_format is None:
             raise ValueError(
-                "`ResizeLongest()` was called with bounding boxes,"
+                "`Resize()` was called with bounding boxes,"
                 "but no `bounding_box_format` was specified in the constructor."
                 "Please specify a bounding box format in the constructor. i.e."
-                "`ResizeLongest(..., bounding_box_format='xyxy')`"
+                "`Resize(..., bounding_box_format='xyxy')`"
             )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
+
+        # resize
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,
@@ -152,18 +150,7 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
         )
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
-            images=images,
             source="rel_xyxy",
-            target="xyxy",
-        )
-        bounding_boxes = bounding_box.clip_to_image(
-            bounding_boxes,
-            bounding_box_format="xyxy",
-            images=images,
-        )
-        bounding_boxes = bounding_box.convert_format(
-            bounding_boxes,
-            source="xyxy",
             target=self.bounding_box_format,
             dtype=self.compute_dtype,
             images=images,
@@ -182,19 +169,18 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
                 self.augment_segmentation_mask_single,
                 inputs,
             )
+            return tf.cast(segmentation_masks, dtype=self.compute_dtype)
         else:
             scaled_size = transformations["scaled_sizes"]
             new_height = scaled_size[0][0]
             new_width = scaled_size[0][1]
+            # resize
             segmentation_masks = tf.image.resize(
                 segmentation_masks,
                 size=(new_height, new_width),
                 method="nearest",
             )
-            segmentation_masks = tf.cast(
-                segmentation_masks, dtype=self.compute_dtype
-            )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def augment_segmentation_mask_single(self, inputs):
         segmentation_mask = inputs.get(
@@ -205,18 +191,18 @@ class ResizeBySmallestSide(VectorizedBaseRandomLayer):
         scaled_size = transformation["scaled_sizes"]
         new_height = scaled_size[0]
         new_width = scaled_size[1]
-        segmentation_mask = tf.image.resize(
+        return tf.image.resize(
             segmentation_mask,
             size=(new_height, new_width),
             method="nearest",
         )
-        return tf.cast(segmentation_mask, dtype=self.compute_dtype)
 
     def get_config(self):
         config = super().get_config()
         config.update(
             {
-                "min_size": self.min_size,
+                "heights": self.heights,
+                "widths": self.widths,
                 "interpolation": self.interpolation,
                 "antialias": self.antialias,
                 "bounding_box_format": self.bounding_box_format,

@@ -3,15 +3,20 @@ import time
 import tensorflow as tf
 
 from examples import demo_utils
-from keras_aug.augmentation import MosaicYOLOV8
-from keras_aug.augmentation import ResizeByLongestSide
+from keras_aug.layers import MosaicYOLOV8
+from keras_aug.layers import Resize
 
 
 def main():
     dataset = demo_utils.load_voc_dataset(
         bounding_box_format="xyxy", batch_size=16
     )
-    resize = ResizeByLongestSide(max_size=224, bounding_box_format="xyxy")
+    resize = Resize(
+        height=224,
+        width=224,
+        pad_to_aspect_ratio=True,
+        bounding_box_format="xyxy",
+    )
     mosaic = MosaicYOLOV8(
         height=448,
         width=448,

@@ -145,16 +145,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
     ),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
-    ),
     ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
     ("Grayscale", layers.Grayscale, {"output_channels": 3}),
@@ -185,6 +175,7 @@ FORCE_DENSE_IMAGES_LAYERS = [
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
     ),
+    ("RandomResize", layers.RandomResize, {"heights": [2]}),
     (
         "RandomZoomAndCrop",
         layers.RandomZoomAndCrop,

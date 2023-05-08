@@ -40,6 +40,7 @@ TEST_CONFIGURATIONS = [
         },
     ),
     ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
+    ("RandomResize", layers.RandomResize, {"heights": [2]}),
     ("RandomRotate", layers.RandomRotate, {"factor": 10}),
     (
         "RandomZoomAndCrop",
@@ -188,16 +189,6 @@ TEST_CONFIGURATIONS = [
         layers.Resize,
         {"height": 2, "width": 2},
     ),
-    (
-        "ResizeByLongestSide",
-        layers.ResizeByLongestSide,
-        {"max_size": [2]},
-    ),
-    (
-        "ResizeBySmallestSide",
-        layers.ResizeBySmallestSide,
-        {"min_size": [2]},
-    ),
     ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
     ("Grayscale", layers.Grayscale, {"output_channels": 3}),
@@ -216,14 +207,13 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomCrop,  # tf.image.crop_and_resize
     layers.RandomCropAndResize,  # tf.image.crop_and_resize
+    layers.RandomResize,  # tf.image.resize
     layers.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomZoomAndCrop,  # tf.image.resize
     layers.RandomBlur,  # tf.map_fn
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     layers.MosaicYOLOV8,  # tf.map_fn
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.ResizeByLongestSide,  # tf.image.resize
-    layers.ResizeBySmallestSide,  # tf.image.resize
     layers.Equalize,  # tf.histogram_fixed_width
 ]
 

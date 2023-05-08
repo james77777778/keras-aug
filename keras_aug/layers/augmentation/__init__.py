@@ -5,6 +5,7 @@ from keras_aug.layers.augmentation.geometry.random_crop_and_resize import (
     RandomCropAndResize,
 )
 from keras_aug.layers.augmentation.geometry.random_flip import RandomFlip
+from keras_aug.layers.augmentation.geometry.random_resize import RandomResize
 from keras_aug.layers.augmentation.geometry.random_rotate import RandomRotate
 from keras_aug.layers.augmentation.geometry.random_zoom_and_crop import (
     RandomZoomAndCrop,
