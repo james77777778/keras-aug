@@ -18,6 +18,7 @@ Table of Layers
     RandomCrop
     RandomCropAndResize
     RandomFlip
+    RandomResize
     RandomRotate
     RandomZoomAndCrop
     ChannelShuffle
@@ -41,6 +42,7 @@ Table of Layers
     RandomGridMask
     RandomApply
     RandomChoice
+    RepeatedAugment
 
 **Preprocessing 2D**
 
@@ -134,6 +136,7 @@ Augmentation 2D
 
 .. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
 .. autoclass:: RandomChoice(layers, batchwise=False, seed=None, **kwargs)    
+.. autoclass:: RepeatedAugment(layers, shuffle=True, seed=None, **kwargs)
 
 Preprocessing 2D
 ****************

@@ -175,6 +175,20 @@ TEST_CONFIGURATIONS = [
         },
     ),
     (
+        "RepeatedAugment",
+        layers.RepeatedAugment,
+        {
+            "layers": [
+                layers.RandomColorJitter(
+                    value_range=(0, 255), brightness_factor=(1.5, 1.5)
+                ),
+                layers.RandomColorJitter(
+                    value_range=(0, 255), contrast_factor=(1.5, 1.5)
+                ),
+            ]
+        },
+    ),
+    (
         "CenterCrop",
         layers.CenterCrop,
         {"height": 2, "width": 2},
@@ -214,6 +228,7 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
     layers.MosaicYOLOV8,  # tf.map_fn
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
+    layers.RepeatedAugment,  # tf.random.state_less.shuffle
     layers.Equalize,  # tf.histogram_fixed_width
 ]
 

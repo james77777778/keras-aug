@@ -141,6 +141,20 @@ CONSISTENT_OUTPUTS_LAYERS = [
         },
     ),
     (
+        "RepeatedAugment",
+        layers.RepeatedAugment,
+        {
+            "layers": [
+                layers.RandomColorJitter(
+                    value_range=(0, 255), brightness_factor=(1.5, 1.5)
+                ),
+                layers.RandomColorJitter(
+                    value_range=(0, 255), contrast_factor=(1.5, 1.5)
+                ),
+            ]
+        },
+    ),
+    (
         "PadIfNeeded",
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
