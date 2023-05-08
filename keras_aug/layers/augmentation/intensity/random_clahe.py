@@ -142,9 +142,23 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
         )
 
         # Compute per-tile histogram
-        hists = tf.math.reduce_sum(
-            tf.one_hot(all_tiles, depth=256, on_value=1, off_value=0, axis=0),
-            axis=1,
+        # Notes: following operations save some memory compared to original
+        # implementation
+        ori_tiles_shape = tf.shape(all_tiles)
+        all_tiles = tf.reshape(all_tiles, shape=[ori_tiles_shape[0], -1])
+        all_tiles = tf.transpose(all_tiles, [1, 0])
+        hists = tf.math.bincount(
+            all_tiles, minlength=256, maxlength=256, axis=-1
+        )
+        hists = tf.transpose(hists, [1, 0])
+        hists = tf.reshape(
+            hists,
+            shape=[
+                256,
+                ori_tiles_shape[1],
+                ori_tiles_shape[2],
+                ori_tiles_shape[3],
+            ],
         )
 
         clipped_hists = tf.cond(
