@@ -32,9 +32,9 @@ class RepeatedAugment(VectorizedBaseRandomLayer):
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
-        - `RepeatedAugment <https://arxiv.org/abs/1901.09335>`
-        - `DEIT <https://github.com/facebookresearch/deit>`
-        - `KerasCV <https://github.com/keras-team/keras-cv>`
+        - `RepeatedAugment <https://arxiv.org/abs/1901.09335>`_
+        - `DEIT <https://github.com/facebookresearch/deit>`_
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(self, layers, shuffle=True, seed=None, **kwargs):
