@@ -10,6 +10,7 @@ from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
 
 TEST_CONFIGURATIONS = [
+    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
     (
         "RandomAffine",
