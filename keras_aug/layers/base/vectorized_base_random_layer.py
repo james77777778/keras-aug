@@ -3,6 +3,8 @@ from keras_cv import bounding_box
 from keras_cv.utils import preprocessing
 from tensorflow import keras
 
+from keras_aug.layers.__internal__.base_layer import BaseRandomLayer
+
 H_AXIS = -3
 W_AXIS = -2
 
@@ -20,7 +22,7 @@ USE_TARGETS = "use_targets"
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class VectorizedBaseRandomLayer(keras.__internal__.layers.BaseRandomLayer):
+class VectorizedBaseRandomLayer(BaseRandomLayer):
     """Abstract base layer for vectorized image augmentation.
 
     This layer contains base functionalities for preprocessing layers which
