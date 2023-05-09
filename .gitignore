@@ -14,10 +14,11 @@ __pycache__/
 # VS Code files and container
 .vscode/
 .devcontainer/
-.coverage
 
 # pytest
+.coverage
 htmlcov/
+coverage.xml
 
 # docs
 docs/build/
