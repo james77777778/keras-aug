@@ -10,6 +10,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 CONSISTENT_OUTPUTS_LAYERS = [
+    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     (
         "RandAugment",
         layers.RandAugment,
@@ -211,11 +212,7 @@ FORCE_DENSE_IMAGES_LAYERS = [
 ]
 
 NO_RAGGED_IMAGES_SUPPORT = [
-    (
-        "CutMix",
-        layers.CutMix,
-        {"alpha": 1.0},
-    ),
+    ("CutMix", layers.CutMix, {"alpha": 1.0}),
 ]
 
 

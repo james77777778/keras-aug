@@ -11,6 +11,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
+    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
     (
         "RandomAffine",

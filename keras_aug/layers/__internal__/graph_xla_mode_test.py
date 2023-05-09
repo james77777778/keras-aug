@@ -10,6 +10,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 TEST_CONFIGURATIONS = [
+    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     (
         "RandAugment",
         layers.RandAugment,
@@ -217,6 +218,7 @@ TEST_CONFIGURATIONS = [
 ]
 
 NO_XLA_SUPPORT_LAYERS = [
+    layers.AugMix,
     layers.RandAugment,
     layers.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomCrop,  # tf.image.crop_and_resize
@@ -233,6 +235,7 @@ NO_XLA_SUPPORT_LAYERS = [
 ]
 
 SKIP_XLA_TEST_LAYERS = [
+    layers.AugMix,  # too slow to compile
     layers.RandAugment,  # too slow to compile
     layers.RandomColorJitter,  # too slow to compile
     layers.Equalize,  # too slow to compile

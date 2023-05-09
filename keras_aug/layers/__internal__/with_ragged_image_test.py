@@ -10,6 +10,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
 CONSISTENT_OUTPUTS_LAYERS = [
+    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     (
         "RandAugment",
         layers.RandAugment,
