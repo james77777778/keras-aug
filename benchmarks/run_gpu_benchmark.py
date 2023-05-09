@@ -39,9 +39,10 @@ def load_voc_dataset(
             "bounding_boxes": bounding_boxes,
         }
 
-    resize = keras_aug.layers.ResizeAndPad(
+    resize = keras_aug.layers.Resize(
         height=height,
         width=width,
+        pad_to_aspect_ratio=True,
         bounding_box_format=bounding_box_format,
         dtype=tf.uint8,
     )
@@ -74,13 +75,9 @@ def compute_stats(time_costs, batch_size=128, decimals=2):
     return (mean, median, std)
 
 
-"""
-Define the behavior to process tensor
-"""
-
-
 def drop_data_by_layer_name(tf_data, layer_name):
-    if layer_name == "CutMix":
+    """Drop the annotations if needed."""
+    if layer_name in ("CutMix", "AugMix", "RandAugment", "RandomCutout"):
         tf_data.pop("bounding_boxes")
     if layer_name == "Resize":
         tf_data.pop("labels")
@@ -154,7 +151,7 @@ if __name__ == "__main__":
     width = 640
     batch_size = 128
     bounding_box_format = "xyxy"
-    skip_number = (0, 20)  # max: 20
+    skip_number = (5, 6)  # max: 24
     skip_torchvision = False
 
     # candidates
@@ -185,6 +182,21 @@ if __name__ == "__main__":
             bounding_box_format=bounding_box_format,
             name="RandomAffine",
         ),
+        keras_aug.layers.RandomCropAndResize(
+            height=224,
+            width=224,
+            crop_area_factor=(0.8, 1.0),
+            aspect_ratio_factor=(3 / 4, 4 / 3),
+            bounding_box_format=bounding_box_format,
+            name="RandomCropAndResize",
+        ),
+        keras_aug.layers.Resize(
+            height=224,
+            width=224,
+            pad_to_aspect_ratio=True,
+            bounding_box_format=bounding_box_format,
+            name="Resize",
+        ),
         keras_aug.layers.RandomColorJitter(
             value_range=(0, 255),
             brightness_factor=(0.0, 2.0),
@@ -209,27 +221,12 @@ if __name__ == "__main__":
             hue_factor=(-0.5, 0.5),
             name="RandomColorJitter",
         ),
-        keras_aug.layers.Grayscale(output_channels=3, name="Grayscale"),
-        keras_aug.layers.Resize(
-            height=224,
-            width=224,
-            bounding_box_format=bounding_box_format,
-            name="Resize",
-        ),
-        keras_aug.layers.RandomCropAndResize(
-            height=224,
-            width=224,
-            crop_area_factor=(0.8, 1.0),
-            aspect_ratio_factor=(3 / 4, 4 / 3),
-            bounding_box_format=bounding_box_format,
-            name="RandomCropAndResize",
-        ),
-        keras_aug.layers.Equalize(value_range=(0, 255), name="Equalize"),
         keras_aug.layers.RandomGaussianBlur(
             kernel_size=11, factor=(0.1, 1.0), name="RandomGaussianBlur"
         ),
-        keras_aug.layers.CutMix(name="CutMix"),
-        keras_aug.layers.MixUp(alpha=32.0, name="MixUp"),
+        keras_aug.layers.Invert(value_range=(0, 255), name="Invert"),
+        keras_aug.layers.Grayscale(output_channels=3, name="Grayscale"),
+        keras_aug.layers.Equalize(value_range=(0, 255), name="Equalize"),
         keras_aug.layers.AutoContrast(
             value_range=(0, 255), name="AutoContrast"
         ),
@@ -242,7 +239,29 @@ if __name__ == "__main__":
         keras_aug.layers.RandomSharpness(
             value_range=(0, 255), factor=(1.5, 1.5), name="RandomSharpness"
         ),
-        keras_aug.layers.Invert(value_range=(0, 255), name="Invert"),
+        keras_aug.layers.RandomCutout(
+            height_factor=0.1, width_factor=0.1, name="RandomCutout"
+        ),
+        keras_aug.layers.RandomGridMask(
+            rotation_factor=(-10, 10), name="RandomGridMask"
+        ),
+        keras_aug.layers.CutMix(name="CutMix"),
+        keras_aug.layers.MixUp(alpha=32.0, name="MixUp"),
+        keras_aug.layers.AugMix(value_range=(0, 255), name="AugMix"),
+        keras_aug.layers.RandAugment(
+            value_range=(0, 255),
+            augmentations_per_image=3,
+            exclude_ops=[  # match KerasCV setting
+                "identity",
+                "rotate",
+                "invert",
+                "posterize",
+                "sharpness",
+                "cutout",
+                "solarize_add",
+            ],
+            name="RandAugment",
+        ),
     ]
     keras_cv_layers = [
         keras_cv.layers.RandomFlip(
@@ -281,6 +300,20 @@ if __name__ == "__main__":
             ],
             name="RandomAffine",
         ),
+        keras_cv.layers.RandomCropAndResize(
+            (224, 224),
+            crop_area_factor=(0.8, 1.0),
+            aspect_ratio_factor=(3 / 4, 4 / 3),
+            bounding_box_format=bounding_box_format,
+            name="RandomCropAndResize",
+        ),
+        keras_cv.layers.Resizing(
+            height=224,
+            width=224,
+            pad_to_aspect_ratio=True,
+            bounding_box_format=bounding_box_format,
+            name="Resize",
+        ),
         keras_cv.layers.RandomBrightness(
             value_range=(0, 255), factor=(-0.5, 0.5), name="RandomBrightness"
         ),
@@ -303,27 +336,12 @@ if __name__ == "__main__":
             hue_factor=(0.0, 1.0),
             name="RandomColorJitter",
         ),
-        keras_cv.layers.Grayscale(output_channels=3, name="Grayscale"),
-        keras_cv.layers.Resizing(
-            height=224,
-            width=224,
-            pad_to_aspect_ratio=True,
-            bounding_box_format=bounding_box_format,
-            name="Resize",
-        ),
-        keras_cv.layers.RandomCropAndResize(
-            (224, 224),
-            crop_area_factor=(0.8, 1.0),
-            aspect_ratio_factor=(3 / 4, 4 / 3),
-            bounding_box_format=bounding_box_format,
-            name="RandomCropAndResize",
-        ),
-        keras_cv.layers.Equalization(value_range=(0, 255), name="Equalize"),
         keras_cv.layers.RandomGaussianBlur(
             kernel_size=11, factor=(0.1, 1.0), name="RandomGaussianBlur"
         ),
-        keras_cv.layers.CutMix(name="CutMix"),
-        keras_cv.layers.MixUp(alpha=32.0, name="MixUp"),
+        None,  # no Invert
+        keras_cv.layers.Grayscale(output_channels=3, name="Grayscale"),
+        keras_cv.layers.Equalization(value_range=(0, 255), name="Equalize"),
         keras_cv.layers.AutoContrast(value_range=(0, 255), name="AutoContrast"),
         keras_cv.layers.Posterization(
             value_range=(0, 255), bits=4, name="Posterize"
@@ -334,7 +352,20 @@ if __name__ == "__main__":
         keras_cv.layers.RandomSharpness(
             value_range=(0, 255), factor=(0.6, 0.6), name="RandomSharpness"
         ),
-        None,  # no Invert
+        keras_cv.layers.RandomCutout(
+            height_factor=0.1, width_factor=0.1, name="RandomCutout"
+        ),
+        keras_cv.layers.GridMask(
+            ratio_factor=(0.6, 0.6),
+            rotation_factor=(-10 / (2 * math.pi), 10 / (2 * math.pi)),
+            name="RandomGridMask",
+        ),
+        keras_cv.layers.CutMix(name="CutMix"),
+        keras_cv.layers.MixUp(alpha=32.0, name="MixUp"),
+        None,  # fail to run AugMix
+        keras_cv.layers.RandAugment(
+            value_range=(0, 255), augmentations_per_image=3, name="RandAugment"
+        ),
     ]
     # results
     results = {}
