@@ -2,8 +2,8 @@
 
 ![Python](https://img.shields.io/badge/python-v3.8.0+-success.svg)
 ![Tensorflow](https://img.shields.io/badge/tensorflow-v2.12.0+-success.svg)
-![Tensorflow Probability](https://img.shields.io/badge/tensorflow_probability-v0.19.0+-success.svg)
-![KerasCV](https://img.shields.io/badge/keras_cv-v0.4.3+-success.svg)
+![Tensorflow Probability](https://img.shields.io/badge/tensorflow_probability-v0.20.0+-success.svg)
+![KerasCV](https://img.shields.io/badge/keras_cv-v0.5.0+-success.svg)
 [![Tests Status](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml/badge.svg?branch=main)](https://github.com/james77777778/keras-aug/actions?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/james77777778/keras-aug/issues)
@@ -32,9 +32,76 @@ KerasAug is compatible with the latest version of KerasCV, but is NOT compatible
 pip install "keras-cv>=0.5.0" tensorflow tensorflow_probability --upgrade
 ```
 
-## Usage
+## Quick Start
 
-WIP
+```python
+import keras_aug
+import keras_cv
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from tensorflow import keras
+
+# Create a preprocessing pipeline with KerasAug
+BATCH_SIZE = 16
+NUM_CLASSES = 3
+augmenter = keras.Sequential(
+    [
+        keras_aug.layers.Resize(height=128, width=128),
+        keras_aug.layers.RandomFlip(),
+        keras_aug.layers.RandAugment(
+            value_range=(0, 255), augmentations_per_image=3
+        ),
+        keras_aug.layers.CutMix(),
+    ]
+)
+
+
+def preprocess_data(images, labels, augment=False):
+    labels = tf.one_hot(labels, NUM_CLASSES)
+    inputs = {"images": images, "labels": labels}
+    outputs = augmenter(inputs) if augment else inputs
+    return outputs['images'], outputs['labels']
+
+
+train_dataset, test_dataset = tfds.load(
+    'rock_paper_scissors', as_supervised=True, split=['train', 'test']
+)
+train_dataset = (
+    train_dataset.batch(BATCH_SIZE)
+    .map(
+        lambda x, y: preprocess_data(x, y, augment=True),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    .prefetch(tf.data.AUTOTUNE)
+)
+test_dataset = (
+    test_dataset.batch(BATCH_SIZE)
+    .map(preprocess_data, num_parallel_calls=tf.data.AUTOTUNE)
+    .prefetch(tf.data.AUTOTUNE)
+)
+
+# Create a model using a pretrained backbone
+backbone = keras_cv.models.ResNet50V2Backbone.from_preset(
+    "resnet50_v2_imagenet"
+)
+model = keras_cv.models.ImageClassifier(
+    backbone=backbone,
+    num_classes=NUM_CLASSES,
+    activation="softmax",
+)
+model.compile(
+    loss='categorical_crossentropy',
+    optimizer=keras.optimizers.Adam(learning_rate=1e-5),
+    metrics=['accuracy'],
+)
+
+# Train your model
+model.fit(
+    train_dataset,
+    validation_data=test_dataset,
+    epochs=8,
+)
+```
 
 ## Benchmark
 
