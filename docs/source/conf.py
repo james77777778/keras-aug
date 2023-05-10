@@ -51,7 +51,7 @@ html_show_sourcelink = True
 html_theme_options = {"logo_only": False}
 
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }
