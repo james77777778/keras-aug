@@ -151,8 +151,7 @@ if __name__ == "__main__":
     width = 640
     batch_size = 128
     bounding_box_format = "xyxy"
-    skip_number = (5, 6)  # max: 24
-    skip_torchvision = False
+    skip_number = (0, 24)  # max: 24
 
     # candidates
     keras_aug_layers = [

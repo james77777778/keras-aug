@@ -1,4 +1,7 @@
 import tensorflow as tf
+from keras_cv import bounding_box
+from keras_cv.bounding_box.iou import _compute_area
+from keras_cv.bounding_box.iou import _compute_intersection
 from keras_cv.utils import fill_utils
 from tensorflow import keras
 
@@ -30,12 +33,21 @@ class RandomCutout(VectorizedBaseRandomLayer):
             ``"constant", "gaussian_noise"``. Defaults to ``"constant"``.
         fill_value (int|float, optional): The value to be filled in the cutout
             rectangle when ``fill_mode="constant"``. Defaults to ``0``.
+        bbox_removal_threshold (float, optional): The bounding boxes having
+            content cut above the threshold will be removed.
+            Defaults to ``0.6`` which is applied by ultralytics/yolo series.
+        bounding_box_format (str, optional): The format of bounding
+            boxes of input dataset. Refer
+            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `Cutout <https://arxiv.org/abs/1708.04552>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
-    """
+        - `kaushal2896@Kaggle <https://www.kaggle.com/code/kaushal2896/data-augmentation-tutorial-basic-cutout-mixup>`_
+        - `ultralytics <https://github.com/ultralytics/ultralytics>`_
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -43,6 +55,8 @@ class RandomCutout(VectorizedBaseRandomLayer):
         width_factor,
         fill_mode="constant",
         fill_value=0.0,
+        bbox_removal_threshold=0.6,
+        bounding_box_format=None,
         seed=None,
         **kwargs,
     ):
@@ -64,6 +78,8 @@ class RandomCutout(VectorizedBaseRandomLayer):
             )
         self.fill_mode = fill_mode
         self.fill_value = fill_value
+        self.bbox_removal_threshold = bbox_removal_threshold
+        self.bounding_box_format = bounding_box_format
         self.seed = seed
 
     def get_random_transformation_batch(
@@ -130,25 +146,59 @@ class RandomCutout(VectorizedBaseRandomLayer):
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
 
-    def augment_bounding_boxes(self, bounding_boxes, transformations, **kwargs):
-        raise NotImplementedError(
-            "The effect of RandomCutout for bounding boxes is not clear."
-            "Feel free to file the issue if you have the idea about it."
-        )
-
-    def augment_segmentation_masks(
-        self, segmentation_masks, transformations, **kwargs
+    def augment_bounding_boxes(
+        self, bounding_boxes, transformations, raw_images=None, **kwargs
     ):
-        raise NotImplementedError(
-            "The effect of RandomCutout for segmentation masks is not clear."
-            "Feel free to file the issue if you have the idea about it."
+        if self.bounding_box_format is None:
+            raise ValueError(
+                "`RandomCutout()` was called with bounding boxes,"
+                "but no `bounding_box_format` was specified in the constructor."
+                "Please specify a bounding box format in the constructor. i.e."
+                "`RandomCutout(bounding_box_format='xyxy')`"
+            )
+        bounding_boxes = bounding_box.to_dense(bounding_boxes)
+        bounding_boxes = bounding_box.convert_format(
+            bounding_boxes,
+            source=self.bounding_box_format,
+            target="xyxy",
+            images=raw_images,
+            dtype=tf.float32,
+        )
+        # construct cutout bounding_boxes
+        cutout_boxes = tf.concat(
+            [
+                transformations["center_xs"],
+                transformations["center_ys"],
+                transformations["cutout_widths"],
+                transformations["cutout_heights"],
+            ],
+            axis=-1,
+        )
+        cutout_boxes = tf.expand_dims(cutout_boxes, axis=1)
+        cutout_boxes = bounding_box.convert_format(
+            cutout_boxes,
+            source="center_xywh",
+            target="xyxy",
+            images=raw_images,
+            dtype=tf.float32,
         )
 
-    def augment_keypoints(self, keypoints, transformations, **kwargs):
-        raise NotImplementedError(
-            "The effect of RandomCutout for keypoints is not clear."
-            "Feel free to file the issue if you have the idea about it."
+        areas = _compute_area(bounding_boxes["boxes"])
+        intersections = tf.squeeze(
+            _compute_intersection(bounding_boxes["boxes"], cutout_boxes),
+            axis=-1,
         )
+        intersection_ratios = tf.math.divide_no_nan(intersections, areas)
+
+        # set classes == -1 if ratios < self.bbox_removal_threshold
+        # the bounding_boxes with classes==-1 will be removed by
+        # bounding_box.to_ragged() after self.augment_bounding_boxes()
+        bounding_boxes["classes"] = tf.where(
+            intersection_ratios >= self.bbox_removal_threshold,
+            -1.0,
+            bounding_boxes["classes"],
+        )
+        return bounding_boxes
 
     def compute_rectangle_fills(self, inputs):
         input_shape = tf.shape(inputs)
@@ -168,6 +218,8 @@ class RandomCutout(VectorizedBaseRandomLayer):
                 "width_factor": self.width_factor,
                 "fill_mode": self.fill_mode,
                 "fill_value": self.fill_value,
+                "bbox_removal_threshold": self.bbox_removal_threshold,
+                "bounding_box_format": self.bounding_box_format,
                 "seed": self.seed,
             }
         )

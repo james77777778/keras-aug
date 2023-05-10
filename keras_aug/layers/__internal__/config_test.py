@@ -131,8 +131,8 @@ TEST_CONFIGURATIONS = [
         {},
     ),
     (
-        "MosaicYOLOV8",
-        layers.MosaicYOLOV8,
+        "Mosaic",
+        layers.Mosaic,
         {
             "height": 2,
             "width": 2,

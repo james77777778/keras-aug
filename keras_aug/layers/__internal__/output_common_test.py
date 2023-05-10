@@ -202,8 +202,8 @@ FORCE_DENSE_IMAGES_LAYERS = [
         {"height": 2, "width": 2},
     ),
     (
-        "MosaicYOLOV8",
-        layers.MosaicYOLOV8,
+        "Mosaic",
+        layers.Mosaic,
         {
             "height": 2,
             "width": 2,

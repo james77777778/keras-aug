@@ -1,7 +1,7 @@
 ARG PYTHON_VERSION
 FROM mcr.microsoft.com/vscode/devcontainers/python:${PYTHON_VERSION}
 
-RUN apt update && apt install -y locales git clang-format \
+RUN apt update && apt install -y locales git clang-format ffmpeg libsm6 libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
@@ -11,9 +11,12 @@ ARG TFP_VERSION
 ARG KERASCV_VERSION
 RUN pip install \
     tensorflow-cpu==${TF_VERSION} \
-    tensorflow_probability==${TFP_VERSION} \
+    tensorflow-probability==${TFP_VERSION} \
     keras-cv==${KERASCV_VERSION} \
+    # demo
     matplotlib \
+    opencv-python-headless \
+    # pytest
     flake8 \
     isort \
     black[jupyter] \

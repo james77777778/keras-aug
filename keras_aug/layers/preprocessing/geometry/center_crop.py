@@ -147,10 +147,10 @@ class CenterCrop(VectorizedBaseRandomLayer):
     ):
         if self.bounding_box_format is None:
             raise ValueError(
-                "`PadIfNeeded()` was called with bounding boxes,"
+                "`CenterCrop()` was called with bounding boxes,"
                 "but no `bounding_box_format` was specified in the constructor."
                 "Please specify a bounding box format in the constructor. i.e."
-                "`PadIfNeeded(..., bounding_box_format='xyxy')`"
+                "`CenterCrop(..., bounding_box_format='xyxy')`"
             )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(

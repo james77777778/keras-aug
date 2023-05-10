@@ -36,7 +36,7 @@ Table of Layers
     RandomSolarize
     CutMix
     MixUp
-    MosaicYOLOV8
+    Mosaic
     RandomChannelDropout
     RandomCutout
     RandomErase
@@ -121,14 +121,14 @@ Augmentation 2D
 
 .. autoclass:: CutMix(alpha=1.0, seed=None, **kwargs)
 .. autoclass:: MixUp(alpha=0.2, seed=None, **kwargs)
-.. autoclass:: MosaicYOLOV8(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
+.. autoclass:: Mosaic(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
 
 **Regularization**
 
 ----
 
 .. autoclass:: RandomChannelDropout(factor=(0, 2), fill_value=0, seed=None, **kwargs)
-.. autoclass:: RandomCutout(height_factor, width_factor, fill_mode="constant", fill_value=0, seed=None, **kwargs)
+.. autoclass:: RandomCutout(height_factor, width_factor, fill_mode="constant", fill_value=0, bbox_removal_threshold=0.6, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomErase(area_factor=(0.02, 0.4), aspect_ratio_factor=(0.3, 1.0 / 0.3), fill_mode="constant", fill_value=(125, 123, 114), seed=None, **kwargs)
 .. autoclass:: RandomGridMask(size_factor=(96.0 / 224.0, 224.0 / 224.0), ratio_factor=(0.6, 0.6), rotation_factor=(-180, 180), fill_mode="constant", fill_value=0.0, seed=None, **kwargs)
 

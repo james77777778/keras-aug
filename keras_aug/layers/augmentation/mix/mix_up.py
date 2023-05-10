@@ -42,7 +42,7 @@ class MixUp(VectorizedBaseRandomLayer):
         # beta distribution
         self.beta_dist = tfp.distributions.Beta(self.alpha, self.alpha)
 
-        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
+        # set force_no_unwrap_ragged_image_call=True because MixUp needs
         # to process images in batch.
         self.force_no_unwrap_ragged_image_call = True
 

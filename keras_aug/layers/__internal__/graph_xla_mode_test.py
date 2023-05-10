@@ -129,8 +129,8 @@ TEST_CONFIGURATIONS = [
         {},
     ),
     (
-        "MosaicYOLOV8",
-        layers.MosaicYOLOV8,
+        "Mosaic",
+        layers.Mosaic,
         {
             "height": 100,
             "width": 100,
@@ -228,7 +228,7 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomZoomAndCrop,  # tf.image.resize
     layers.RandomBlur,  # tf.map_fn
     layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
-    layers.MosaicYOLOV8,  # tf.map_fn
+    layers.Mosaic,  # tf.map_fn
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RepeatedAugment,  # tf.random.state_less.shuffle
     layers.Equalize,  # tf.histogram_fixed_width
