@@ -46,7 +46,6 @@ BATCH_SIZE = 16
 NUM_CLASSES = 3
 augmenter = keras.Sequential(
     [
-        keras_aug.layers.Resize(height=128, width=128),
         keras_aug.layers.RandomFlip(),
         keras_aug.layers.RandAugment(
             value_range=(0, 255), augmentations_per_image=3
