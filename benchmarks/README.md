@@ -9,13 +9,13 @@ Updated: 2023/05/09
 - Python 3.8.10
 - Tensorflow 2.12.0
 - Tensorflow Probability 0.19.0
-- KerasCV nightly
+- KerasCV 0.5.0
 - KerasAug nightly
 - torch 2.0.0
 - torchvision 0.15.1
 
 ```bash
-pip install git+https://github.com/keras-team/keras-cv.git tensorflow==2.12.0 tensorflow_probability==0.19.0 --upgrade
+pip install keras-cv==0.5.0 tensorflow==2.12.0 tensorflow_probability==0.19.0 --upgrade
 pip install git+https://github.com/james77777778/keras-aug.git
 pip install torch==2.0.0+cpu torchvision==0.15.1+cpu --index-url https://download.pytorch.org/whl/cpu
 ```

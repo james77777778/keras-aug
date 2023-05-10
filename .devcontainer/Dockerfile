@@ -8,10 +8,11 @@ RUN pip install --upgrade pip
 
 ARG TF_VERSION
 ARG TFP_VERSION
+ARG KERASCV_VERSION
 RUN pip install \
     tensorflow-cpu==${TF_VERSION} \
     tensorflow_probability==${TFP_VERSION} \
-    git+https://github.com/keras-team/keras-cv.git \
+    keras-cv==${KERASCV_VERSION} \
     matplotlib \
     flake8 \
     isort \
