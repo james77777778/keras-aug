@@ -105,3 +105,43 @@ def visualize_data(
             path=output_path,
             dpi=100,
         )
+
+
+def visualize_data_single(
+    data, value_range=(0, 255), bounding_box_format=None, output_path=None
+):
+    data = next(iter(data))
+    images = data["images"]
+    images = images[0:1, ...]
+    if isinstance(images, tf.RaggedTensor):
+        images = images.to_tensor(0)
+    if "labels" in data:
+        mask = tf.greater(data["labels"][0], 0)
+        non_zero_array = tf.boolean_mask(data["labels"][0], mask)
+        print(f"Nonzero labels of the first image:\n{non_zero_array}")
+    if bounding_box_format is not None:
+        bounding_boxes = data["bounding_boxes"]
+        bounding_boxes = {
+            "boxes": bounding_boxes["boxes"][0:1, ...],
+            "classes": bounding_boxes["classes"][0:1, ...],
+        }
+        keras_cv.visualization.plot_bounding_box_gallery(
+            images,
+            value_range=value_range,
+            bounding_box_format=bounding_box_format,
+            y_true=bounding_boxes,
+            path=output_path,
+            line_thickness=1,
+            rows=1,
+            cols=1,
+            dpi=300,
+        )
+    else:
+        keras_cv.visualization.plot_image_gallery(
+            images,
+            value_range=value_range,
+            path=output_path,
+            rows=1,
+            cols=1,
+            dpi=300,
+        )
