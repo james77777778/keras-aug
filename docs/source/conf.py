@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_markdown_tables",
     "sphinx_rtd_theme",
+    "myst_parser",
 ]
 
 templates_path = ["_templates"]
@@ -48,3 +49,9 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_show_sourcelink = True
 html_theme_options = {"logo_only": False}
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
