@@ -12,6 +12,10 @@ BUILD_WITH_CUSTOM_OPS = False
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
+DESCRIPTION = (
+    "Industry-strength augmentation and preprocessing library for TensorFlow, "
+    "Keras and KerasCV."
+)
 
 
 class BinaryDistribution(Distribution):
@@ -26,7 +30,7 @@ class BinaryDistribution(Distribution):
 
 setup(
     name="keras-aug",
-    description="Industry-strength augmentation extensions for KerasCV.",
+    description=DESCRIPTION,
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/james77777778/keras-aug",
@@ -44,8 +48,8 @@ setup(
             "pytest-cov",
             "pycocotools",
             "tensorflow",
-            "tensorflow_probability",
-            "keras-cv @ git+https://github.com/keras-team/keras-cv.git",
+            "tensorflow-probability",
+            "keras-cv",
         ],
         "examples": ["tensorflow-datasets", "matplotlib"],
     },

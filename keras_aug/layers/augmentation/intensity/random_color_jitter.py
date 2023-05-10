@@ -182,6 +182,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         degenerates = augmentation_utils.rgb_to_grayscale(images)
         degenerates = tf.reduce_mean(degenerates, axis=(1, 2, 3), keepdims=True)
         images = augmentation_utils.blend(degenerates, images, contrast_factors)
+        images = tf.clip_by_value(images, 0, 255)
         return images
 
     def adjust_saturation(self, images, transformations):
@@ -190,6 +191,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         images = augmentation_utils.blend(
             degenerates, images, saturation_factors, (0, 255)
         )
+        images = tf.clip_by_value(images, 0, 255)
         return images
 
     def adjust_hue(self, images, transformations):
@@ -200,6 +202,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             [h_channels, images[..., 1:2], images[..., 2:3]], axis=-1
         )
         images = tf.image.hsv_to_rgb(images)
+        images = tf.clip_by_value(images, 0, 255)
         return images
 
     def get_config(self):

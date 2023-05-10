@@ -2,9 +2,11 @@ Welcome to KerasAug's documentation!
 ====================================
 
 .. toctree::
-   :caption: 💡 User Guide
+   :caption: 💡 Get Started
    :maxdepth: 2
 
+   get_started/overview.md
+   get_started/tutorial.md
 
 .. toctree::
    :caption: 📚 API Reference
@@ -15,7 +17,9 @@ Welcome to KerasAug's documentation!
 
 .. toctree::
    :caption: 🚀 Benchmarks
-   :maxdepth: 1
+   :maxdepth: 2
+
+   benchmarks/gpu.md
 
 
 Indices and tables
