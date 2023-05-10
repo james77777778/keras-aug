@@ -37,7 +37,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             2. Defaults to ``None``.
         hue_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range of
             the hue factor. When represented as a single float, the factor will
-            be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
+            be picked between ``[0.0 - lower, 0.0 + upper]``. ``0.0`` means no
             shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
             Defaults to ``None``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
