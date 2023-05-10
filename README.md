@@ -12,10 +12,10 @@
 
 ## Installation
 
-KerasAug is compatible with the latest version of KerasCV, but is not compatible with `keras-cv <= 0.4.2`.
+KerasAug is compatible with the latest version of KerasCV, but is NOT compatible with `keras-cv < 0.5.0`.
 
 ```bash
-pip install git+https://github.com/keras-team/keras-cv.git tensorflow tensorflow_probability --upgrade
+pip install "keras-cv>=0.5.0" tensorflow tensorflow_probability --upgrade
 ```
 
 ## Usage
