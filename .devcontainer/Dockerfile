@@ -27,6 +27,6 @@ RUN pip install \
     sphinx~=6.1.3 \
     sphinx_markdown_tables~=0.0.17 \
     sphinx_rtd_theme~=1.2.0 \
-    myst-parser-1.0.0~=1.0.0 \
+    myst-parser~=1.0.0 \
     # dist
     twine
