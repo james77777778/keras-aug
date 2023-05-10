@@ -41,7 +41,7 @@ from keras_aug.layers.augmentation.intensity.random_solarize import (
 )
 from keras_aug.layers.augmentation.mix.cut_mix import CutMix
 from keras_aug.layers.augmentation.mix.mix_up import MixUp
-from keras_aug.layers.augmentation.mix.mosaic_yolov8 import MosaicYOLOV8
+from keras_aug.layers.augmentation.mix.mosaic import Mosaic
 from keras_aug.layers.augmentation.regularization.random_channel_dropout import (  # noqa: E501
     RandomChannelDropout,
 )

@@ -244,6 +244,7 @@ class RandAugment(VectorizedBaseRandomLayer):
                         **policy[key],
                         fill_mode="constant",
                         fill_value=self.fill_value,
+                        bounding_box_format=bounding_box_format,
                         seed=seed,
                         **kwargs,
                     )
@@ -387,12 +388,6 @@ def create_rand_augment_policy(
             min_value=0,
             max_value=(max_magnitude / max_level) * 30.0,
         ),
-        "translation_height_factor": 0,
-        "translation_width_factor": 0,
-        "zoom_height_factor": 0,
-        "zoom_width_factor": 0,
-        "shear_height_factor": 0,
-        "shear_width_factor": 0,
     }
     policy["posterize"] = {
         "factor": NormalFactorSampler(
@@ -412,26 +407,20 @@ def create_rand_augment_policy(
         "addition_factor": 0,
     }
     policy["color"] = {
-        "brightness_factor": 0,
-        "contrast_factor": 0,
         "saturation_factor": NormalFactorSampler(
             mean=magnitude / max_level * 1.8 + 0.1,
             stddev=magnitude_stddev,
             min_value=0,
             max_value=max_magnitude / max_level * 1.8 + 0.1,
         ),
-        "hue_factor": 0,
     }
     policy["contrast"] = {
-        "brightness_factor": 0,
         "contrast_factor": NormalFactorSampler(
             mean=magnitude / max_level * 1.8 + 0.1,
             stddev=magnitude_stddev,
             min_value=0,
             max_value=max_magnitude / max_level * 1.8 + 0.1,
         ),
-        "saturation_factor": 0,
-        "hue_factor": 0,
     }
     policy["brightness"] = {
         "brightness_factor": NormalFactorSampler(
@@ -440,9 +429,6 @@ def create_rand_augment_policy(
             min_value=0,
             max_value=max_magnitude / max_level * 1.8 + 0.1,
         ),
-        "contrast_factor": 0,
-        "saturation_factor": 0,
-        "hue_factor": 0,
     }
     policy["sharpness"] = {
         "factor": NormalFactorSampler(
@@ -453,11 +439,6 @@ def create_rand_augment_policy(
         )
     }
     policy["shear_x"] = {
-        "rotation_factor": 0,
-        "translation_height_factor": 0,
-        "translation_width_factor": 0,
-        "zoom_height_factor": 0,
-        "zoom_width_factor": 0,
         "shear_height_factor": 0,
         "shear_width_factor": SignedNormalFactorSampler(
             mean=magnitude / max_level * 0.3,
@@ -468,11 +449,6 @@ def create_rand_augment_policy(
         ),
     }
     policy["shear_y"] = {
-        "rotation_factor": 0,
-        "translation_height_factor": 0,
-        "translation_width_factor": 0,
-        "zoom_height_factor": 0,
-        "zoom_width_factor": 0,
         "shear_height_factor": SignedNormalFactorSampler(
             mean=magnitude / max_level * 0.3,
             stddev=magnitude_stddev,
@@ -483,13 +459,8 @@ def create_rand_augment_policy(
         "shear_width_factor": 0,
     }
     policy["translate_x"] = {
-        "rotation_factor": 0,
         "translation_height_factor": 0,
-        "translation_width_factor": 0,
-        "zoom_height_factor": 0,
-        "zoom_width_factor": 0,
-        "shear_height_factor": 0,
-        "shear_width_factor": SignedNormalFactorSampler(
+        "translation_width_factor": SignedNormalFactorSampler(
             mean=magnitude / max_level * translation_multiplier,
             stddev=magnitude_stddev,
             min_value=0,
@@ -498,19 +469,14 @@ def create_rand_augment_policy(
         ),
     }
     policy["translate_y"] = {
-        "rotation_factor": 0,
-        "translation_height_factor": 0,
-        "translation_width_factor": 0,
-        "zoom_height_factor": 0,
-        "zoom_width_factor": 0,
-        "shear_height_factor": SignedNormalFactorSampler(
+        "translation_height_factor": SignedNormalFactorSampler(
             mean=magnitude / max_level * translation_multiplier,
             stddev=magnitude_stddev,
             min_value=0,
             max_value=max_magnitude / max_level * translation_multiplier,
             rate=0.5,
         ),
-        "shear_width_factor": 0,
+        "translation_width_factor": 0,
     }
     policy["cutout"] = {
         "height_factor": NormalFactorSampler(

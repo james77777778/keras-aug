@@ -36,7 +36,7 @@ Table of Layers
     RandomSolarize
     CutMix
     MixUp
-    MosaicYOLOV8
+    Mosaic
     RandomChannelDropout
     RandomCutout
     RandomErase
@@ -121,7 +121,7 @@ Augmentation 2D
 
 .. autoclass:: CutMix(alpha=1.0, seed=None, **kwargs)
 .. autoclass:: MixUp(alpha=0.2, seed=None, **kwargs)
-.. autoclass:: MosaicYOLOV8(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
+.. autoclass:: Mosaic(height, width, offset=(0.25, 0.75), seed=None, **kwargs)
 
 **Regularization**
 

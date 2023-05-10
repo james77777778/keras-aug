@@ -3,7 +3,7 @@ import tensorflow as tf
 from keras_aug import layers
 
 
-class MosaicYOLOV8Test(tf.test.TestCase):
+class MosaicTest(tf.test.TestCase):
     num_classes = 10
 
     def test_return_shapes(self):
@@ -18,10 +18,8 @@ class MosaicYOLOV8Test(tf.test.TestCase):
             "boxes": tf.random.uniform((2, 3, 4), 0, 1),
             "classes": tf.random.uniform((2, 3), 0, 1),
         }
-        layer = layers.MosaicYOLOV8(
-            height=32, width=32, bounding_box_format="xywh"
-        )
-        # augmentations.MosaicYOLOV8 on labels
+        layer = layers.Mosaic(height=32, width=32, bounding_box_format="xywh")
+        # mosaic on labels
         outputs = layer(
             {
                 "images": xs,
@@ -45,7 +43,7 @@ class MosaicYOLOV8Test(tf.test.TestCase):
             tf.stack([2 * tf.ones((10, 10, 1)), tf.ones((10, 10, 1))], axis=0),
             tf.float32,
         )
-        layer = layers.MosaicYOLOV8(height=32, width=32)
+        layer = layers.Mosaic(height=32, width=32)
         with self.assertRaisesRegexp(
             ValueError, "expects inputs in a dictionary"
         ):
@@ -55,18 +53,18 @@ class MosaicYOLOV8Test(tf.test.TestCase):
         xs = tf.ones((32, 32, 3))
         ys = tf.one_hot(tf.constant([1]), 2)
         inputs = {"images": xs, "labels": ys}
-        layer = layers.MosaicYOLOV8(height=32, width=32)
+        layer = layers.Mosaic(height=32, width=32)
         with self.assertRaisesRegexp(
             ValueError,
-            "MosaicYOLOV8 received a single image to `call`",
+            "Mosaic received a single image to `call`",
         ):
             _ = layer(inputs)
 
     def test_image_input(self):
         xs = tf.ones((2, 32, 32, 3))
-        layer = layers.MosaicYOLOV8(height=32, width=32)
+        layer = layers.Mosaic(height=32, width=32)
         with self.assertRaisesRegexp(
             ValueError,
-            "MosaicYOLOV8 expects inputs in a dictionary with format",
+            "Mosaic expects inputs in a dictionary with format",
         ):
             _ = layer(xs)

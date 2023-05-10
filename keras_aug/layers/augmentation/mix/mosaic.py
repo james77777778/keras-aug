@@ -13,7 +13,7 @@ from keras_aug.utils.augmentation import LABELS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class MosaicYOLOV8(VectorizedBaseRandomLayer):
+class Mosaic(VectorizedBaseRandomLayer):
     """The Mosaic data augmentation technique used by YOLO series.
 
     The Mosaic data augmentation first takes 4 images from the batch and makes a
@@ -39,10 +39,10 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
             ``None``.
 
     References:
-        - `YOLOV4 <https://arxiv.org/pdf/2004.10934>`_
-        - `YOLOV5 <https://github.com/ultralytics/yolov5>`_
+        - `YOLOV4 <https://arxiv.org/abs/2004.10934>`_
         - `YOLOX <https://github.com/Megvii-BaseDetection/YOLOX>`_
-        - `YOLOV8 <https://github.com/ultralytics/ultralytics>`_
+        - `ultralytics <https://github.com/ultralytics/ultralytics>`_
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(
@@ -74,7 +74,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         )
         self.single_image_max_size = single_image_max_size  # for padding
 
-        # set force_no_unwrap_ragged_image_call=True because MosaicYOLOV8 needs
+        # set force_no_unwrap_ragged_image_call=True because Mosaic needs
         # to process images in batch.
         # set force_output_dense_images=True because the output images must
         # have same shape (B, height, width, C)
@@ -253,7 +253,7 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         _, metadata = self._format_inputs(inputs)
         if metadata[BATCHED] is not True:
             raise ValueError(
-                "MosaicYOLOV8 received a single image to `call`. The "
+                "Mosaic received a single image to `call`. The "
                 "layer relies on combining multiple examples, and as such "
                 "will not behave as expected. Please call the layer with 4 "
                 "or more samples."
@@ -266,14 +266,14 @@ class MosaicYOLOV8(VectorizedBaseRandomLayer):
         bounding_boxes = inputs.get(BOUNDING_BOXES, None)
         if images is None or (labels is None and bounding_boxes is None):
             raise ValueError(
-                "MosaicYOLOV8 expects inputs in a dictionary with format "
+                "Mosaic expects inputs in a dictionary with format "
                 '{"images": images, "labels": labels}. or'
                 '{"images": images, "bounding_boxes": bounding_boxes}'
                 f"Got: inputs = {inputs}"
             )
         if bounding_boxes is not None and self.bounding_box_format is None:
             raise ValueError(
-                "MosaicYOLOV8 received bounding boxes but no "
+                "Mosaic received bounding boxes but no "
                 "bounding_box_format. Please pass a bounding_box_format from "
                 "the supported list."
             )
