@@ -1,5 +1,8 @@
 from keras_aug.layers.augmentation.auto.aug_mix import AugMix
 from keras_aug.layers.augmentation.auto.rand_augment import RandAugment
+from keras_aug.layers.augmentation.auto.trivial_augment_wide import (
+    TrivialAugmentWide,
+)
 from keras_aug.layers.augmentation.geometry.random_affine import RandomAffine
 from keras_aug.layers.augmentation.geometry.random_crop import RandomCrop
 from keras_aug.layers.augmentation.geometry.random_crop_and_resize import (

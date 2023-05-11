@@ -13,6 +13,11 @@ TEST_CONFIGURATIONS = [
     ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
     (
+        "TrivialAugmentWide",
+        layers.TrivialAugmentWide,
+        {"value_range": (0, 255)},
+    ),
+    (
         "RandomAffine",
         layers.RandomAffine,
         {

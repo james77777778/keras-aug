@@ -5,8 +5,7 @@ from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import layers
-from keras_aug.core import NormalFactorSampler
-from keras_aug.core import SignedNormalFactorSampler
+from keras_aug.core import UniformFactorSampler
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -15,15 +14,16 @@ from keras_aug.utils.augmentation import IMAGES
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
-class RandAugment(VectorizedBaseRandomLayer):
-    """RandAugment performs the Rand Augment operation on input images.
+class TrivialAugmentWide(VectorizedBaseRandomLayer):
+    """TrivialAugmentWide performs the Wide version of Trivial Augment
+    operation on input images.
 
-    RandAugment can be thought of as an all-in-one image augmentation layer. The
-    policy implemented by RandAugment has been benchmarked extensively and is
-    effective on a wide variety of datasets.
+    TrivialAugmentWide can be thought of as an all-in-one image augmentation
+    layer. The policy implemented by TrivialAugmentWide has been benchmarked
+    extensively and is effective on a wide variety of datasets.
 
     The input images will be converted to the range [0, 255], performed
-    RandAugment and then converted back to the original value range.
+    TrivialAugment and then converted back to the original value range.
 
     For object detection tasks, you should set ``fill_mode="constant"`` and
     ``fill_value=128`` to avoid artifacts. Moreover, you can set
@@ -34,19 +34,6 @@ class RandAugment(VectorizedBaseRandomLayer):
         value_range ((int|float, int|float)): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        augmentations_per_image (int, optional): The number of layers to use in
-            the rand augment policy. Defaults to ``2``.
-        magnitude (float, optional): The shared magnitude across all
-            augmentation operations. Represented as M in the paper. Usually best
-            values are in the range ``[5, 10]``. Defaults to ``10``.
-        magnitude_stddev (float, optional): The randomness of the severity as
-            proposed by the authors of the timm library. Defaults to ``0``. When
-            enabled, A gaussian noise with ``magnitude_stddev`` as sigma will be
-            added to ``magnitude``.
-        translation_multiplier (float, optional): The multiplier for applying
-            translation. Defaults to ``150.0 / 331.0`` which is for ImageNet
-            classification model. For CIFAR, it is set to ``10.0 / 32.0``.
-            Usually best value is in the range ``[1.0 / 3.0, 1.0 / 2.0]``.
         use_geometry (bool, optional): whether to include geometric
             augmentations. This should be set to ``False`` when performing
             object detection. Defaults to ``True``.
@@ -66,19 +53,14 @@ class RandAugment(VectorizedBaseRandomLayer):
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
-        - `RandAugment <https://arxiv.org/abs/1909.13719>`_
-        - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
+        - `TrivialAugment <https://arxiv.org/abs/2103.10158>`_
+        - `TrivialAugment Official Repo <https://github.com/automl/trivialaugment>`_
         - `Torchvision <https://github.com/pytorch/vision>`_
-        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(
         self,
         value_range,
-        augmentations_per_image=2,
-        magnitude=10,
-        magnitude_stddev=0.0,
-        translation_multiplier=150.0 / 331.0,
         use_geometry=True,
         interpolation="nearest",
         fill_mode="reflect",
@@ -90,10 +72,6 @@ class RandAugment(VectorizedBaseRandomLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         self.value_range = value_range
-        self.augmentations_per_image = augmentations_per_image
-        self.magnitude = magnitude
-        self.magnitude_stddev = magnitude_stddev
-        self.translation_multiplier = translation_multiplier
         self.use_geometry = use_geometry
         self.interpolation = interpolation
         self.fill_mode = fill_mode
@@ -103,9 +81,6 @@ class RandAugment(VectorizedBaseRandomLayer):
         self.seed = seed
 
         self.aug_layers = self.get_standard_policy(
-            magnitude,
-            magnitude_stddev,
-            translation_multiplier,
             use_geometry,
             exclude_ops,
             bounding_box_format,
@@ -116,18 +91,13 @@ class RandAugment(VectorizedBaseRandomLayer):
 
     def get_standard_policy(
         self,
-        magnitude,
-        magnitude_stddev,
-        translation_multiplier,
         use_geometry,
         exclude_ops,
         bounding_box_format=None,
         seed=None,
         **kwargs,
     ):
-        policy = create_rand_augment_policy(
-            magnitude, magnitude_stddev, translation_multiplier, seed=seed
-        )
+        policy = create_trivial_augment_policy(seed)
         aug_layers = []
         if exclude_ops is not None:
             for op in exclude_ops:
@@ -250,10 +220,7 @@ class RandAugment(VectorizedBaseRandomLayer):
 
     def get_random_transformation_batch(self, batch_size):
         random_indices = self._random_generator.random_uniform(
-            shape=(
-                batch_size,
-                self.augmentations_per_image,
-            ),
+            shape=(batch_size,),
             minval=0,
             maxval=self.num_layers,
             dtype=tf.int32,
@@ -271,13 +238,13 @@ class RandAugment(VectorizedBaseRandomLayer):
         )
         inputs[IMAGES] = images
 
-        inputs_for_rand_augment_single_input = {
+        inputs_for_trivial_augment_single_input = {
             "inputs": inputs,
             "transformations": transformations,
         }
         result = tf.map_fn(
-            self.rand_augment_single_input,
-            inputs_for_rand_augment_single_input,
+            self.trivial_augment_single_input,
+            inputs_for_trivial_augment_single_input,
         )
         # unpack result to normal inputs
         result = result["inputs"]
@@ -290,28 +257,21 @@ class RandAugment(VectorizedBaseRandomLayer):
         result[IMAGES] = images
         return result
 
-    def rand_augment_single_input(self, inputs):
+    def trivial_augment_single_input(self, inputs):
         input = inputs.get("inputs")
-        random_indices = inputs.get("transformations")
-
-        for random_indice in random_indices:
-            # construct branch_fns
-            branch_fns = {}
-            for idx, layer in enumerate(self.aug_layers):
-                branch_fns[idx] = partial(layer, input)
-            # augment
-            input = tf.switch_case(random_indice, branch_fns=branch_fns)
-        return {"inputs": input, "transformations": random_indices}
+        random_indice = inputs.get("transformations")
+        # construct branch_fns
+        branch_fns = {}
+        for idx, layer in enumerate(self.aug_layers):
+            branch_fns[idx] = partial(layer, input)
+        input = tf.switch_case(random_indice, branch_fns=branch_fns)
+        return {"inputs": input, "transformations": random_indice}
 
     def get_config(self):
         config = super().get_config()
         config.update(
             {
                 "value_range": self.value_range,
-                "augmentations_per_image": self.augmentations_per_image,
-                "magnitude": self.magnitude,
-                "magnitude_stddev": self.magnitude_stddev,
-                "translation_multiplier": self.translation_multiplier,
                 "use_geometry": self.use_geometry,
                 "interpolation": self.interpolation,
                 "fill_mode": self.fill_mode,
@@ -324,125 +284,65 @@ class RandAugment(VectorizedBaseRandomLayer):
         return config
 
 
-def create_rand_augment_policy(
-    magnitude, magnitude_stddev, translation_multiplier, seed
-):
-    """Create RandAugment Policy.
+def create_trivial_augment_policy(seed):
+    """Create TrivialAugment Policy.
 
     References:
         https://github.com/pytorch/vision/blob/main/torchvision/transforms/v2/_auto_augment.py
     """  # noqa: E501
-    max_magnitude = 30.0
-
     policy = {}
     policy["identity"] = {}
     policy["auto_contrast"] = {}
     policy["equalize"] = {}
     policy["rotate"] = {
-        "rotation_factor": SignedNormalFactorSampler(
-            mean=(magnitude / max_magnitude) * 30.0,
-            stddev=magnitude_stddev * 30.0,
-            min_value=0,
-            max_value=30.0,
-            seed=seed,
+        "rotation_factor": UniformFactorSampler(
+            lower=-135, upper=135, seed=seed
         ),
     }
     policy["posterize"] = {
-        "factor": NormalFactorSampler(
-            mean=8 - round(4 * (magnitude / max_magnitude)),  # must be int
-            stddev=0,
-            min_value=0,
-            max_value=8,
-            seed=seed,
-        )
+        "factor": UniformFactorSampler(lower=2, upper=8 + 1, seed=seed)
     }
     policy["solarize"] = {
-        "threshold_factor": NormalFactorSampler(
-            mean=255 - (magnitude / max_magnitude * 255),
-            stddev=magnitude_stddev * 255,
-            min_value=0,
-            max_value=255,
-            seed=seed,
-        ),
+        "threshold_factor": UniformFactorSampler(lower=0, upper=255, seed=seed),
         "addition_factor": 0,
     }
     policy["color"] = {
-        "saturation_factor": NormalFactorSampler(
-            mean=1.0 + magnitude / max_magnitude * 0.9,
-            stddev=magnitude_stddev * 0.9,
-            min_value=0,
-            max_value=1.9,
-            seed=seed,
+        "saturation_factor": UniformFactorSampler(
+            lower=1, upper=1.99, seed=seed
         ),
     }
     policy["contrast"] = {
-        "contrast_factor": NormalFactorSampler(
-            mean=1.0 + magnitude / max_magnitude * 0.9,
-            stddev=magnitude_stddev * 0.9,
-            min_value=0,
-            max_value=1.9,
-            seed=seed,
-        ),
+        "contrast_factor": UniformFactorSampler(lower=1, upper=1.99, seed=seed),
     }
     policy["brightness"] = {
-        "brightness_factor": NormalFactorSampler(
-            mean=1.0 + magnitude / max_magnitude * 0.9,
-            stddev=magnitude_stddev * 0.9,
-            min_value=0,
-            max_value=1.9,
-            seed=seed,
+        "brightness_factor": UniformFactorSampler(
+            lower=1, upper=1.99, seed=seed
         ),
     }
     policy["sharpness"] = {
-        "factor": NormalFactorSampler(
-            mean=1.0 + magnitude / max_magnitude * 0.9,
-            stddev=magnitude_stddev * 0.9,
-            min_value=0,
-            max_value=1.9,
-            seed=seed,
-        )
+        "factor": UniformFactorSampler(lower=1, upper=1.99, seed=seed),
     }
     policy["shear_x"] = {
         "shear_height_factor": 0,
-        "shear_width_factor": SignedNormalFactorSampler(
-            mean=magnitude / max_magnitude * 0.3,
-            stddev=magnitude_stddev * 0.3,
-            min_value=0,
-            max_value=0.3,
-            rate=0.5,
-            seed=seed,
+        "shear_width_factor": UniformFactorSampler(
+            lower=-0.99, upper=0.99, seed=seed
         ),
     }
     policy["shear_y"] = {
-        "shear_height_factor": SignedNormalFactorSampler(
-            mean=magnitude / max_magnitude * 0.3,
-            stddev=magnitude_stddev * 0.3,
-            min_value=0,
-            max_value=0.3,
-            rate=0.5,
-            seed=seed,
+        "shear_height_factor": UniformFactorSampler(
+            lower=-0.99, upper=0.99, seed=seed
         ),
         "shear_width_factor": 0,
     }
     policy["translate_x"] = {
         "translation_height_factor": 0,
-        "translation_width_factor": SignedNormalFactorSampler(
-            mean=magnitude / max_magnitude * translation_multiplier,
-            stddev=magnitude_stddev * translation_multiplier,
-            min_value=0,
-            max_value=translation_multiplier,
-            rate=0.5,
-            seed=seed,
+        "translation_width_factor": UniformFactorSampler(
+            lower=-1, upper=1, seed=seed
         ),
     }
     policy["translate_y"] = {
-        "translation_height_factor": SignedNormalFactorSampler(
-            mean=magnitude / max_magnitude * translation_multiplier,
-            stddev=magnitude_stddev * translation_multiplier,
-            min_value=0,
-            max_value=translation_multiplier,
-            rate=0.5,
-            seed=seed,
+        "translation_height_factor": UniformFactorSampler(
+            lower=-1, upper=1, seed=seed
         ),
         "translation_width_factor": 0,
     }

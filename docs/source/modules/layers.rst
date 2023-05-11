@@ -15,6 +15,7 @@ Table of Layers
 
     AugMix
     RandAugment
+    TrivialAugmentWide
     RandomAffine
     RandomCrop
     RandomCropAndResize
@@ -84,7 +85,8 @@ Augmentation 2D
 ----
 
 .. autoclass:: AugMix(value_range, severity=[0.01, 0.3], num_chains=3, chain_depth=[1, 3], alpha=1.0, seed=None, **kwargs)
-.. autoclass:: RandAugment(value_range, augmentations_per_image=2, magnitude=10, magnitude_stddev=0, cutout_multiplier=60.0 / 331.0, translation_multiplier=150.0/331.0, use_geometry=True, interpolation="nearest", fill_mode="reflect", fill_value=0, exclude_ops=None, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: RandAugment(value_range, augmentations_per_image=2, magnitude=10, magnitude_stddev=0, translation_multiplier=150.0/331.0, use_geometry=True, interpolation="nearest", fill_mode="reflect", fill_value=0, exclude_ops=None, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: TrivialAugmentWide(value_range, use_geometry=True, interpolation="nearest", fill_mode="reflect", fill_value=0, exclude_ops=None, bounding_box_format=None, seed=None, **kwargs)
 
 **Geometry**
 

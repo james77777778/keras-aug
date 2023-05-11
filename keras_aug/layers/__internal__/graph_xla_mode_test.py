@@ -17,6 +17,11 @@ TEST_CONFIGURATIONS = [
         {"value_range": (0, 255), "seed": 2023},
     ),
     (
+        "TrivialAugmentWide",
+        layers.TrivialAugmentWide,
+        {"value_range": (0, 255)},
+    ),
+    (
         "RandomAffine",
         layers.RandomAffine,
         {
@@ -220,6 +225,7 @@ TEST_CONFIGURATIONS = [
 NO_XLA_SUPPORT_LAYERS = [
     layers.AugMix,
     layers.RandAugment,
+    layers.TrivialAugmentWide,
     layers.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RandomCrop,  # tf.image.crop_and_resize
     layers.RandomCropAndResize,  # tf.image.crop_and_resize
@@ -237,6 +243,7 @@ NO_XLA_SUPPORT_LAYERS = [
 SKIP_XLA_TEST_LAYERS = [
     layers.AugMix,  # too slow to compile
     layers.RandAugment,  # too slow to compile
+    layers.TrivialAugmentWide,  # too slow to compile
     layers.RandomColorJitter,  # too slow to compile
     layers.Equalize,  # too slow to compile
 ]
