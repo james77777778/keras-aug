@@ -17,6 +17,11 @@ CONSISTENT_OUTPUTS_LAYERS = [
         {"value_range": (0, 255), "seed": 2023},
     ),
     (
+        "TrivialAugmentWide",
+        layers.TrivialAugmentWide,
+        {"value_range": (0, 255)},
+    ),
+    (
         "RandomAffine",
         layers.RandomAffine,
         {

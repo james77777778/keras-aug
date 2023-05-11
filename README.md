@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # KerasAug
 
 ![Python](https://img.shields.io/badge/python-v3.8.0+-success.svg)
@@ -32,7 +33,7 @@ KerasAug is compatible with the latest version of KerasCV, but is NOT compatible
 pip install "keras-cv>=0.5.0" tensorflow tensorflow_probability --upgrade
 ```
 
-## Quick Start
+## Quickstart
 
 ```python
 import keras_aug
@@ -48,7 +49,10 @@ augmenter = keras.Sequential(
     [
         keras_aug.layers.RandomFlip(),
         keras_aug.layers.RandAugment(
-            value_range=(0, 255), augmentations_per_image=3
+            value_range=(0, 255),
+            augmentations_per_image=3,
+            magnitude=15,  # [0, 30]
+            magnitude_stddev=0.15,
         ),
         keras_aug.layers.CutMix(),
     ]
@@ -59,11 +63,11 @@ def preprocess_data(images, labels, augment=False):
     labels = tf.one_hot(labels, NUM_CLASSES)
     inputs = {"images": images, "labels": labels}
     outputs = augmenter(inputs) if augment else inputs
-    return outputs['images'], outputs['labels']
+    return outputs["images"], outputs["labels"]
 
 
 train_dataset, test_dataset = tfds.load(
-    'rock_paper_scissors', as_supervised=True, split=['train', 'test']
+    "rock_paper_scissors", as_supervised=True, split=["train", "test"]
 )
 train_dataset = (
     train_dataset.batch(BATCH_SIZE)
@@ -80,8 +84,8 @@ test_dataset = (
 )
 
 # Create a model using a pretrained backbone
-backbone = keras_cv.models.ResNet50V2Backbone.from_preset(
-    "resnet50_v2_imagenet"
+backbone = keras_cv.models.EfficientNetV2Backbone.from_preset(
+    "efficientnetv2_b0_imagenet"
 )
 model = keras_cv.models.ImageClassifier(
     backbone=backbone,
@@ -89,9 +93,9 @@ model = keras_cv.models.ImageClassifier(
     activation="softmax",
 )
 model.compile(
-    loss='categorical_crossentropy',
+    loss="categorical_crossentropy",
     optimizer=keras.optimizers.Adam(learning_rate=1e-5),
-    metrics=['accuracy'],
+    metrics=["accuracy"],
 )
 
 # Train your model
@@ -101,6 +105,25 @@ model.fit(
     epochs=8,
 )
 ```
+
+<details>
+<summary>trainging log</summary>
+
+```bash
+# KerasCV Quickstart
+...
+Epoch 8/8
+158/158 [==============================] - 39s 242ms/step - loss: 0.7930 - accuracy: 0.7171 - val_loss: 0.2488 - val_accuracy: 0.9946
+
+# KerasAug Quickstart
+...
+Epoch 8/8
+158/158 [==============================] - 34s 215ms/step - loss: 0.7680 - accuracy: 0.7567 - val_loss: 0.2639 - val_accuracy: 1.0000
+```
+
+</details>
+
+KerasAug runs faster (215ms/step vs. 242ms/step) than KerasCV and achieves better performance with the script.
 
 ## Benchmark
 
