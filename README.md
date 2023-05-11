@@ -13,14 +13,14 @@
 
 KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, bounding boxes, segmentation masks, and more.
 
-![visualization](https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif)
+<div align="center"><img style="width: 440px; max-width: 90%;" src="https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif"></div>
 
 KerasAug aims to provide fast and user-friendly preprocessing and augmentation layers, facilitating seamless integration with TensorFlow, Keras, and KerasCV.
 
 KerasAug is:
 
 - built entirely using TensorFlow, TensorFlow Probability, Keras and KerasCV
-- supporting various data types, including images, bounding boxes, segmentation masks, and more.
+- supporting various data types, including images, labels, bounding boxes, segmentation masks, and more.
 - compatible with GPU (partially compatible with TPU/XLA)
 - seamlessly integrating with the `tf.data` and `tf.keras.Model` API
 - cosistent with officially published implementations
@@ -123,7 +123,7 @@ Epoch 8/8
 
 </details>
 
-KerasAug runs faster (215ms/step vs. 242ms/step) than KerasCV and achieves better performance with the script.
+KerasAug runs faster (215ms/step vs. 242ms/step) than KerasCV and achieves better performance.
 
 ## Benchmark
 
