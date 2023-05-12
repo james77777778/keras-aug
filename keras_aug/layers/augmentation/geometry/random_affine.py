@@ -9,6 +9,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -55,6 +56,9 @@ class RandomAffine(VectorizedBaseRandomLayer):
             range for random horizontal shear. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. Defaults to ``None``.
+        same_zoom_factor (bool, optional): If True, the zoom factor sampled from
+            ``zoom_height_factor`` will be applied to both height and width.
+            It is useful to keep aspect ratio. Defaults to ``False``.
         interpolation (str, optional): The interpolation mode. Supported values:
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
         fill_mode (str, optional): The fill mode. Supported values:
@@ -66,6 +70,10 @@ class RandomAffine(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
+        bounding_box_area_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``0.1``.
+        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``100``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -81,10 +89,13 @@ class RandomAffine(VectorizedBaseRandomLayer):
         zoom_width_factor=None,
         shear_height_factor=None,
         shear_width_factor=None,
+        same_zoom_factor=False,
         interpolation="bilinear",
         fill_mode="constant",
         fill_value=0,
         bounding_box_format=None,
+        bounding_box_area_ratio_threshold=0.1,
+        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -157,6 +168,8 @@ class RandomAffine(VectorizedBaseRandomLayer):
                 seed=seed,
             )
 
+        self.same_zoom_factor = same_zoom_factor
+
         preprocessing_utils.check_fill_mode_and_interpolation(
             fill_mode, interpolation
         )
@@ -164,6 +177,12 @@ class RandomAffine(VectorizedBaseRandomLayer):
         self.fill_mode = fill_mode
         self.fill_value = fill_value
         self.bounding_box_format = bounding_box_format
+        self.bounding_box_area_ratio_threshold = (
+            bounding_box_area_ratio_threshold
+        )
+        self.bounding_box_aspect_ratio_threshold = (
+            bounding_box_aspect_ratio_threshold
+        )
         self.seed = seed
 
         # decide whether to enable the augmentation
@@ -217,7 +236,10 @@ class RandomAffine(VectorizedBaseRandomLayer):
             translation_widths = self.translation_width_factor(factor_shape)
         if self._enable_zoom:
             zoom_heights = self.zoom_height_factor(factor_shape)
-            zoom_widths = self.zoom_width_factor(factor_shape)
+            if self.same_zoom_factor:
+                zoom_widths = zoom_heights
+            else:
+                zoom_widths = self.zoom_width_factor(factor_shape)
         if self._enable_shear:
             shear_heights = self.shear_height_factor(factor_shape)
             shear_widths = self.shear_width_factor(factor_shape)
@@ -328,6 +350,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             dtype=tf.float32,
         )
         boxes = bounding_boxes["boxes"]
+        original_bounding_boxes = bounding_boxes.copy()
         # process rotations
         if self._enable_rotation:
             origin_x = widths / 2
@@ -421,7 +444,14 @@ class RandomAffine(VectorizedBaseRandomLayer):
             bounding_box_format="xyxy",
             images=raw_images,
         )
-        # coordinates cannot be float values, it is cast to int32
+        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+            original_bounding_boxes,
+            bounding_boxes,
+            self.bounding_box_area_ratio_threshold,
+            self.bounding_box_aspect_ratio_threshold,
+            bounding_box_format="xyxy",
+            images=raw_images,
+        )
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source="xyxy",
@@ -461,10 +491,13 @@ class RandomAffine(VectorizedBaseRandomLayer):
                 "zoom_width_factor": self.zoom_width_factor,
                 "shear_height_factor": self.shear_height_factor,
                 "shear_width_factor": self.shear_width_factor,
+                "same_zoom_factor": self.same_zoom_factor,
                 "fill_mode": self.fill_mode,
                 "fill_value": self.fill_value,
                 "interpolation": self.interpolation,
                 "bounding_box_format": self.bounding_box_format,
+                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
+                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )
