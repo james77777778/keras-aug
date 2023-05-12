@@ -17,7 +17,7 @@ class AutoContrast(VectorizedBaseRandomLayer):
     ``[0, 255]``, auto contrast will change the ``1`` values to be ``255``.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
 

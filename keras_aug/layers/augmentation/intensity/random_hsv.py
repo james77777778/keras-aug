@@ -20,21 +20,21 @@ class RandomHSV(VectorizedBaseRandomLayer):
     converted back to RGB.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        hue_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range of
+        hue_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The range of
             the hue factor. When represented as a single float, the factor will
             be picked between ``[0.5 - lower, 0.5 + upper]``. ``0.0`` means no
             shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.
             Defaults to ``None``.
-        saturation_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
+        saturation_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The
             range of the saturation factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image. ``0.0`` makes the image to be
             fully grayscale. ``2.0`` will enhance the saturation by a factor of
             2. Defaults to ``None``.
-        value_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range
+        value_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The range
             of the value factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image. ``0.0`` makes the image to be

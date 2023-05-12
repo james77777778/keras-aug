@@ -32,7 +32,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
     Args:
         height (int): The height of result image.
         width (int): The width of result image.
-        scale_factor (float|(float, float)|keras_cv.FactorSampler): The range
+        scale_factor (float|Sequence[float]|keras_aug.FactorSampler): The range
             of the scale factor that is used to scale the input image. When
             represented as a single float, the factor will be picked between
             ``[1.0 - lower, 1.0 + upper]``. To reproduce the results of the
@@ -51,6 +51,9 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(

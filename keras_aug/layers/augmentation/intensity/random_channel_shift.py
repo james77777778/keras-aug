@@ -13,10 +13,10 @@ class RandomChannelShift(VectorizedBaseRandomLayer):
     """Randomly shift values for each channel of the input images.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (float|(float, float)|keras_cv.FactorSampler): The range of the
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The range of the
             channel shift factor. When represented as a single float,
             the factor will be picked between ``[0.0 - lower, 0.0 + upper]``.
             ``0.0`` gives the original image.

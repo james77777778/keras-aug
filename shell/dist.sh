@@ -1,3 +1,3 @@
 #!/bin/bash
-python setup.py sdist &&
-twine upload --repository testpypi dist/*
+python setup.py sdist bdist_wheel &&
+twine upload dist/*.whl

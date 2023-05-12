@@ -25,7 +25,7 @@ class Mosaic(VectorizedBaseRandomLayer):
     Args:
         height (int): The height of result image.
         width (int): The width of result image.
-        offset (float|(float, float)|keras_cv.FactorSampler): The offset
+        offset (float|Sequence[float]|keras_aug.FactorSampler): The offset
             of the mosaic center from the top-left corner of the mosaic. If a
             tuple is used, the x and y coordinates of the mosaic center are
             sampled between the two values for every image augmented. When
@@ -40,8 +40,8 @@ class Mosaic(VectorizedBaseRandomLayer):
 
     References:
         - `YOLOV4 <https://arxiv.org/abs/2004.10934>`_
-        - `YOLOX <https://github.com/Megvii-BaseDetection/YOLOX>`_
-        - `ultralytics <https://github.com/ultralytics/ultralytics>`_
+        - `YOLOX Official Repo <https://github.com/Megvii-BaseDetection/YOLOX>`_
+        - `ultralytics/ultralytics <https://github.com/ultralytics/ultralytics>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 

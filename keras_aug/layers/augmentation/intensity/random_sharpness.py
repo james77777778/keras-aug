@@ -17,10 +17,10 @@ class RandomSharpness(VectorizedBaseRandomLayer):
     an image less sharp than they were in the original image.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (float|(float, float)|keras_cv.FactorSampler): The range of the
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The range of the
             sharpness factor. When represented as a single float, the factor
             will be picked between ``[1.0 - lower, 1.0 + upper]``. ``1.0`` will
             give the original image. ``0.0`` makes the image to be blurred.
@@ -28,9 +28,9 @@ class RandomSharpness(VectorizedBaseRandomLayer):
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
-        - `PIL <https://pillow.readthedocs.io/en/stable/reference/ImageEnhance.html>`_
+        - `PIL/ImageEnhance <https://pillow.readthedocs.io/en/stable/reference/ImageEnhance.html>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
-        - `Tensorflow Model <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
+        - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
     """  # noqa: E501
 
     def __init__(

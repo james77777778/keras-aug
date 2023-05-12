@@ -107,7 +107,7 @@ Augmentation 2D
 .. autoclass:: ChannelShuffle(groups=3, seed=None, **kwargs)
 .. autoclass:: RandomBlur(factor, seed=None, **kwargs)
 .. autoclass:: RandomChannelShift(value_range, factor, channels=3, seed=None, **kwargs)
-.. autoclass:: RandomCLAHE(value_range, factor=(1, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
+.. autoclass:: RandomCLAHE(value_range, factor=(4, 4), tile_grid_size=(8, 8), seed=None, **kwargs)
 .. autoclass:: RandomColorJitter(value_range, brightness_factor=None, contrast_factor=None, saturation_factor=None, hue_factor=None, seed=None, **kwargs)
 .. autoclass:: RandomGamma(value_range, factor, seed=None, **kwargs)
 .. autoclass:: RandomGaussianBlur(kernel_size, factor, seed=None, **kwargs)

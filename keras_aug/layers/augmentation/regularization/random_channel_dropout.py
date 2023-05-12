@@ -12,7 +12,7 @@ class RandomChannelDropout(VectorizedBaseRandomLayer):
     """Randomly drop channels of the input images.
 
     Args:
-        factor (float|(float, float)|keras_cv.FactorSampler): The range from
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The range from
             which we choose the number of channels to drop. Defaults to
             ``(0, 2)``.
         fill_value (int|float, optional): The value to be filled for dropped

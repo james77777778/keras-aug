@@ -33,6 +33,9 @@ class RandomFlip(VectorizedBaseRandomLayer):
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 
     def __init__(

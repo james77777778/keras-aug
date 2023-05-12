@@ -25,12 +25,12 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
     Args:
         height (int): The height of result image.
         width (int): The width of result image.
-        crop_area_factor (float|(float, float)|keras_cv.FactorSampler): The
+        crop_area_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range of the area of the cropped part to that of original image.
             For self-supervised pretraining a common value for this parameter is
             ``(0.08, 1.0)``. For fine-tuning and classification a common value
             is ``(0.8, 1.0)``.
-        aspect_ratio_factor (float|(float, float)|keras_cv.FactorSampler): The
+        aspect_ratio_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             ratio of width to height of the cropped image. When represented as
             a single float, the factor will be picked between
             ``[1.0 - factor, 1.0]``. For most tasks, this should be

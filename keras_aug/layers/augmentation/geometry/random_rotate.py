@@ -19,7 +19,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
     clock-wise, while a negative value means clock-wise.
 
     Args:
-        factor (float|(float, float)|keras_cv.FactorSampler): The
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range of the degree for random rotation. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A positive value means rotating

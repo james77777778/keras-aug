@@ -13,13 +13,13 @@ class RandomErase(VectorizedBaseRandomLayer):
     """Randomly erase rectangles from images and fill them.
 
     Args:
-        area_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range
+        area_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The range
             of the area factor that controls the area of the erasing. When
             represented as a single float, the factor will be picked between
             ``[0.0, 0.0 + upper]``. ``0.0`` means the rectangle will be of size
             0% of the image area. ``0.1`` means the rectangle will have a size
             of 10% of the image area. Defaults to ``(0.02, 0.4)``
-        aspect_ratio_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
+        aspect_ratio_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The
             range of the aspect ratio factor that controls the aspect ratio of
             the erasing. When represented as a single float, the factor will be
             picked between ``[1.0 - lower, 1.0 + upper]``. ``1.0`` means the

@@ -31,7 +31,7 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
     distortion of the bounding boxes is too large.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
         use_geometry (bool, optional): whether to include geometric
@@ -55,7 +55,7 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
     References:
         - `TrivialAugment <https://arxiv.org/abs/2103.10158>`_
         - `TrivialAugment Official Repo <https://github.com/automl/trivialaugment>`_
-        - `Torchvision <https://github.com/pytorch/vision>`_
+        - `torchvision <https://github.com/pytorch/vision>`_
     """  # noqa: E501
 
     def __init__(

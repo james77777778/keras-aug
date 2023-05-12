@@ -31,7 +31,7 @@ class RandAugment(VectorizedBaseRandomLayer):
     distortion of the bounding boxes is too large.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
         augmentations_per_image (int, optional): The number of layers to use in
@@ -68,7 +68,7 @@ class RandAugment(VectorizedBaseRandomLayer):
     References:
         - `RandAugment <https://arxiv.org/abs/1909.13719>`_
         - `Tensorflow Model augment <https://github.com/tensorflow/models/blob/v2.12.0/official/vision/ops/augment.py>`_
-        - `Torchvision <https://github.com/pytorch/vision>`_
+        - `torchvision <https://github.com/pytorch/vision>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """  # noqa: E501
 

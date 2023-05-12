@@ -13,10 +13,10 @@ class RandomPosterize(VectorizedBaseRandomLayer):
     """Randomly reduces the number of bits for each color channel.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (int|(int, int)|keras_cv.FactorSampler): The number of bits to
+        factor (int|Sequence[int]|keras_aug.FactorSampler): The number of bits to
             keep for each channel. Must be a value between ``[1, 8]``.
             ``factor=(5, 8)`` means RandomPosterize will randomly keep 5 to 8
             bits for the image.
