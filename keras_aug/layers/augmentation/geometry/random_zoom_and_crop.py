@@ -7,6 +7,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -50,6 +51,10 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
+        bounding_box_area_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``0.1``.
+        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``100``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -66,6 +71,8 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         interpolation="bilinear",
         antialias=False,
         bounding_box_format=None,
+        bounding_box_area_ratio_threshold=0.1,
+        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -91,6 +98,12 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         )
         self.antialias = antialias
         self.bounding_box_format = bounding_box_format
+        self.bounding_box_area_ratio_threshold = (
+            bounding_box_area_ratio_threshold
+        )
+        self.bounding_box_aspect_ratio_threshold = (
+            bounding_box_aspect_ratio_threshold
+        )
         self.seed = seed
 
         crop_size = tf.expand_dims(
@@ -175,46 +188,61 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         return labels
 
     def augment_bounding_boxes(
-        self, bounding_boxes, transformations, raw_images=None, **kwargs
+        self,
+        bounding_boxes,
+        transformations,
+        images=None,
+        raw_images=None,
+        **kwargs,
     ):
         if self.bounding_box_format is None:
             raise ValueError(
-                "Please provide a `bounding_box_format` when augmenting "
-                "bounding boxes with `RandomZoomAndCrop()`."
+                "`RandomZoomAndCrop()` was called with bounding boxes,"
+                "but no `bounding_box_format` was specified in the constructor."
+                "Please specify a bounding box format in the constructor. i.e."
+                "`RandomZoomAndCrop(..., bounding_box_format='xyxy')`"
             )
-        if isinstance(bounding_boxes["boxes"], tf.RaggedTensor):
-            bounding_boxes = bounding_box.to_dense(bounding_boxes)
-        result = bounding_boxes.copy()
+        bounding_boxes = bounding_box.to_dense(bounding_boxes)
+        bounding_boxes = bounding_box.convert_format(
+            bounding_boxes,
+            source=self.bounding_box_format,
+            target="yxyx",
+            images=raw_images,
+        )
+        original_bounding_boxes = bounding_boxes.copy()
+
         image_scales = tf.cast(
             transformations["image_scales"], self.compute_dtype
         )
         offsets = tf.cast(transformations["offsets"], self.compute_dtype)
 
-        bounding_boxes = bounding_box.convert_format(
-            bounding_boxes,
-            images=raw_images,
-            source=self.bounding_box_format,
-            target="yxyx",
-        )
-
         # Adjusts box coordinates based on image_scale and offset.
+        bounding_boxes = bounding_boxes.copy()
         yxyx = bounding_boxes["boxes"]
         yxyx *= tf.tile(image_scales, [1, 2])[..., tf.newaxis, :]
         yxyx -= tf.tile(offsets, [1, 2])[..., tf.newaxis, :]
 
-        result["boxes"] = yxyx
-        result = bounding_box.clip_to_image(
-            result,
-            image_shape=(self.height, self.width, raw_images.shape[-1]),
+        bounding_boxes["boxes"] = yxyx
+        bounding_boxes = bounding_box.clip_to_image(
+            bounding_boxes,
             bounding_box_format="yxyx",
+            images=images,
         )
-        result = bounding_box.convert_format(
-            result,
-            image_shape=(self.height, self.width, raw_images.shape[-1]),
+        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+            original_bounding_boxes,
+            bounding_boxes,
+            self.bounding_box_area_ratio_threshold,
+            self.bounding_box_aspect_ratio_threshold,
+            bounding_box_format="yxyx",
+            images=images,
+        )
+        bounding_boxes = bounding_box.convert_format(
+            bounding_boxes,
             source="yxyx",
             target=self.bounding_box_format,
+            images=images,
         )
-        return result
+        return bounding_boxes
 
     def resize_and_crop_single_image(self, inputs):
         image = inputs.get("images", None)
@@ -248,6 +276,8 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
                 "crop_width": self.crop_width,
                 "interpolation": self.interpolation,
                 "bounding_box_format": self.bounding_box_format,
+                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
+                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )

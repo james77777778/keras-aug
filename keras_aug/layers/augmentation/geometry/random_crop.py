@@ -6,6 +6,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -26,6 +27,10 @@ class RandomCrop(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
+        bounding_box_area_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``0.1``.
+        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``100``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -38,6 +43,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
         width,
         interpolation="bilinear",
         bounding_box_format=None,
+        bounding_box_area_ratio_threshold=0.1,
+        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -46,6 +53,12 @@ class RandomCrop(VectorizedBaseRandomLayer):
         self.width = width
         self.interpolation = interpolation
         self.bounding_box_format = bounding_box_format
+        self.bounding_box_area_ratio_threshold = (
+            bounding_box_area_ratio_threshold
+        )
+        self.bounding_box_aspect_ratio_threshold = (
+            bounding_box_aspect_ratio_threshold
+        )
         self.seed = seed
 
         self.resize_bilinear = keras.layers.Resizing(self.height, self.width)
@@ -125,6 +138,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
             target="xyxy",
             images=raw_images,
         )
+        original_bounding_boxes = bounding_boxes.copy()
+
         heights, widths = augmentation_utils.get_images_shape(raw_images)
         h_diffs = heights - self.height
         w_diffs = widths - self.width
@@ -145,14 +160,22 @@ class RandomCrop(VectorizedBaseRandomLayer):
         bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
-            image_shape=(self.height, self.width, None),
+            images=images,
+        )
+        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+            original_bounding_boxes,
+            bounding_boxes,
+            self.bounding_box_area_ratio_threshold,
+            self.bounding_box_aspect_ratio_threshold,
+            bounding_box_format="xyxy",
+            images=images,
         )
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source="xyxy",
             target=self.bounding_box_format,
             dtype=self.compute_dtype,
-            image_shape=(self.height, self.width, None),
+            images=images,
         )
         return bounding_boxes
 
@@ -258,6 +281,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
                 "height": self.height,
                 "width": self.width,
                 "bounding_box_format": self.bounding_box_format,
+                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
+                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )
