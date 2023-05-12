@@ -6,6 +6,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 from keras_aug.utils.augmentation import BATCHED
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
@@ -31,12 +32,17 @@ class Mosaic(VectorizedBaseRandomLayer):
             sampled between the two values for every image augmented. When
             represented as a single float, the values will be picked between
             ``[0.5 - offset, 0.5 + offset]``. Defaults to ``(0.25, 0.75)``.
+        fill_value (int|float, optional): The value to be filled outside the
+            boundaries when ``fill_mode="constant"``. Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+        bounding_box_area_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``0.1``.
+        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``100``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `YOLOV4 <https://arxiv.org/abs/2004.10934>`_
@@ -50,8 +56,10 @@ class Mosaic(VectorizedBaseRandomLayer):
         height,
         width,
         offset=(0.25, 0.75),
-        padding_value=114,
+        fill_value=0,
         bounding_box_format=None,
+        bounding_box_area_ratio_threshold=0.1,
+        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -61,8 +69,14 @@ class Mosaic(VectorizedBaseRandomLayer):
         self.height = height
         self.width = width
         self.offset = offset
-        self.padding_value = padding_value
+        self.fill_value = fill_value
         self.bounding_box_format = bounding_box_format
+        self.bounding_box_area_ratio_threshold = (
+            bounding_box_area_ratio_threshold
+        )
+        self.bounding_box_aspect_ratio_threshold = (
+            bounding_box_aspect_ratio_threshold
+        )
         self.seed = seed
 
         self.center_sampler = augmentation_utils.parse_factor(
@@ -194,6 +208,10 @@ class Mosaic(VectorizedBaseRandomLayer):
         widths_for_mosaic = tf.gather(widths, permutation_order)
         classes_for_mosaic = tf.gather(classes, permutation_order)
         boxes_for_mosaic = tf.gather(boxes, permutation_order)
+        original_bounding_boxes = {
+            "classes": tf.reshape(classes_for_mosaic, [batch_size, -1]),
+            "boxes": tf.reshape(boxes_for_mosaic, [batch_size, -1, 4]),
+        }
 
         # translate_xs/translate_ys 3D:
         # (batch_size, mosaic_index, 1)
@@ -235,6 +253,14 @@ class Mosaic(VectorizedBaseRandomLayer):
             boxes_for_mosaic,
             bounding_box_format="xyxy",
             image_shape=(self.height, self.width, None),
+        )
+        boxes_for_mosaic = bounding_box_utils.sanitize_bounding_boxes(
+            original_bounding_boxes,
+            boxes_for_mosaic,
+            self.bounding_box_area_ratio_threshold,
+            self.bounding_box_aspect_ratio_threshold,
+            bounding_box_format="xyxy",
+            images=raw_images,
         )
         boxes_for_mosaic = bounding_box.convert_format(
             boxes_for_mosaic,
@@ -300,7 +326,7 @@ class Mosaic(VectorizedBaseRandomLayer):
         paddings = tf.convert_to_tensor(paddings, dtype=tf.int32)
         paddings = tf.where(paddings > 0, paddings, tf.zeros_like(paddings))
         image = tf.pad(
-            image, paddings=paddings, constant_values=self.padding_value
+            image, paddings=paddings, constant_values=self.fill_value
         )
         # crop
         offsets = tf.convert_to_tensor(
@@ -406,8 +432,10 @@ class Mosaic(VectorizedBaseRandomLayer):
                 "height": self.height,
                 "width": self.width,
                 "offset": self.offset,
-                "padding_value": self.padding_value,
+                "fill_value": self.fill_value,
                 "bounding_box_format": self.bounding_box_format,
+                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
+                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )
