@@ -37,16 +37,13 @@ jobs:
         pip install keras-cv==${{ env.KERASCV_VERSION }}
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
-    - name: Build wheels
-      shell: bash
-      run: |
-        source ./.venv/bin/activate
-        pip install --upgrade pip setuptools wheel twine
-        python setup.py sdist bdist_wheel
-    - name: Upload wheels
+    - name: Build and upload wheels
       shell: bash
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
+        source ./.venv/bin/activate
+        pip install --upgrade pip setuptools wheel twine
+        python setup.py sdist bdist_wheel
         twine upload dist/*.whl
