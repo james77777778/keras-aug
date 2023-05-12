@@ -15,27 +15,27 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
     expects input as RGB image.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        brightness_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
+        brightness_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The
             range of the brightness factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` will make image be black. ``1.0`` will make image be white.
             Defaults to ``None``.
-        contrast_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range
+        contrast_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The range
             of the contrast factor. When represented as a single float, the
             factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``0.0`` gives solid gray image. ``1.0`` gives the original image
             while ``2.0`` increases the contrast by a factor of 2.
             Defaults to ``None``.
-        saturation_factor (float|(float, float)|keras_cv.FactorSampler, optional): The
+        saturation_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The
             range of the saturation factor. When represented as a single float,
             the factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image. ``0.0`` makes the image to be
             fully grayscale. ``2.0`` will enhance the saturation by a factor of
             2. Defaults to ``None``.
-        hue_factor (float|(float, float)|keras_cv.FactorSampler, optional): The range of
+        hue_factor (float|Sequence[float]|keras_aug.FactorSampler, optional): The range of
             the hue factor. When represented as a single float, the factor will
             be picked between ``[0.0 - lower, 0.0 + upper]``. ``0.0`` means no
             shift. ``-0.5`` or ``0.5`` gives an image with complementary colors.

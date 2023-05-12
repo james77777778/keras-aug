@@ -20,10 +20,10 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
     compression.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (int|(int, int)|keras_cv.FactorSampler): The range of the
+        factor (int|Sequence[int]|keras_aug.FactorSampler): The range of the
             compression factor. When represented as a single int, the
             factor will be randomly picked between ``[100 - factor, 100]``.
             ``50`` will give the image with 50% JPEG compression. ``100`` will

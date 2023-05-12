@@ -19,13 +19,13 @@ class RandomGridMask(VectorizedBaseRandomLayer):
     """RandomGridMask performs the Grid Mask operation on input images.
 
     Args:
-        size_factor (float|(float, float)|keras_cv.FactorSampler, optional):
+        size_factor (float|Sequence[float]|keras_aug.FactorSampler, optional):
             The relative size for grid masks. When represented as a single
             float, the factor will be picked between ``[0.0, 0.0 + upper]``.
             Represented as d1, d2 in the paper. Defaults to
             ``(96/224, 224/224)`` which is for ImageNet classification model.
             For COCO object detection, it is set to ``(0.01, 1.0)``
-        ratio_factor (float|(float, float)|keras_cv.FactorSampler, optional):
+        ratio_factor (float|Sequence[float]|keras_aug.FactorSampler, optional):
             The ratio from spacings to grid masks. When represented as a single
             float, the factor will be picked between ``[0.0, 0.0 + upper]``.
             Represented as ratio in the paper. Lower values make the grid size
@@ -33,7 +33,7 @@ class RandomGridMask(VectorizedBaseRandomLayer):
             indicates that grid and spacing will be of equal size. Defaults to
             ``(0.6, 0.6)`` which is for ImageNet classification model. For COCO
             object detection, it is set to ``(0.5, 0.5)``
-        rotation_factor (float|(float, float)|keras_cv.FactorSampler, optional):
+        rotation_factor (float|Sequence[float]|keras_aug.FactorSampler, optional):
             The range of the degree that will be used to rotate the grid_mask.
             When represented as a single float, the factor will be picked
             between ``[0.0 - lower, 0.0 + upper]``. A positive value means
@@ -50,9 +50,9 @@ class RandomGridMask(VectorizedBaseRandomLayer):
 
     References:
         - `GridMask <https://arxiv.org/abs/2001.04086>`_
-        - `GridMask repo <https://github.com/dvlab-research/GridMask>`_
+        - `GridMask Official Repo <https://github.com/dvlab-research/GridMask>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

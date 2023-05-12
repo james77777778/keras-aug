@@ -12,7 +12,7 @@ class Equalize(VectorizedBaseRandomLayer):
     """Performs histogram equalization on a channel-wise basis.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
         bins (int, optional): The number of bins to use in histogram

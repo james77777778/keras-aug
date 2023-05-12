@@ -105,6 +105,14 @@ def get_position_params(
 
 
 def is_factor_working(factor, not_working_value=0.0):
+    """Check whether ``factor`` is working or not.
+
+    Args:
+        factor (int|float|Sequence[int|float]|keras_aug.FactorSampler): The
+            factor to check whether it is working or not.
+        not_working_value (float, optional): The value indicating not working
+            status. Defaults to ``0.0``.
+    """
     if factor is None:
         return False
     if isinstance(factor, (int, float)):
@@ -133,6 +141,16 @@ def is_factor_working(factor, not_working_value=0.0):
 
 
 def get_images_shape(images, dtype=tf.int32):
+    """Get ``heights`` and ``widths`` of the input images.
+
+    Input images can be ``tf.Tensor`` or ``tf.RaggedTensor`` with the shape of
+    [B, H|None, W|None, C].
+
+    Args:
+        images (tf.Tensor|tf.RaggedTensor): The input images.
+        dtype (tf.dtypes.DType, optional): The dtype of the outputs. Defaults to
+            ``tf.int32``.
+    """
     if isinstance(images, tf.RaggedTensor):
         heights = tf.reshape(images.row_lengths(), (-1, 1))
         widths = tf.reshape(
@@ -202,7 +220,7 @@ def blend(images_1, images_2, factors, value_range=None):
         image1 (tf.Tensor): First image(s).
         image2 (tf.Tensor): Second image(s).
         factor (float|tf.Tensor): The blend factor(s).
-        value_range ((int|float, int|float), optional) The value range of the
+        value_range (Sequence[int|float], optional): The value range of the
             results. Defaults to ``None``.
 
     References:

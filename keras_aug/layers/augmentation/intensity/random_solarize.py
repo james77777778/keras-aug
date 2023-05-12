@@ -19,15 +19,15 @@ class RandomSolarize(VectorizedBaseRandomLayer):
     value.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        threshold_factor (float|(float, float)|keras_cv.FactorSampler):
+        threshold_factor (float|Sequence[float]|keras_aug.FactorSampler):
             The range of the threshold factor. Only the pixel values above the
             threshold will be solarized. When represented as a single float,
             the factor will be picked between ``[0, upper]``. ``255``
             means no thresholding.
-        addition_factor (float|(float, float)|keras_cv.FactorSampler, optional):
+        addition_factor (float|Sequence[float]|keras_aug.FactorSampler, optional):
             The range of the addition factor that is added to each pixel before
             solarization and thresholding. When represented as a single float,
             the factor will be picked between ``[0, upper]``. ``0`` means no

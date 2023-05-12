@@ -35,8 +35,7 @@ class PadIfNeeded(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `Albumentations <https://github.com/albumentations-team/albumentations>`_

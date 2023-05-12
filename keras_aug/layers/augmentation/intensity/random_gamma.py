@@ -19,10 +19,10 @@ class RandomGamma(VectorizedBaseRandomLayer):
     original value range.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (float|(float, float)|keras_cv.FactorSampler): The range of the
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The range of the
             gamma factor. When represented as a single float, the
             factor will be picked between ``[1.0 - lower, 1.0 + upper]``.
             ``1.0`` will give the original image.

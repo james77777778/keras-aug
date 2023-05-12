@@ -14,17 +14,16 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
     input images.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
-        factor (int|(int, int)|keras_cv.FactorSampler): The range of the
+        factor (int|Sequence[int]|keras_aug.FactorSampler): The range of the
             threshold values for contrast limiting. If the factor is a single
             float value, the range will be ``(1, clip_limit)``. Defaults to
-            ``(1, 4)``.
-        tile_grid_size ((int, int)): The size of grid for histogram
+            ``(4, 4)``.
+        tile_grid_size (Sequence[int]): The size of grid for histogram
             equalization. Defaults to ``(8, 8)``.
-        seed (int|float, optional): The random seed. Defaults to
-            ``None``.
+        seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
         - `isears/tf_clahe <https://github.com/isears/tf_clahe>`_
@@ -33,7 +32,7 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
     def __init__(
         self,
         value_range,
-        factor=(1, 4),
+        factor=(4, 4),
         tile_grid_size=(8, 8),
         seed=None,
         **kwargs,

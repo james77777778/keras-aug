@@ -12,9 +12,9 @@ class RandomGaussianBlur(VectorizedBaseRandomLayer):
     """Applies a Gaussian Blur with random strength to an image.
 
     Args:
-        kernel_size (int|tuple(int,int)): The x and y dimensions for the kernel
+        kernel_size (int|Sequence[int]): The x and y dimensions for the kernel
             used.
-        factor (float|(float, float)|keras_cv.FactorSampler): The range of the
+        factor (float|Sequence[float]|keras_aug.FactorSampler): The range of the
             factor that controls the extent to which the image is blurred.
             When represented as a single float, the factor will be picked
             between ``[0.0, 0.0 + upper]``. Mathematically, ``factor``
@@ -22,6 +22,9 @@ class RandomGaussianBlur(VectorizedBaseRandomLayer):
             layer perform a no-op operation. High values make the blur
             stronger.
         seed (int|float, optional): The random seed. Defaults to ``None``.
+
+    References:
+        - `KerasCV <https://github.com/keras-team/keras-cv>`_
     """
 
     def __init__(self, kernel_size, factor, seed=None, **kwargs):

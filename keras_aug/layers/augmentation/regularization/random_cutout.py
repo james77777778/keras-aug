@@ -16,13 +16,13 @@ class RandomCutout(VectorizedBaseRandomLayer):
     """Randomly cut out rectangles from images and fill them.
 
     Args:
-        height_factor (float|(float, float)|keras_cv.FactorSampler): The range
+        height_factor (float|Sequence[float]|keras_aug.FactorSampler): The range
             of the height factor that controls the height of the cutout
             rectangle. When represented as a single float, the factor will be
             picked between ``[0.0, 0.0 + upper]``. ``0.0`` means the rectangle
             will be of size 0% of the image height. ``0.1`` means the rectangle
             will have a size of 10% of the image height.
-        width_factor (float|(float, float)|keras_cv.FactorSampler): The range
+        width_factor (float|Sequence[float]|keras_aug.FactorSampler): The range
             of the width factor that controls the width of the cutout
             rectangle. When represented as a single float, the factor will be
             picked between ``[0.0, 0.0 + upper]``. ``0.0`` means the rectangle
@@ -46,7 +46,7 @@ class RandomCutout(VectorizedBaseRandomLayer):
         - `Cutout <https://arxiv.org/abs/1708.04552>`_
         - `KerasCV <https://github.com/keras-team/keras-cv>`_
         - `kaushal2896@Kaggle <https://www.kaggle.com/code/kaushal2896/data-augmentation-tutorial-basic-cutout-mixup>`_
-        - `ultralytics <https://github.com/ultralytics/ultralytics>`_
+        - `ultralytics/ultralytics <https://github.com/ultralytics/ultralytics>`_
     """  # noqa: E501
 
     def __init__(

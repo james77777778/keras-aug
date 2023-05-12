@@ -19,39 +19,39 @@ class RandomAffine(VectorizedBaseRandomLayer):
     processes the images by combined transformation matrix, so it is fast.
 
     Args:
-        rotation_factor (float|(float, float)|keras_cv.FactorSampler): The
+        rotation_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range of the degree for random rotation. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A positive value means rotating
             counter clock-wise, while a negative value means clock-wise.
             Defaults to ``None``.
-        translation_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+        translation_height_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random vertical translation. When represented as a single
             float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting image
             up, while a positive value means shifting image down.
             Defaults to ``None``.
-        translation_width_factor (float|(float, float)|keras_cv.FactorSampler): The
+        translation_width_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random horizontal translation. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. A negative value means shifting
             image left, while a positive value means shifting image right.
             Defaults to ``None``.
-        zoom_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+        zoom_height_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random vertical zoom. When represented as a
             single float, the factor will be picked between
             ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
             while a positive value means zooming out. Defaults to ``None``.
-        zoom_width_factor (float|(float, float)|keras_cv.FactorSampler): The
+        zoom_width_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random horizontal zoom. When represented as a
             single float, the factor will be picked between
             ``[1.0 - lower, 1.0 + upper]``. A negative value means zooming in
             while a positive value means zooming out. Defaults to ``None``.
-        shear_height_factor (float|(float, float)|keras_cv.FactorSampler): The
+        shear_height_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random vertical shear. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. Defaults to ``None``.
-        shear_width_factor (float|(float, float)|keras_cv.FactorSampler): The
+        shear_width_factor (float|Sequence[float]|keras_aug.FactorSampler): The
             range for random horizontal shear. When represented as a
             single float, the factor will be picked between
             ``[0.0 - lower, 0.0 + upper]``. Defaults to ``None``.

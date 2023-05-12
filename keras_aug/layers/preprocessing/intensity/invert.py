@@ -13,7 +13,7 @@ class Invert(VectorizedBaseRandomLayer):
     Inverts the pixel value by equation: ``y = max_pixel_value - x``.
 
     Args:
-        value_range ((int|float, int|float)): The range of values the incoming
+        value_range (Sequence[int|float]): The range of values the incoming
             images will have. This is typically either ``[0, 1]`` or
             ``[0, 255]`` depending on how your preprocessing pipeline is set up.
     """

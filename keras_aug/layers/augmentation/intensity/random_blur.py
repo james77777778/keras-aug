@@ -15,7 +15,7 @@ class RandomBlur(VectorizedBaseRandomLayer):
     images. The sampled kernel sizes are always odd numbers.
 
     Args:
-        factor (int|(int, int)|keras_cv.FactorSampler): The kernel size range
+        factor (int|Sequence[int]|keras_aug.FactorSampler): The kernel size range
             for blurring the input image. If the factor is a single value, the
             range will be ``(1, factor)``. The value range of the factor should
             be in ``(1, +inf)``. When sampled kernel size=``1``, there is no
