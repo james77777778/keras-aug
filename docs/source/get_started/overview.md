@@ -3,7 +3,7 @@
 
 ## Introduction
 
-KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, bounding boxes, segmentation masks, and more.
+KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, labels, bounding boxes, segmentation masks, and more.
 
 <div align="center"><img style="width: 440px; max-width: 90%;" src="https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif"></div>
 
