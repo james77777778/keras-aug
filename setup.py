@@ -13,8 +13,9 @@ BUILD_WITH_CUSTOM_OPS = False
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 DESCRIPTION = (
-    "Industry-strength augmentation and preprocessing library for TensorFlow, "
-    "Keras and KerasCV."
+    "A library that includes pure TF/Keras preprocessing and augmentation "
+    "layers, providing support for various data types such as images, labels, "
+    "bounding boxes, segmentation masks, and more."
 )
 
 
@@ -64,6 +65,6 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Software Development",
     ],
-    packages=find_packages(exclude=("*_test.py",)),
+    packages=find_packages(),
     include_package_data=True,
 )
