@@ -159,3 +159,25 @@ Unit: FPS (frames per second)
 |                | MixUp                   | 2596     | 2962      |
 | Auto           | AugMix                  | 80       | X (Error) |
 |                | RandAugment             | 283      | 253       |
+
+## Citing KerasAug
+
+KerasAug is an extension of KerasCV and it would be preferable to acknowledge and cite both libraries jointly.
+
+```bibtex
+@misc{wood2022kerascv,
+  title={KerasCV},
+  author={Wood, Luke and Tan, Zhenyu and Stenbit, Ian and Bischof, Jonathan and Zhu, Scott and Chollet, Fran\c{c}ois and others},
+  year={2022},
+  howpublished={\url{https://github.com/keras-team/keras-cv}},
+}
+```
+
+```bibtex
+@misc{chiu2023kerasaug,
+  title={KeraAug},
+  author={Hongyu, Chiu},
+  year={2023},
+  howpublished={\url{https://github.com/james77777778/keras-aug}},
+}
+```
