@@ -30,7 +30,7 @@ KerasAug is:
 KerasAug is compatible with the latest version of KerasCV, but is NOT compatible with `keras-cv < 0.5.0`.
 
 ```bash
-pip install "keras-cv>=0.5.0" tensorflow tensorflow_probability --upgrade
+pip install keras-aug "keras-cv>=0.5.0" tensorflow tensorflow_probability --upgrade
 ```
 
 ## Quickstart
