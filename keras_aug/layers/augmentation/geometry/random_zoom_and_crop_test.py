@@ -49,8 +49,6 @@ class RandomZoomAndCropTest(tf.test.TestCase, parameterized.TestCase):
             width=self.width,
             scale_factor=(3 / 4, 4 / 3),
             bounding_box_format="rel_xyxy",
-            bounding_box_area_ratio_threshold=0.001,
-            bounding_box_aspect_ratio_threshold=None,
             seed=self.seed,
         )
         output = layer(input)
@@ -88,8 +86,6 @@ class RandomZoomAndCropTest(tf.test.TestCase, parameterized.TestCase):
             width=self.width,
             scale_factor=(3 / 4, 4 / 3),
             bounding_box_format="rel_xyxy",
-            bounding_box_area_ratio_threshold=0.001,
-            bounding_box_aspect_ratio_threshold=None,
             seed=self.seed,
         )
         output = layer(input, training=True)
@@ -132,8 +128,6 @@ class RandomZoomAndCropTest(tf.test.TestCase, parameterized.TestCase):
             width=self.width,
             scale_factor=(3 / 4, 4 / 3),
             bounding_box_format="rel_xyxy",
-            bounding_box_area_ratio_threshold=0.001,
-            bounding_box_aspect_ratio_threshold=None,
             seed=self.seed,
         )
         output = layer(input, training=True)

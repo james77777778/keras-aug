@@ -27,10 +27,10 @@ class RandomCrop(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        bounding_box_area_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``0.1``.
-        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``100``.
+        bounding_box_min_area_ratio (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``None``.
+        bounding_box_max_aspect_ratio (float, optional): The threshold to
+            apply sanitize_bounding_boxes. Defaults to ``None``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -43,8 +43,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
         width,
         interpolation="bilinear",
         bounding_box_format=None,
-        bounding_box_area_ratio_threshold=0.1,
-        bounding_box_aspect_ratio_threshold=100,
+        bounding_box_min_area_ratio=None,
+        bounding_box_max_aspect_ratio=None,
         seed=None,
         **kwargs,
     ):
@@ -53,12 +53,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
         self.width = width
         self.interpolation = interpolation
         self.bounding_box_format = bounding_box_format
-        self.bounding_box_area_ratio_threshold = (
-            bounding_box_area_ratio_threshold
-        )
-        self.bounding_box_aspect_ratio_threshold = (
-            bounding_box_aspect_ratio_threshold
-        )
+        self.bounding_box_min_area_ratio = bounding_box_min_area_ratio
+        self.bounding_box_max_aspect_ratio = bounding_box_max_aspect_ratio
         self.seed = seed
 
         self.resize_bilinear = keras.layers.Resizing(self.height, self.width)
@@ -163,12 +159,13 @@ class RandomCrop(VectorizedBaseRandomLayer):
             images=images,
         )
         bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
-            original_bounding_boxes,
             bounding_boxes,
-            self.bounding_box_area_ratio_threshold,
-            self.bounding_box_aspect_ratio_threshold,
+            min_area_ratio=self.bounding_box_min_area_ratio,
+            max_aspect_ratio=self.bounding_box_max_aspect_ratio,
             bounding_box_format="xyxy",
+            reference_bounding_boxes=original_bounding_boxes,
             images=images,
+            reference_images=raw_images,
         )
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
@@ -281,8 +278,8 @@ class RandomCrop(VectorizedBaseRandomLayer):
                 "height": self.height,
                 "width": self.width,
                 "bounding_box_format": self.bounding_box_format,
-                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
-                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
+                "bounding_box_min_area_ratio": self.bounding_box_min_area_ratio,  # noqa: E501
+                "bounding_box_max_aspect_ratio": self.bounding_box_max_aspect_ratio,  # noqa: E501
                 "seed": self.seed,
             }
         )

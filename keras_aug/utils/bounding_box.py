@@ -4,91 +4,136 @@ from keras_cv.bounding_box.iou import _compute_area
 
 
 def sanitize_bounding_boxes(
-    original_bounding_boxes,
-    processed_bounding_boxes,
-    area_ratio_threshold=None,
-    aspect_ratio_threshold=None,
+    bounding_boxes,
+    min_size=None,
+    min_area_ratio=None,
+    max_aspect_ratio=None,
     bounding_box_format=None,
+    reference_bounding_boxes=None,
     images=None,
+    reference_images=None,
 ):
-    """Sanitize bounding boxes by area_ratio_threshold and
-    aspect_ratio_threshold.
-
-    If ``area_ratio_threshold`` is provided, the bounding boxes with the
-    reduced area ratio < area_ratio_threshold will be sanitized.
-
-    If ``aspect_ratio_threshold`` is provided, the bounding boxes with the
-    new aspect ratio > aspect_ratio_threshold will be sanitized.
+    """Sanitize bounding boxes by min_size, min_area_ratio and max_aspect_ratio.
 
     Args:
-        original_bounding_boxes (dict[str, tf.Tensor]): The original
-            bounding_boxes.
-        processed_bounding_boxes (dict[str, tf.Tensor]): The bounding_boxes that
-            has been processed by any operation, such as RandomAffine and
-            Mosaic.
-        area_ratio_threshold (float, optional): The threshold of the area ratio
-            to sanitize. Defaults to ``None``.
-        aspect_ratio_threshold (float, optional): The threshold of the aspect
-            ratio to sanitize. Defaults to ``None``.
+        bounding_boxes (dict[str, tf.Tensor]): The bounding boxes to sanitize.
+        min_size (float, optional): The minimum size of the bounding boxes.
+        min_area_ratio (float, optional): The minimum area ratio of original
+            bounding boxes to bounding boxes for sanitizing.
+            Defaults to ``None``.
+        max_aspect_ratio (float, optional): The maximum aspect ratio of
+            bounding boxes for sanitizing. Defaults to ``None``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        images (tf.Tensor, optional): The reference images for bounding boxes
+        reference_bounding_boxes (dict[str, tf.Tensor], optional): The
+            reference bounding boxes when apply sanitizing with
+            min_area_ratio enabled. Defaults to ``None``.
+        images (tf.Tensor, optional): The images for bounding boxes
             format conversion.
+        reference_images (tf.Tensor, optional): The reference images for
+            reference bounding boxes format conversion.
 
-    Referecnes:
+    References:
         - `ultralytics/ultralytics <https://github.com/ultralytics/ultralytics>`_
     """  # noqa: E501
-    if area_ratio_threshold is not None:
-        assert isinstance(area_ratio_threshold, (int, float))
-    if aspect_ratio_threshold is not None:
-        assert isinstance(aspect_ratio_threshold, (int, float))
-    assert (
-        area_ratio_threshold is not None or aspect_ratio_threshold is not None
+    if min_size is None and min_area_ratio is None and max_aspect_ratio is None:
+        return bounding_boxes
+    if min_size is not None:
+        assert isinstance(min_size, (int, float))
+    if min_area_ratio is not None:
+        assert isinstance(min_area_ratio, (int, float))
+    if max_aspect_ratio is not None:
+        assert isinstance(max_aspect_ratio, (int, float))
+
+    sanitize_mask = tf.ones(
+        tf.shape(bounding_boxes["boxes"])[:2], dtype=tf.bool
     )
 
-    if area_ratio_threshold is not None:
-        ori_boxes = original_bounding_boxes["boxes"]
-        processed_boxes = processed_bounding_boxes["boxes"]
-        ori_areas = _compute_area(ori_boxes)
-        processed_areas = _compute_area(processed_boxes)
-        area_ratios = tf.math.divide_no_nan(processed_areas, ori_areas)
-        # set classes == -1 if intersection_ratios < area_threshold
-        processed_bounding_boxes["classes"] = tf.where(
-            area_ratios < area_ratio_threshold,
-            -1.0,
-            processed_bounding_boxes["classes"],
-        )
-    if aspect_ratio_threshold is not None:
+    if min_size is not None:
         if bounding_box_format is None or images is None:
             raise ValueError(
                 "When apply sanitize_bounding_boxes with "
-                "aspect_ratio_threshold, must pass bounding_box_format and "
-                "images."
+                "min_size, must pass bounding_box_format and images."
             )
-        eps = 1e-7
-        ori_boxes = original_bounding_boxes["boxes"]
-        processed_boxes = processed_bounding_boxes["boxes"]
-        processed_boxes = bounding_box.convert_format(
-            processed_boxes,
+        boxes = bounding_boxes["boxes"]
+        boxes = bounding_box.convert_format(
+            boxes,
             source=bounding_box_format,
             target="xywh",
             images=images,
         )
-        _, _, widths, heights = tf.split(processed_boxes, 4, axis=-1)
+        _, _, widths, heights = tf.split(boxes, 4, axis=-1)
+        min_sides = tf.minimum(widths, heights)
+        min_sides = tf.squeeze(min_sides, axis=-1)
+        sanitize_mask = tf.math.logical_and(sanitize_mask, min_sides < min_size)
+
+    if min_area_ratio is not None:
+        if (
+            bounding_box_format is None
+            or reference_bounding_boxes is None
+            or images is None
+            or reference_images is None
+        ):
+            raise ValueError(
+                "When apply sanitize_bounding_boxes with "
+                "min_area_ratio, must pass bounding_box_format, "
+                "reference_bounding_boxes, images and reference_images."
+                "."
+            )
+        ref_boxes = reference_bounding_boxes["boxes"]
+        ref_boxes = bounding_box.convert_format(
+            ref_boxes,
+            source=bounding_box_format,
+            target="xyxy",
+            images=reference_images,
+        )
+        boxes = bounding_boxes["boxes"]
+        boxes = bounding_box.convert_format(
+            boxes,
+            source=bounding_box_format,
+            target="xyxy",
+            images=images,
+        )
+        ref_areas = _compute_area(ref_boxes)
+        areas = _compute_area(boxes)
+        area_ratios = tf.math.divide_no_nan(areas, ref_areas)
+        sanitize_mask = tf.math.logical_and(
+            sanitize_mask, area_ratios < min_area_ratio
+        )
+
+    if max_aspect_ratio is not None:
+        if bounding_box_format is None or images is None:
+            raise ValueError(
+                "When apply sanitize_bounding_boxes with "
+                "max_aspect_ratio, must pass bounding_box_format and "
+                "images."
+            )
+        boxes = bounding_boxes["boxes"]
+        boxes = bounding_box.convert_format(
+            boxes,
+            source=bounding_box_format,
+            target="xywh",
+            images=images,
+        )
+        _, _, widths, heights = tf.split(boxes, 4, axis=-1)
         max_aspect_ratios = tf.squeeze(
             tf.maximum(
-                widths / (heights + eps),
-                heights / (widths + eps),
+                tf.math.divide_no_nan(widths, heights),
+                tf.math.divide_no_nan(heights, widths),
             ),
             axis=-1,
         )
-        # set classes == -1 if max_aspect_ratios > aspect_ratio_threshold
-        processed_bounding_boxes["classes"] = tf.where(
-            max_aspect_ratios > aspect_ratio_threshold,
-            -1.0,
-            processed_bounding_boxes["classes"],
+        sanitize_mask = tf.math.logical_and(
+            sanitize_mask, max_aspect_ratios > max_aspect_ratio
         )
 
-    return processed_bounding_boxes
+    # set classes == -1
+    bounding_boxes = bounding_boxes.copy()
+    bounding_boxes["classes"] = tf.where(
+        sanitize_mask,
+        -1.0,
+        bounding_boxes["classes"],
+    )
+    return bounding_boxes
