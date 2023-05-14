@@ -92,9 +92,9 @@ Augmentation 2D
 
 ----
 
-.. autoclass:: RandomAffine(rotation_factor=None, translation_height_factor=None, translation_width_factor=None, zoom_height_factor=None, zoom_width_factor=None, shear_height_factor=None, shear_width_factor=None, same_zoom_factor=False, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, bounding_box_area_ratio_threshold=0.1, bounding_box_aspect_ratio_threshold=100, seed=None, **kwargs)
+.. autoclass:: RandomAffine(rotation_factor=None, translation_height_factor=None, translation_width_factor=None, zoom_height_factor=None, zoom_width_factor=None, shear_height_factor=None, shear_width_factor=None, same_zoom_factor=False, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
 .. autoclass:: RandomCrop(height, width, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
 .. autoclass:: RandomFlip(mode="horizontal", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomResize(heights, widths=None, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomRotate(factor, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
@@ -123,7 +123,7 @@ Augmentation 2D
 
 .. autoclass:: CutMix(alpha=1.0, seed=None, **kwargs)
 .. autoclass:: MixUp(alpha=0.2, seed=None, **kwargs)
-.. autoclass:: Mosaic(height, width, offset=(0.25, 0.75), fill_value=0, bounding_box_format=None, bounding_box_area_ratio_threshold=0.1, bounding_box_aspect_ratio_threshold=100, seed=None, **kwargs)
+.. autoclass:: Mosaic(height, width, offset=(0.25, 0.75), fill_value=0, bounding_box_format=None, seed=None, **kwargs)
 
 **Regularization**
 
@@ -149,7 +149,7 @@ Preprocessing 2D
 
 ----
 
-.. autoclass:: CenterCrop(height, width, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: CenterCrop(height, width, postion="center", padding_value=0, bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
 .. autoclass:: PadIfNeeded(min_height=None, min_width=None, height_divisor=None, width_divisor=None, position="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: Resize(height, width, interpolation="bilinear", antialias=False, crop_to_aspect_ratio=False, pad_to_aspect_ratio=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 

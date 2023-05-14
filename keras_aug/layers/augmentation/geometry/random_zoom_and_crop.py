@@ -7,7 +7,6 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -51,10 +50,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        bounding_box_area_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``0.1``.
-        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``100``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -71,8 +66,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         interpolation="bilinear",
         antialias=False,
         bounding_box_format=None,
-        bounding_box_area_ratio_threshold=0.1,
-        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -98,12 +91,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         )
         self.antialias = antialias
         self.bounding_box_format = bounding_box_format
-        self.bounding_box_area_ratio_threshold = (
-            bounding_box_area_ratio_threshold
-        )
-        self.bounding_box_aspect_ratio_threshold = (
-            bounding_box_aspect_ratio_threshold
-        )
         self.seed = seed
 
         crop_size = tf.expand_dims(
@@ -209,7 +196,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             target="yxyx",
             images=raw_images,
         )
-        original_bounding_boxes = bounding_boxes.copy()
 
         image_scales = tf.cast(
             transformations["image_scales"], self.compute_dtype
@@ -225,14 +211,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         bounding_boxes["boxes"] = yxyx
         bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
-            bounding_box_format="yxyx",
-            images=images,
-        )
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
-            original_bounding_boxes,
-            bounding_boxes,
-            self.bounding_box_area_ratio_threshold,
-            self.bounding_box_aspect_ratio_threshold,
             bounding_box_format="yxyx",
             images=images,
         )
@@ -276,8 +254,6 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
                 "crop_width": self.crop_width,
                 "interpolation": self.interpolation,
                 "bounding_box_format": self.bounding_box_format,
-                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
-                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )

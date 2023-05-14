@@ -7,7 +7,6 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -42,10 +41,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
-        bounding_box_area_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``0.1``.
-        bounding_box_aspect_ratio_threshold (float, optional): The threshold to
-            apply sanitize_bounding_boxes. Defaults to ``100``.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
     References:
@@ -60,8 +55,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         aspect_ratio_factor,
         interpolation="bilinear",
         bounding_box_format=None,
-        bounding_box_area_ratio_threshold=0.1,
-        bounding_box_aspect_ratio_threshold=100,
         seed=None,
         **kwargs,
     ):
@@ -90,12 +83,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         )
         self.interpolation = interpolation
         self.bounding_box_format = bounding_box_format
-        self.bounding_box_area_ratio_threshold = (
-            bounding_box_area_ratio_threshold
-        )
-        self.bounding_box_aspect_ratio_threshold = (
-            bounding_box_aspect_ratio_threshold
-        )
         self.seed = seed
 
         # set force_output_dense_images=True because the output images must
@@ -193,7 +180,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             target="rel_xyxy",
             images=raw_images,
         )
-        original_bounding_boxes = bounding_boxes.copy()
 
         t_y1s, t_x1s, t_y2s, t_x2s = tf.split(transformations, 4, axis=-1)
         # broadcast
@@ -217,14 +203,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
 
         bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
-            bounding_box_format="rel_xyxy",
-            images=images,
-        )
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
-            original_bounding_boxes,
-            bounding_boxes,
-            self.bounding_box_area_ratio_threshold,
-            self.bounding_box_aspect_ratio_threshold,
             bounding_box_format="rel_xyxy",
             images=images,
         )
@@ -296,8 +274,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
                 "aspect_ratio_factor": self.aspect_ratio_factor,
                 "interpolation": self.interpolation,
                 "bounding_box_format": self.bounding_box_format,
-                "bounding_box_area_ratio_threshold": self.bounding_box_area_ratio_threshold,  # noqa: E501
-                "bounding_box_aspect_ratio_threshold": self.bounding_box_aspect_ratio_threshold,  # noqa: E501
                 "seed": self.seed,
             }
         )
