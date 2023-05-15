@@ -66,32 +66,33 @@ augmenter = keras.Sequential(
             padding_value=114,
             bounding_box_format="xywh",
         ),
-        keras_aug.layers.Mosaic(
-            1280, 1280, fill_value=114, bounding_box_format="xywh"
-        ),
-        keras_aug.layers.RandomAffine(
-            # translation_height_factor=0.1,
-            # translation_width_factor=0.1,
-            zoom_height_factor=(1.0, 1.0),
-            same_zoom_factor=True,
-            fill_value=114,
-            bounding_box_format="xywh",
-            bounding_box_min_area_ratio=0.1,
-            bounding_box_max_aspect_ratio=100.0,
-        ),
-        keras_aug.layers.Resize(640, 640, bounding_box_format="xywh"),
-        # TODO: Blur, MedianBlur
-        keras_aug.layers.RandomApply(keras_aug.layers.Grayscale(), rate=0.01),
-        keras_aug.layers.RandomApply(
-            keras_aug.layers.RandomCLAHE(value_range=(0, 255)), rate=0.01
-        ),
-        keras_aug.layers.RandomHSV(
-            value_range=(0, 255),
-            hue_factor=0.015,
-            saturation_factor=0.7,
-            value_factor=0.4,
-        ),
         keras_aug.layers.RandomFlip(bounding_box_format="xywh"),
+        keras_aug.layers.RandomApply(
+            layer=keras_aug.layers.RandomColorJitter(
+                value_range=(0, 255), brightness_factor=(1.5, 1.5)
+            ),
+            rate=0.9,
+        ),
+        keras_aug.layers.RandomChoice(
+            layers=[
+                keras_aug.layers.ChannelShuffle(),
+                keras_aug.layers.RandomChannelShift(
+                    value_range=(0, 255), factor=0.2
+                ),
+            ]
+        ),
+        keras_aug.layers.RandomChoice(
+            layers=[
+                keras_aug.layers.Mosaic(
+                    height=640,
+                    width=640,
+                    fill_value=114,
+                    bounding_box_format="xywh",
+                ),
+                keras_aug.layers.MixUp(alpha=32.0),
+            ],
+            batchwise=True,
+        ),
     ]
 )
 
@@ -101,11 +102,13 @@ train_ds = load_pascal_voc(
 )
 train_ds = train_ds.ragged_batch(BATCH_SIZE, drop_remainder=True)
 train_ds = train_ds.map(augmenter, num_parallel_calls=tf.data.AUTOTUNE)
-visualize_dataset(
-    train_ds,
-    bounding_box_format="xywh",
-    value_range=(0, 255),
-    rows=2,
-    cols=2,
-    path=OUTPUT_PATH,
-)
+
+for i in range(3):
+    visualize_dataset(
+        train_ds,
+        bounding_box_format="xywh",
+        value_range=(0, 255),
+        rows=2,
+        cols=2,
+        path=f"{i}_{OUTPUT_PATH}",
+    )

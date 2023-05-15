@@ -47,7 +47,7 @@ def sanitize_bounding_boxes(
     if max_aspect_ratio is not None:
         assert isinstance(max_aspect_ratio, (int, float))
 
-    sanitize_mask = tf.ones(
+    sanitize_mask = tf.zeros(
         tf.shape(bounding_boxes["boxes"])[:2], dtype=tf.bool
     )
 
@@ -67,7 +67,7 @@ def sanitize_bounding_boxes(
         _, _, widths, heights = tf.split(boxes, 4, axis=-1)
         min_sides = tf.minimum(widths, heights)
         min_sides = tf.squeeze(min_sides, axis=-1)
-        sanitize_mask = tf.math.logical_and(sanitize_mask, min_sides < min_size)
+        sanitize_mask = tf.math.logical_or(sanitize_mask, min_sides < min_size)
 
     if min_area_ratio is not None:
         if (
@@ -99,7 +99,7 @@ def sanitize_bounding_boxes(
         ref_areas = _compute_area(ref_boxes)
         areas = _compute_area(boxes)
         area_ratios = tf.math.divide_no_nan(areas, ref_areas)
-        sanitize_mask = tf.math.logical_and(
+        sanitize_mask = tf.math.logical_or(
             sanitize_mask, area_ratios < min_area_ratio
         )
 
@@ -125,7 +125,7 @@ def sanitize_bounding_boxes(
             ),
             axis=-1,
         )
-        sanitize_mask = tf.math.logical_and(
+        sanitize_mask = tf.math.logical_or(
             sanitize_mask, max_aspect_ratios > max_aspect_ratio
         )
 
