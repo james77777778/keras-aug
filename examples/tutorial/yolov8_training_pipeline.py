@@ -7,6 +7,9 @@ import keras_aug
 
 BATCH_SIZE = 16
 OUTPUT_PATH = "output.png"
+IMAGE_HEIGHT = 640
+IMAGE_WIDTH = 640
+FILL_VALUE = 114
 
 
 def visualize_dataset(
@@ -60,26 +63,31 @@ def load_pascal_voc(split, dataset, bounding_box_format):
 augmenter = keras.Sequential(
     layers=[
         keras_aug.layers.Resize(
-            640,
-            640,
+            IMAGE_HEIGHT,
+            IMAGE_WIDTH,
             pad_to_aspect_ratio=True,
-            padding_value=114,
+            padding_value=FILL_VALUE,
             bounding_box_format="xywh",
         ),
         keras_aug.layers.Mosaic(
-            1280, 1280, fill_value=114, bounding_box_format="xywh"
+            IMAGE_HEIGHT * 2,
+            IMAGE_WIDTH * 2,
+            fill_value=FILL_VALUE,
+            bounding_box_format="xywh",
         ),
         keras_aug.layers.RandomAffine(
-            # translation_height_factor=0.1,
-            # translation_width_factor=0.1,
-            zoom_height_factor=(1.0, 1.0),
+            translation_height_factor=0.1,
+            translation_width_factor=0.1,
+            zoom_height_factor=0.5,
             same_zoom_factor=True,
-            fill_value=114,
+            fill_value=FILL_VALUE,
             bounding_box_format="xywh",
             bounding_box_min_area_ratio=0.1,
             bounding_box_max_aspect_ratio=100.0,
         ),
-        keras_aug.layers.Resize(640, 640, bounding_box_format="xywh"),
+        keras_aug.layers.Resize(
+            IMAGE_HEIGHT, IMAGE_WIDTH, bounding_box_format="xywh"
+        ),
         # TODO: Blur, MedianBlur
         keras_aug.layers.RandomApply(keras_aug.layers.Grayscale(), rate=0.01),
         keras_aug.layers.RandomApply(

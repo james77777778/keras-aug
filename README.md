@@ -25,6 +25,24 @@ KerasAug is:
 - seamlessly integrating with the `tf.data` and `tf.keras.Model` API
 - cosistent with officially published implementations
 
+## Why Use KerasAug Rather than KerasCV?
+
+1. KerasAug is generally faster than KerasCV
+
+    See [benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details
+
+2. The APIs of KerasAug are highly stable compared to KerasCV
+
+    While KerasCV may encounter issues running [examples/tutorial/advanced_pipeline.py](examples/tutorial/advanced_pipeline.py), KerasAug is capable of running the same script successfully.
+
+3. The implementations in KerasAug are consistent with popular libraries like torchvision, Albumentations and ultralytics
+
+4. KerasAug provides the functionality of sanitizing bounding boxes
+
+    [RandomAffine](https://kerasaug.readthedocs.io/en/latest/modules/layers.html#keras_aug.layers.RandomAffine) with `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio`
+
+    You can use [keras_aug.utils.bounding_box.sanitize_bounding_boxes](https://kerasaug.readthedocs.io/en/latest/modules/utils.html#keras_aug.utils.bounding_box.sanitize_bounding_boxes) to customize your self-defined preprocessing/augmentation layer
+
 ## Installation
 
 ```bash
@@ -124,6 +142,10 @@ Epoch 8/8
 </details>
 
 KerasAug runs faster (215ms/step vs. 242ms/step) than KerasCV and achieves better performance.
+
+## YOLOV8 Training Pipeline Demonstration
+
+See [https://kerasaug.readthedocs.io/en/latest/get_started/tutorial.html](https://kerasaug.readthedocs.io/en/latest/get_started/tutorial.html)
 
 ## Benchmark
 
