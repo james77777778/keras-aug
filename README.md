@@ -13,7 +13,12 @@
 
 KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, labels, bounding boxes, segmentation masks, and more.
 
-<div align="center"><img style="width: 440px; max-width: 90%;" src="https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif"></div>
+<div align="center">
+<img style="width: 440px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif"> <img style="width: 440px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238360126-26e09041-7202-4e9f-a429-5335ba440a07.png">
+</div>
+
+> **Note**
+> The image on the left provides the visualization of the layers in KerasAug; the image on the right provides the visualization of the YOLOV8 pipeline using KerasAug
 
 KerasAug aims to provide fast and user-friendly preprocessing and augmentation layers, facilitating seamless integration with TensorFlow, Keras, and KerasCV.
 
@@ -25,7 +30,7 @@ KerasAug is:
 - seamlessly integrating with the `tf.data` and `tf.keras.Model` API
 - cosistent with officially published implementations
 
-## Why Use KerasAug Rather than KerasCV?
+## Why Use KerasAug Rather than KerasCV for Preprocessing/Augmentation?
 
 1. KerasAug is generally faster than KerasCV
 
@@ -49,7 +54,8 @@ KerasAug is:
 pip install keras-aug keras-cv tensorflow tensorflow_probability --upgrade
 ```
 
-Warning: KerasAug is NOT compatible with `keras-cv < 0.5.0`.
+> **Warning**
+> KerasAug is NOT compatible with `keras-cv < 0.5.0`.
 
 ## Quickstart
 
@@ -60,7 +66,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow import keras
 
-# Create a preprocessing pipeline with KerasAug
+# Create a preprocessing pipeline using KerasAug
 BATCH_SIZE = 16
 NUM_CLASSES = 3
 augmenter = keras.Sequential(
