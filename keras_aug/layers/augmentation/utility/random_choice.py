@@ -1,12 +1,18 @@
 from functools import partial
 
 import tensorflow as tf
+from keras_cv import bounding_box
 from tensorflow import keras
 
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils.augmentation import BOUNDING_BOXES
+from keras_aug.utils.augmentation import CUSTOM_ANNOTATIONS
 from keras_aug.utils.augmentation import IMAGES
+from keras_aug.utils.augmentation import KEYPOINTS
+from keras_aug.utils.augmentation import LABELS
+from keras_aug.utils.augmentation import SEGMENTATION_MASKS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -16,6 +22,9 @@ class RandomChoice(VectorizedBaseRandomLayer):
     The implemented policy does the following: for each input provided in
     `call`(), the policy selects a random layer from the provided list of
     `layers`. It then calls the `layer()` on the inputs.
+
+    Notes:
+        The shape and type of the outputs must be the same of the inputs.
 
     Args:
         layers (list(VectorizedBaseRandomLayer|keras.Layer|keras.Sequential)): The list
@@ -46,13 +55,67 @@ class RandomChoice(VectorizedBaseRandomLayer):
         )
         return selected_op_idx
 
+    def compute_inputs_signature(self, inputs):
+        fn_output_signature = {}
+        if IMAGES in inputs:
+            if isinstance(inputs[IMAGES], tf.Tensor):
+                fn_output_signature[IMAGES] = tf.TensorSpec(
+                    inputs[IMAGES].shape[1:], self.compute_dtype
+                )
+            else:
+                fn_output_signature[IMAGES] = tf.RaggedTensorSpec(
+                    shape=inputs[IMAGES].shape[1:],
+                    ragged_rank=1,
+                    dtype=self.compute_dtype,
+                )
+        if LABELS in inputs:
+            fn_output_signature[LABELS] = tf.TensorSpec(
+                inputs[LABELS].shape[1:], self.compute_dtype
+            )
+        if BOUNDING_BOXES in inputs:
+            fn_output_signature[BOUNDING_BOXES] = {
+                "boxes": tf.RaggedTensorSpec(
+                    shape=[None, 4],
+                    ragged_rank=1,
+                    dtype=self.compute_dtype,
+                ),
+                "classes": tf.RaggedTensorSpec(
+                    shape=[None], ragged_rank=0, dtype=self.compute_dtype
+                ),
+            }
+        if SEGMENTATION_MASKS in inputs:
+            if isinstance(inputs[SEGMENTATION_MASKS], tf.Tensor):
+                fn_output_signature[SEGMENTATION_MASKS] = tf.TensorSpec(
+                    inputs[SEGMENTATION_MASKS].shape[1:], self.compute_dtype
+                )
+            else:
+                fn_output_signature[SEGMENTATION_MASKS] = tf.RaggedTensorSpec(
+                    shape=inputs[SEGMENTATION_MASKS].shape[1:],
+                    ragged_rank=1,
+                    dtype=self.compute_dtype,
+                )
+        if KEYPOINTS in inputs:
+            if isinstance(inputs[KEYPOINTS], tf.Tensor):
+                fn_output_signature[KEYPOINTS] = tf.TensorSpec(
+                    inputs[KEYPOINTS].shape[1:], self.compute_dtype
+                )
+            else:
+                fn_output_signature[KEYPOINTS] = tf.RaggedTensorSpec(
+                    shape=inputs[KEYPOINTS].shape[1:],
+                    ragged_rank=1,
+                    dtype=self.compute_dtype,
+                )
+        if CUSTOM_ANNOTATIONS in inputs:
+            raise NotImplementedError()
+        return fn_output_signature
+
     def _batch_augment(self, inputs):
         images = inputs.get(IMAGES, None)
         batch_size = tf.shape(images)[0]
         transformations = self.get_random_transformation_batch(batch_size)
         if self.batchwise:
             selected_op_idx = transformations[0]
-            result = self.random_choice_single_input(
+            result = self.augment(
                 {"inputs": inputs, "transformations": selected_op_idx}
             )
         else:
@@ -61,14 +124,23 @@ class RandomChoice(VectorizedBaseRandomLayer):
                 "transformations": transformations,
             }
             result = tf.map_fn(
-                self.random_choice_single_input,
+                self.augment,
                 inputs_for_random_choice_single_input,
+                fn_output_signature=self.compute_inputs_signature(inputs),
             )
-        # unpack result to normal inputs
-        result = result["inputs"]
+
+        # workaround: force bounding_boxes to be ragged
+        # sometimes tf will output tf.Tensor instead of tf.RaggedTensor
+        # the root cause is not clear right now
+        bounding_boxes = result.get(BOUNDING_BOXES, None)
+        if bounding_boxes is not None:
+            bounding_boxes = bounding_box.to_dense(bounding_boxes)
+            bounding_boxes = bounding_box.to_ragged(bounding_boxes)
+            result[BOUNDING_BOXES] = bounding_boxes
+
         return result
 
-    def random_choice_single_input(self, inputs):
+    def augment(self, inputs):
         input = inputs.get("inputs")
         selected_op_idx = inputs.get("transformations")
         # construct branch_fns
@@ -76,8 +148,12 @@ class RandomChoice(VectorizedBaseRandomLayer):
         for idx, layer in enumerate(self.layers):
             branch_fns[idx] = partial(layer, input)
         # augment
-        input = tf.switch_case(selected_op_idx, branch_fns=branch_fns)
-        return {"inputs": input, "transformations": selected_op_idx}
+        result = tf.switch_case(selected_op_idx, branch_fns=branch_fns)
+        if BOUNDING_BOXES in result:
+            result[BOUNDING_BOXES] = bounding_box.to_ragged(
+                result[BOUNDING_BOXES]
+            )
+        return result
 
     def get_config(self):
         config = super().get_config()

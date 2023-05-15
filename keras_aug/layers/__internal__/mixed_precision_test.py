@@ -167,22 +167,6 @@ TEST_CONFIGURATIONS = [
     ("Invert", layers.Invert, {"value_range": (0, 255)}),
     ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     (
-        "RandomApply",
-        layers.RandomApply,
-        {"layer": layers.RandomChannelDropout(), "batchwise": True},
-    ),
-    (
-        "RandomChoice",
-        layers.RandomChoice,
-        {
-            "layers": [
-                layers.RandomChannelDropout(),
-                layers.RandomChannelDropout(),
-            ],
-            "batchwise": True,
-        },
-    ),
-    (
         "RepeatedAugment",
         layers.RepeatedAugment,
         {
@@ -220,6 +204,37 @@ TEST_CONFIGURATIONS = [
     ("Identity", layers.Identity, {}),
 ]
 
+BUILD_IN_RUNTIME = [
+    (
+        "RandomApply",
+        layers.RandomApply,
+        {"name": "layer", "value": "single", "args": {}},
+        layers.RandomChannelDropout,
+        {},
+    ),
+    (
+        "RandomApplyBatchwise",
+        layers.RandomApply,
+        {"name": "layer", "value": "single", "args": {"batchwise": True}},
+        layers.RandomChannelDropout,
+        {},
+    ),
+    (
+        "RandomChoice",
+        layers.RandomChoice,
+        {"name": "layers", "value": "multiple", "args": {}},
+        layers.RandomChannelDropout,
+        {},
+    ),
+    (
+        "RandomChoiceBatchwise",
+        layers.RandomChoice,
+        {"name": "layers", "value": "multiple", "args": {"batchwise": True}},
+        layers.RandomChannelDropout,
+        {},
+    ),
+]
+
 
 class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
@@ -235,12 +250,14 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
             item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
         ]
         all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        test_configuration_names = set(item[0] for item in TEST_CONFIGURATIONS)
+        test_configs = set(item[0] for item in TEST_CONFIGURATIONS)
+        build_in_runtime = set(item[0] for item in BUILD_IN_RUNTIME)
+        all_test_conf_names = test_configs.union(build_in_runtime)
 
         for name in all_2d_aug_layer_names:
             self.assertIn(
                 name,
-                test_configuration_names,
+                all_test_conf_names,
                 msg=f"{name} not found in TEST_CONFIGURATIONS",
             )
 
@@ -254,6 +271,35 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
         labels = tf.cast(
             tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
         )
+        layer = layer_cls(**args)
+        layer({IMAGES: images, LABELS: labels})
+
+    @parameterized.named_parameters(*BUILD_IN_RUNTIME)
+    def test_can_run_in_mixed_precision_build_in_runtime(
+        self, layer_cls, args, build_layer, build_args
+    ):
+        keras.mixed_precision.set_global_policy("mixed_float16")
+        images = tf.cast(
+            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
+        )
+        name = args["name"]
+        value = args["value"]
+        other_args = args["args"]
+        if value == "single":
+            build_layers = build_layer(**build_args)
+        elif value == "multiple":
+            build_layers = [
+                build_layer(**build_args),
+                build_layer(**build_args),
+                build_layer(**build_args),
+            ]
+        else:
+            raise NotImplementedError()
+        args = {name: build_layers, **other_args}
         layer = layer_cls(**args)
         layer({IMAGES: images, LABELS: labels})
 
