@@ -138,7 +138,7 @@ Augmentation 2D
 
 ----
 
-.. autoclass:: RandomApply(layer, rate=0.5, seed=None, **kwargs)
+.. autoclass:: RandomApply(layer, rate=0.5, batchwise=False, seed=None, **kwargs)
 .. autoclass:: RandomChoice(layers, batchwise=False, seed=None, **kwargs)    
 .. autoclass:: RepeatedAugment(layers, shuffle=True, seed=None, **kwargs)
 

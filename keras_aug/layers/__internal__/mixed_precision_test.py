@@ -169,7 +169,7 @@ TEST_CONFIGURATIONS = [
     (
         "RandomApply",
         layers.RandomApply,
-        {"layer": layers.RandomChannelDropout()},
+        {"layer": layers.RandomChannelDropout(), "batchwise": True},
     ),
     (
         "RandomChoice",
