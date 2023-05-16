@@ -18,35 +18,32 @@ KerasAug is a library that includes pure TF/Keras preprocessing and augmentation
 </div>
 
 > **Note**
-> The image on the left provides the visualization of the layers in KerasAug; the image on the right provides the visualization of the YOLOV8 pipeline using KerasAug
+> left: the visualization of the layers in KerasAug; right: the visualization of the YOLOV8 pipeline using KerasAug
 
-KerasAug aims to provide fast and user-friendly preprocessing and augmentation layers, facilitating seamless integration with TensorFlow, Keras, and KerasCV.
+KerasAug aims to provide fast, robust and user-friendly preprocessing and augmentation layers, facilitating seamless integration with TensorFlow, Keras and KerasCV.
 
 KerasAug is:
 
-- built entirely using TensorFlow, TensorFlow Probability, Keras and KerasCV
-- supporting various data types, including images, labels, bounding boxes, segmentation masks, and more.
-- compatible with GPU (partially compatible with TPU/XLA)
+- faster than KerasCV which is official Keras library
+- supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
+- dependent only on TensorFlow, TensorFlow Probability and KerasCV
 - seamlessly integrating with the `tf.data` and `tf.keras.Model` API
-- cosistent with officially published implementations
+- compatible with GPU
 
-## Why Use KerasAug Rather than KerasCV for Preprocessing/Augmentation?
+## Why KerasAug?
 
 1. KerasAug is generally faster than KerasCV
 
-    See [benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details
+    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1342** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
 
 2. The APIs of KerasAug are highly stable compared to KerasCV
 
-    While KerasCV may encounter issues running [examples/tutorial/advanced_pipeline.py](examples/tutorial/advanced_pipeline.py), KerasAug is capable of running the same script successfully.
+    > KerasCV struggles to reproduce the YOLOV8 training pipeline, whereas KerasAug executes it flawlessly. See [Quickstart](https://github.com/james77777778/keras-aug/tree/main#quickstart) for more details.
 
-3. The implementations in KerasAug are consistent with popular libraries like torchvision, Albumentations and ultralytics
+3. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
 
-4. KerasAug provides the functionality of sanitizing bounding boxes
-
-    [RandomAffine](https://kerasaug.readthedocs.io/en/latest/modules/layers.html#keras_aug.layers.RandomAffine) with `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio`
-
-    You can use [keras_aug.utils.bounding_box.sanitize_bounding_boxes](https://kerasaug.readthedocs.io/en/latest/modules/utils.html#keras_aug.utils.bounding_box.sanitize_bounding_boxes) to customize your self-defined preprocessing/augmentation layer
+    > The current layers in KerasAug support the sanitizing process by incorporating the `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio` arguments.
+    > In addition, you can bring the sanitizing functionality to your custom layer by utilizing `keras_aug.utils.bounding_box.sanitize_bounding_boxes`.
 
 ## Installation
 
@@ -58,6 +55,9 @@ pip install keras-aug keras-cv tensorflow tensorflow_probability --upgrade
 > KerasAug is NOT compatible with `keras-cv < 0.5.0`.
 
 ## Quickstart
+
+<details>
+<summary>Rock, Paper and Scissors Image Classification</summary>
 
 ```python
 import keras_aug
@@ -130,9 +130,6 @@ model.fit(
 )
 ```
 
-<details>
-<summary>trainging log</summary>
-
 ```bash
 # KerasCV Quickstart
 ...
@@ -145,52 +142,175 @@ Epoch 8/8
 158/158 [==============================] - 34s 215ms/step - loss: 0.7680 - accuracy: 0.7567 - val_loss: 0.2639 - val_accuracy: 1.0000
 ```
 
-</details>
-
 KerasAug runs faster (215ms/step vs. 242ms/step) than KerasCV and achieves better performance.
 
-## YOLOV8 Training Pipeline Demonstration
+</details>
 
-See [https://kerasaug.readthedocs.io/en/latest/get_started/tutorial.html](https://kerasaug.readthedocs.io/en/latest/get_started/tutorial.html)
+<details>
+<summary>YOLOV8 Training Pipeline Demo</summary>
+
+```python
+import keras_aug
+import keras_cv
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from tensorflow import keras
+
+BATCH_SIZE = 16
+OUTPUT_PATH = "output.png"
+IMAGE_HEIGHT = 640
+IMAGE_WIDTH = 640
+FILL_VALUE = 114
+
+
+def visualize_dataset(
+    inputs, value_range, rows, cols, bounding_box_format, path
+):
+    inputs = next(iter(inputs.take(1)))
+    images, bounding_boxes = inputs["images"], inputs["bounding_boxes"]
+    keras_cv.visualization.plot_bounding_box_gallery(
+        images,
+        value_range=value_range,
+        rows=rows,
+        cols=cols,
+        y_true=bounding_boxes,
+        scale=5,
+        font_scale=0.7,
+        bounding_box_format=bounding_box_format,
+        path=path,
+        dpi=150,
+    )
+
+
+def unpackage_raw_tfds_inputs(inputs, bounding_box_format):
+    image = inputs["image"]
+    boxes = keras_cv.bounding_box.convert_format(
+        inputs["objects"]["bbox"],
+        images=image,
+        source="rel_yxyx",
+        target=bounding_box_format,
+    )
+    bounding_boxes = {
+        "classes": tf.cast(inputs["objects"]["label"], dtype=tf.float32),
+        "boxes": tf.cast(boxes, dtype=tf.float32),
+    }
+    return {
+        "images": tf.cast(image, tf.float32),
+        "bounding_boxes": bounding_boxes,
+    }
+
+
+def load_pascal_voc(split, dataset, bounding_box_format):
+    ds = tfds.load(dataset, split=split, with_info=False, shuffle_files=False)
+    ds = ds.map(
+        lambda x: unpackage_raw_tfds_inputs(
+            x, bounding_box_format=bounding_box_format
+        ),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    return ds
+
+
+augmenter = keras.Sequential(
+    layers=[
+        keras_aug.layers.Resize(
+            IMAGE_HEIGHT,
+            IMAGE_WIDTH,
+            pad_to_aspect_ratio=True,
+            padding_value=FILL_VALUE,
+            bounding_box_format="xywh",
+        ),
+        keras_aug.layers.Mosaic(
+            IMAGE_HEIGHT * 2,
+            IMAGE_WIDTH * 2,
+            fill_value=FILL_VALUE,
+            bounding_box_format="xywh",
+        ),
+        keras_aug.layers.RandomAffine(
+            translation_height_factor=0.1,
+            translation_width_factor=0.1,
+            zoom_height_factor=0.5,
+            same_zoom_factor=True,
+            fill_value=FILL_VALUE,
+            bounding_box_format="xywh",
+            bounding_box_min_area_ratio=0.1,
+            bounding_box_max_aspect_ratio=100.0,
+        ),
+        keras_aug.layers.Resize(
+            IMAGE_HEIGHT, IMAGE_WIDTH, bounding_box_format="xywh"
+        ),
+        # TODO: Blur, MedianBlur
+        keras_aug.layers.RandomApply(keras_aug.layers.Grayscale(), rate=0.01),
+        keras_aug.layers.RandomApply(
+            keras_aug.layers.RandomCLAHE(value_range=(0, 255)), rate=0.01
+        ),
+        keras_aug.layers.RandomHSV(
+            value_range=(0, 255),
+            hue_factor=0.015,
+            saturation_factor=0.7,
+            value_factor=0.4,
+        ),
+        keras_aug.layers.RandomFlip(bounding_box_format="xywh"),
+    ]
+)
+
+
+train_ds = load_pascal_voc(
+    split="train", dataset="voc/2007", bounding_box_format="xywh"
+)
+train_ds = train_ds.ragged_batch(BATCH_SIZE, drop_remainder=True)
+train_ds = train_ds.map(augmenter, num_parallel_calls=tf.data.AUTOTUNE)
+visualize_dataset(
+    train_ds,
+    bounding_box_format="xywh",
+    value_range=(0, 255),
+    rows=2,
+    cols=2,
+    path=OUTPUT_PATH,
+)
+```
+
+<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238360126-26e09041-7202-4e9f-a429-5335ba440a07.png">
+</div>
+
+</details>
 
 ## Benchmark
 
-Please refer to [benchmarks/README.md](benchmarks/README.md) for more details.
-
 KerasAug is generally faster than KerasCV.
 
-Unit: FPS (frames per second)
+| Type           | Layer                     | KerasAug | KerasCV   |      |
+|----------------|---------------------------|----------|-----------|------|
+| Geometry       | RandomHFlip               | 2148     | 1859      |+15%  |
+|                | RandomVFlip               | 2182     | 2075      |+5%   |
+|                | RandomRotate              | 2451     | 1829      |+34%  |
+|                | RandomAffine              | 2141     | 1240      |+73%  |
+|                | RandomCropAndResize       | 3014     | 209       |+1342%|
+|                | Resize (224, 224)         | 2853     | 213       |+1239%|
+| Intensity      | RandomBrightness          | 3028     | 3097      |close |
+|                | RandomContrast            | 2806     | 2645      |+6%   |
+|                | RandomBrightnessContrast  | 3068     | 612       |+401% |
+|                | RandomColorJitter         | 1932     | 1221      |+58%  |
+|                | RandomGaussianBlur        | 2758     | 207       |+1232%|
+|                | Grayscale                 | 2841     | 2872      |close |
+|                | Equalize                  | 206      | 139       |+48%  |
+|                | AutoContrast              | 3116     | 2991      |+4%   |
+|                | Posterize                 | 2917     | 2445      |+19%  |
+|                | Solarize                  | 3025     | 2882      |+5%   |
+|                | Sharpness                 | 2969     | 2915      |close |
+| Regularization | RandomCutout              | 3222     | 3268      |close |
+|                | RandomGridMask            | 947      | 197       |+381% |
+| Mix            | CutMix                    | 2671     | 2445      |+9%   |
+|                | MixUp                     | 2593     | 1996      |+29%  |
+| Auto           | AugMix                    | 83       | X (Error) |X     |
+|                | RandAugment               | 282      | 249       |+13%  |
 
-| Type           | Layer                   | KerasAug | KerasCV   |
-|----------------|-------------------------|----------|-----------|
-| Geometry       | RandomHFlip             | 2325     | 1769      |
-|                | RandomVFlip             | 2012     | 1923      |
-|                | RandomRotate            | 1896     | 1782      |
-|                | RandomAffine            | 1901     | 818       |
-|                | RandomCropAndResize     | 2480     | 210       |
-|                | Resize (224, 224)       | 2550     | 213       |
-| Intensity      | RandomBrightness        | 3054     | 2925      |
-|                | RandomContrast          | 2941     | 3086      |
-|                | RandomBrighnessContrast | 3009     | 629       |
-|                | RandomColorJitter       | 2201     | 1120      |
-|                | RandomGaussianBlur      | 2632     | 196       |
-|                | Invert                  | 2933     | X         |
-|                | Grayscale               | 3072     | 2762      |
-|                | Equalize                | 204      | 140       |
-|                | AutoContrast            | 2873     | 2744      |
-|                | Posterize               | 3081     | 2929      |
-|                | Solarize                | 2828     | 2560      |
-|                | Sharpness               | 2554     | 2560      |
-| Regularization | RandomCutout            | 2995     | 2978      |
-|                | RandomGridMask          | 904      | 202       |
-| Mix            | CutMix                  | 2352     | 2780      |
-|                | MixUp                   | 2596     | 2962      |
-| Auto           | AugMix                  | 80       | X (Error) |
-|                | RandAugment             | 283      | 253       |
+> **Note**
+> FPS (frames per second)
+
+Please refer to [benchmarks/README.md](benchmarks/README.md) for more details.
 
 ## Citing KerasAug
-
-KerasAug is an extension of KerasCV and it would be preferable to acknowledge and cite both libraries jointly.
 
 ```bibtex
 @misc{wood2022kerascv,

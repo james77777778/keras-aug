@@ -93,8 +93,8 @@ Augmentation 2D
 ----
 
 .. autoclass:: RandomAffine(rotation_factor=None, translation_height_factor=None, translation_width_factor=None, zoom_height_factor=None, zoom_width_factor=None, shear_height_factor=None, shear_width_factor=None, same_zoom_factor=False, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
-.. autoclass:: RandomCrop(height, width, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
+.. autoclass:: RandomCrop(height, width, interpolation="bilinear", bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
+.. autoclass:: RandomCropAndResize(height, width, crop_area_factor, aspect_ratio_factor, interpolation="bilinear", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomFlip(mode="horizontal", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomResize(heights, widths=None, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomRotate(factor, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
@@ -162,7 +162,7 @@ Preprocessing 2D
 .. autoclass:: Grayscale(output_channels=3, **kwargs)
 .. autoclass:: Invert(value_range, **kwargs)
 .. autoclass:: Normalize(value_range, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), **kwargs)
-.. autoclass:: Rescale(scale, offset=0.0)
+.. autoclass:: Rescale(scale, offset=0.0, **kwargs)
 
 **Utility**
 

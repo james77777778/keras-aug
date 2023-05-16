@@ -253,11 +253,8 @@ if __name__ == "__main__":
             exclude_ops=[  # match KerasCV setting
                 "identity",
                 "rotate",
-                "invert",
                 "posterize",
                 "sharpness",
-                "cutout",
-                "solarize_add",
             ],
             name="RandAugment",
         ),
