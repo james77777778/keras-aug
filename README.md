@@ -34,7 +34,7 @@ KerasAug is:
 
 1. KerasAug is generally faster than KerasCV
 
-    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1342** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
+    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1342%** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
 
 2. The APIs of KerasAug are highly stable compared to KerasCV
 
