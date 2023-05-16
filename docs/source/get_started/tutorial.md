@@ -129,4 +129,4 @@ visualize_dataset(
 )
 ```
 
-<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238522651-bdc48b92-4337-40b7-a911-f385d54324c1.gif"></div>
+<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238531295-22cd5567-0709-46d5-bf31-7baad05b91d2.gif"></div>
