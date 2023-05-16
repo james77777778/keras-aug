@@ -14,7 +14,7 @@
 KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, labels, bounding boxes, segmentation masks, and more.
 
 <div align="center">
-<img style="max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238527700-7c81210f-f2ea-45a0-b4a7-bb4f6b936ec2.gif"> <img style="max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238522651-bdc48b92-4337-40b7-a911-f385d54324c1.gif">
+<img style="width: 300px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238527700-7c81210f-f2ea-45a0-b4a7-bb4f6b936ec2.gif"> <img style="width: 300px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238522651-bdc48b92-4337-40b7-a911-f385d54324c1.gif">
 </div>
 
 > **Note**
