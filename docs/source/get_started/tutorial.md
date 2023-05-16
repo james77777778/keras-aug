@@ -15,7 +15,6 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow import keras
 
-
 BATCH_SIZE = 16
 OUTPUT_PATH = "output.png"
 IMAGE_HEIGHT = 640
@@ -128,8 +127,6 @@ visualize_dataset(
     cols=2,
     path=OUTPUT_PATH,
 )
-
-
 ```
 
-<div align="center"><img style="width: 440px; max-width: 90%;" src="https://user-images.githubusercontent.com/20734616/238360126-26e09041-7202-4e9f-a429-5335ba440a07.png"></div>
+<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238531295-22cd5567-0709-46d5-bf31-7baad05b91d2.gif"></div>
