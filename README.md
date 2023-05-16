@@ -14,7 +14,7 @@
 KerasAug is a library that includes pure TF/Keras preprocessing and augmentation layers, providing support for various data types such as images, labels, bounding boxes, segmentation masks, and more.
 
 <div align="center">
-<img style="height: 400px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/237416247-417f2870-1e0d-45d6-abda-e384a82118df.gif"> <img style="height: 400px; max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238360126-26e09041-7202-4e9f-a429-5335ba440a07.png">
+<img style="max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238527700-7c81210f-f2ea-45a0-b4a7-bb4f6b936ec2.gif"> <img style="max-width: 45%;" src="https://user-images.githubusercontent.com/20734616/238522651-bdc48b92-4337-40b7-a911-f385d54324c1.gif">
 </div>
 
 > **Note**
@@ -44,6 +44,8 @@ KerasAug is:
 
     > The current layers in KerasAug support the sanitizing process by incorporating the `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio` arguments.
     > In addition, you can bring the sanitizing functionality to your custom layer by utilizing `keras_aug.utils.bounding_box.sanitize_bounding_boxes`.
+
+    <div align="center"><img style="max-width: 75%;" src="https://user-images.githubusercontent.com/20734616/238520600-34f0b7b5-d9ee-4483-859a-51e9644ded4c.jpg"></div>
 
 ## Installation
 
@@ -270,7 +272,7 @@ visualize_dataset(
 )
 ```
 
-<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238360126-26e09041-7202-4e9f-a429-5335ba440a07.png">
+<div align="center"><img src="https://user-images.githubusercontent.com/20734616/238522651-bdc48b92-4337-40b7-a911-f385d54324c1.gif">
 </div>
 
 </details>
