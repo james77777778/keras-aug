@@ -112,7 +112,6 @@ class Mosaic(VectorizedBaseRandomLayer):
         }
 
     def augment_images(self, images, transformations, **kwargs):
-        is_ragged_input = isinstance(images, tf.RaggedTensor)
         permutation_order = transformations["permutation_order"]
         mosaic_images = tf.gather(images, permutation_order)
         inputs_for_pad_and_mosaic_single_image = {
@@ -124,8 +123,9 @@ class Mosaic(VectorizedBaseRandomLayer):
             inputs_for_pad_and_mosaic_single_image,
             fn_output_signature=self.compute_dtype,
         )
-        if is_ragged_input:
-            images = tf.RaggedTensor.from_tensor(images)
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
         return images
 
     def augment_labels(self, labels, transformations, images=None, **kwargs):

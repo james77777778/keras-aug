@@ -153,6 +153,9 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             [self.height, self.width],  # output size
             method=self.interpolation,
         )
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
         return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -228,6 +231,9 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             indices,  # box_indices: maps boxes to images along batch axis
             [self.height, self.width],  # output size
             method="nearest",
+        )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
         )
         return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 

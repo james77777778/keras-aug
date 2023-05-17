@@ -107,6 +107,9 @@ class RandomCrop(VectorizedBaseRandomLayer):
             self.crop_images(images, transformations),
             self.resize_images(images, interpolation=self.interpolation),
         )
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -191,6 +194,9 @@ class RandomCrop(VectorizedBaseRandomLayer):
             tf.math.logical_and(h_diffs >= 0, w_diffs >= 0),
             self.crop_images(segmentation_masks, transformations),
             self.resize_images(segmentation_masks, interpolation="nearest"),
+        )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
         )
         return segmentation_masks
 
