@@ -164,12 +164,15 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             "scaled_sizes": scaled_sizes,
             "offsets": offsets,
         }
-        scaled_images = tf.map_fn(
+        images = tf.map_fn(
             self.resize_and_crop_single_image,
             inputs_for_resize_and_crop_single_image,
             fn_output_signature=tf.float32,
         )
-        return tf.cast(scaled_images, self.compute_dtype)
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
+        return tf.cast(images, self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels

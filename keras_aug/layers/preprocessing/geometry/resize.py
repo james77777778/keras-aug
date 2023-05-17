@@ -96,9 +96,6 @@ class Resize(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
-        if not self.crop_to_aspect_ratio and not self.pad_to_aspect_ratio:
-            return {"dummy": tf.zeros((batch_size,))}
-
         heights, widths = augmentation_utils.get_images_shape(
             images, dtype=tf.float32
         )
@@ -107,6 +104,8 @@ class Resize(VectorizedBaseRandomLayer):
             scales = tf.maximum(self.height / heights, self.width / widths)
         elif self.pad_to_aspect_ratio:
             scales = tf.minimum(self.height / heights, self.width / widths)
+        else:
+            return {"dummy": tf.zeros((batch_size,))}
         new_heights = tf.cast(tf.round(heights * scales), tf.int32)
         new_widths = tf.cast(tf.round(widths * scales), tf.int32)
         scaled_sizes = tf.concat((new_heights, new_widths), axis=-1)
@@ -129,7 +128,8 @@ class Resize(VectorizedBaseRandomLayer):
             rights = tf.where(
                 new_widths > self.width, new_widths - self.width - lefts, 0
             )
-        elif self.pad_to_aspect_ratio:
+        else:
+            assert self.pad_to_aspect_ratio
             tops = tf.where(
                 new_heights < self.height,
                 tf.cast((self.height - new_heights) / 2, tf.int32),
@@ -168,16 +168,6 @@ class Resize(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        # resize
-        if not self.crop_to_aspect_ratio and not self.pad_to_aspect_ratio:
-            images = tf.image.resize(
-                images,
-                size=(self.height, self.width),
-                method=self.interpolation,
-                antialias=self.antialias,
-            )
-            return tf.cast(images, dtype=self.compute_dtype)
-
         # resize keeping aspect ratio
         if self.crop_to_aspect_ratio:
             images = self.resize_with_crop_to_aspect_ratio(
@@ -187,6 +177,17 @@ class Resize(VectorizedBaseRandomLayer):
             images = self.resize_with_pad_to_aspect_ratio(
                 images, transformations, self.interpolation, self.padding_value
             )
+        else:
+            # resize
+            images = tf.image.resize(
+                images,
+                size=(self.height, self.width),
+                method=self.interpolation,
+                antialias=self.antialias,
+            )
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
         return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -256,7 +257,8 @@ class Resize(VectorizedBaseRandomLayer):
             x2s = x2s * widths_ratios - lefts
             y1s = y1s * height_ratios - tops
             y2s = y2s * height_ratios - tops
-        elif self.pad_to_aspect_ratio:
+        else:
+            assert self.pad_to_aspect_ratio
             x1s = x1s * widths_ratios + lefts
             x2s = x2s * widths_ratios + lefts
             y1s = y1s * height_ratios + tops
@@ -290,14 +292,10 @@ class Resize(VectorizedBaseRandomLayer):
                 self.augment_segmentation_mask_single,
                 inputs,
             )
-            return tf.cast(segmentation_masks, dtype=self.compute_dtype)
-        # resize
-        if not self.crop_to_aspect_ratio and not self.pad_to_aspect_ratio:
-            segmentation_masks = tf.image.resize(
-                segmentation_masks,
-                size=(self.height, self.width),
-                method="nearest",
+            segmentation_masks = tf.ensure_shape(
+                segmentation_masks, shape=(None, self.height, self.width, None)
             )
+            return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
         # resize keeping aspect ratio
         if self.crop_to_aspect_ratio:
@@ -308,6 +306,15 @@ class Resize(VectorizedBaseRandomLayer):
             segmentation_masks = self.resize_with_pad_to_aspect_ratio(
                 segmentation_masks, transformations, "nearest", 0
             )
+        else:
+            segmentation_masks = tf.image.resize(
+                segmentation_masks,
+                size=(self.height, self.width),
+                method="nearest",
+            )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
+        )
         return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def augment_segmentation_mask_single(self, inputs):
@@ -339,7 +346,8 @@ class Resize(VectorizedBaseRandomLayer):
             segmentation_mask = tf.image.crop_to_bounding_box(
                 segmentation_mask, top, left, self.height, self.width
             )
-        elif self.pad_to_aspect_ratio:
+        else:
+            assert self.pad_to_aspect_ratio
             # pad
             pad_top = transformation["tops"][0]
             pad_bottom = transformation["bottoms"][0]

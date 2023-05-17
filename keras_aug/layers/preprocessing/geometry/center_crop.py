@@ -136,6 +136,9 @@ class CenterCrop(VectorizedBaseRandomLayer):
             self.height,
             self.width,
         )
+        images = tf.ensure_shape(
+            images, shape=(None, self.height, self.width, None)
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -221,6 +224,8 @@ class CenterCrop(VectorizedBaseRandomLayer):
                 fn_output_signature=segmentation_masks.dtype,
             )
         else:
+            ori_height = tf.shape(segmentation_masks)[augmentation_utils.H_AXIS]
+            ori_width = tf.shape(segmentation_masks)[augmentation_utils.W_AXIS]
             pad_top = transformations["pad_tops"][0][0]
             pad_bottom = transformations["pad_bottoms"][0][0]
             pad_left = transformations["pad_lefts"][0][0]
@@ -236,12 +241,29 @@ class CenterCrop(VectorizedBaseRandomLayer):
             segmentation_masks = tf.pad(
                 segmentation_masks, paddings=paddings, constant_values=0
             )
+            # center crop
+            offset_height = (
+                ori_height + pad_top + pad_bottom - self.height
+            ) // 2
+            offset_width = (ori_width + pad_left + pad_right - self.width) // 2
+            segmentation_masks = tf.image.crop_to_bounding_box(
+                segmentation_masks,
+                offset_height,
+                offset_width,
+                self.height,
+                self.width,
+            )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
+        )
         return segmentation_masks
 
     def augment_segmentation_mask_single(self, inputs):
         segmentation_mask = inputs.get(
             augmentation_utils.SEGMENTATION_MASKS, None
         )
+        ori_height = tf.shape(segmentation_mask)[augmentation_utils.H_AXIS]
+        ori_width = tf.shape(segmentation_mask)[augmentation_utils.W_AXIS]
         transformation = inputs.get("transformation", None)
         pad_top = transformation["pad_tops"][0]
         pad_bottom = transformation["pad_bottoms"][0]
@@ -256,6 +278,16 @@ class CenterCrop(VectorizedBaseRandomLayer):
         )
         segmentation_mask = tf.pad(
             segmentation_mask, paddings=paddings, constant_values=0
+        )
+        # center crop
+        offset_height = (ori_height + pad_top + pad_bottom - self.height) // 2
+        offset_width = (ori_width + pad_left + pad_right - self.width) // 2
+        segmentation_mask = tf.image.crop_to_bounding_box(
+            segmentation_mask,
+            offset_height,
+            offset_width,
+            self.height,
+            self.width,
         )
         return segmentation_mask
 

@@ -149,7 +149,7 @@ Preprocessing 2D
 
 ----
 
-.. autoclass:: CenterCrop(height, width, postion="center", padding_value=0, bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
+.. autoclass:: CenterCrop(height, width, padding_value=0, bounding_box_format=None, bounding_box_min_area_ratio=None, bounding_box_max_aspect_ratio=None, seed=None, **kwargs)
 .. autoclass:: PadIfNeeded(min_height=None, min_width=None, height_divisor=None, width_divisor=None, position="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: Resize(height, width, interpolation="bilinear", antialias=False, crop_to_aspect_ratio=False, pad_to_aspect_ratio=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 
