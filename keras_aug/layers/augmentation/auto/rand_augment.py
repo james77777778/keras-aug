@@ -244,7 +244,13 @@ class RandAugment(VectorizedBaseRandomLayer):
                     )
                 )
             else:
-                if key not in exclude_ops:
+                if use_geometry is False and key not in [
+                    "rotate",
+                    "shear_x",
+                    "shear_y",
+                    "translate_x",
+                    "translate_y",
+                ]:
                     raise ValueError(f"Not recognized policy key: {key}")
         return aug_layers
 
