@@ -16,11 +16,11 @@ KerasAug aims to provide fast, robust and user-friendly preprocessing and augmen
 
 KerasAug is:
 
-- faster than KerasCV which is official Keras library
-- supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
-- dependent only on TensorFlow, TensorFlow Probability and KerasCV
-- seamlessly integrating with the `tf.data` and `tf.keras.Model` API
-- compatible with GPU
+- 🚀 faster than [KerasCV](https://github.com/keras-team/keras-cv) which is an official Keras library
+- 🧰 supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
+- ❤️ dependent only on TensorFlow, TensorFlow Probability and KerasCV
+- 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
+- 🔥 compatible with GPU
 
 ## Why KerasAug?
 
@@ -43,17 +43,17 @@ KerasAug is:
 
 KerasAug expects following types of input data:
 
-1. `tf.Tensor` with the shape of [H, W, C] representing `"images"`
-2. `tf.Tensor` or `tf.RaggedTensor` with the shape of [B, H|None, W|None, C] representing `"images"`
-3. A dictionary containing:
-    - `"images"`: [B, H|None, W|None, C] (`tf.Tensor` or `tf.RaggedTensor`)
-    - `"labels"`: [B, 1] (`tf.Tensor`)
-    - `"bounding_boxes"`:
-        - `"boxes"`: [B, N|None, 4] (`tf.Tensor` or `tf.RaggedTensor`)
-        - `"classes"`: [B, N|None, 1] `tf.Tensor` or `tf.RaggedTensor`
-    - `"segmentation_masks"`: [B, H|None, W|None, 1] (`tf.Tensor` or `tf.RaggedTensor`)
-    - `"keypoints"`: WIP
-    - `"custom_annotations"`: user-defined
+||Type|Key|Shape|Notes|
+|-|-|-|-|-|
+|Single Image|`tf.Tensor`||`[H, W, C]`|
+|Multiple Images|`tf.Tensor`||`[B, H, W, C]`|H, W can be `None` if ragged|
+|Multiple Inputs|Dictionary|`images`|`[B, H, W, C]`|H, W can be `None` if ragged|
+|||`labels`|`[B, 1]`||
+|||`bounding_boxes` (boxes)|`[B, N, 4]`|N can be `None` if ragged|
+|||`bounding_boxes` (classes)|`[B, N]`|N can be `None` if ragged|
+|||`segmentation_masks`|`[B, H, W, 1]`|value `0` for background, H, W can be `None` if ragged|
+|||`keypoints`||WIP|
+|||`custom_annotations`||define by user|
 
 For example:
 
