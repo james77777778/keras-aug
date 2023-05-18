@@ -49,8 +49,8 @@ KerasAug expects following types of input data:
 |Multiple Images|`tf.Tensor`||[B, H, W, C]|H, W can be `None` if ragged|
 |Multiple Inputs|`dict`|`images`|[B, H, W, C]|H, W can be `None` if ragged|
 |||`labels`|[B, 1]||
-|||`bounding_boxes` (boxes)|[B, N, 4]|N can be `None` if ragged|
-|||`bounding_boxes` (classes)|[B, N]|N can be `None` if ragged|
+|||`bounding_boxes`<br>(boxes)|[B, N, 4]|N can be `None` if ragged|
+|||`bounding_boxes`<br>(classes)|[B, N]|N can be `None` if ragged|
 |||`segmentation_masks`|[B, H, W, 1]|value `0` for background, H, W can be `None` if ragged|
 |||`keypoints`||WIP|
 |||`custom_annotations`||define by user|
