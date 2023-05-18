@@ -94,3 +94,33 @@ class CutMixTest(tf.test.TestCase):
             "CutMix expects 'labels' to be present in its inputs",
         ):
             _ = layer(xs)
+
+    def test_cut_mix_call_segmentation_masks(self):
+        xs = tf.cast(
+            tf.stack(
+                [2 * tf.ones((40, 40, 3)), tf.ones((40, 40, 3))],
+                axis=0,
+            ),
+            tf.float32,
+        )
+        masks = tf.cast(
+            tf.stack(
+                [2 * tf.ones((40, 40, 1)), tf.ones((40, 40, 1))],
+                axis=0,
+            ),
+            tf.float32,
+        )
+        ys = tf.one_hot(tf.constant([0, 1]), 2)
+        layer = layers.CutMix(seed=2024)
+
+        outputs = layer(
+            {"images": xs, "labels": ys, "segmentation_masks": masks}
+        )
+        xs, ys = outputs["images"], outputs["labels"]
+        masks = outputs["segmentation_masks"]
+
+        # At least some pixels should be replaced in the CutMix operation
+        self.assertTrue(tf.math.reduce_any(masks[0] == 1.0))
+        self.assertTrue(tf.math.reduce_any(masks[0] == 2.0))
+        self.assertTrue(tf.math.reduce_any(masks[1] == 1.0))
+        self.assertTrue(tf.math.reduce_any(masks[1] == 2.0))
