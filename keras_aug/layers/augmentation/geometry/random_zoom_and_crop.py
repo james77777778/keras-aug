@@ -156,11 +156,11 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        # unpackage augmentation arguments
+        # tf.image.resize always output tf.float32 unless interpolation==nearest
         scaled_sizes = transformations["scaled_sizes"]
         offsets = transformations["offsets"]
         inputs_for_resize_and_crop_single_image = {
-            "images": images,
+            "images": tf.cast(images, dtype=tf.float32),
             "scaled_sizes": scaled_sizes,
             "offsets": offsets,
         }
@@ -225,26 +225,86 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
+    def compute_ragged_segmentation_mask_signature(self, segmentation_masks):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, segmentation_masks.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        # unpackage augmentation arguments
+        scaled_sizes = transformations["scaled_sizes"]
+        offsets = transformations["offsets"]
+        inputs_for_resize_and_crop_single_segmentation_mask = {
+            "segmentation_masks": tf.cast(segmentation_masks, dtype=tf.float32),
+            "scaled_sizes": scaled_sizes,
+            "offsets": offsets,
+        }
+        segmentation_masks = tf.map_fn(
+            self.resize_and_crop_single_segmentation_mask,
+            inputs_for_resize_and_crop_single_segmentation_mask,
+            fn_output_signature=tf.float32,
+        )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
+        )
+        return tf.cast(segmentation_masks, self.compute_dtype)
+
     def resize_and_crop_single_image(self, inputs):
         image = inputs.get("images", None)
         scaled_size = inputs.get("scaled_sizes", None)
         offset = inputs.get("offsets", None)
 
-        scaled_image = tf.image.resize(
+        image = tf.image.resize(
             image,
             tf.cast(scaled_size, tf.int32),
             method=self.interpolation,
             antialias=self.antialias,
         )
-        scaled_image = scaled_image[
+        image = image[
             offset[0] : offset[0] + self.crop_height,
             offset[1] : offset[1] + self.crop_width,
             :,
         ]
-        scaled_image = tf.image.pad_to_bounding_box(
-            scaled_image, 0, 0, self.height, self.width
+        image = tf.image.pad_to_bounding_box(
+            image, 0, 0, self.height, self.width
         )
-        return scaled_image
+        return image
+
+    def resize_and_crop_single_segmentation_mask(self, inputs):
+        segmentation_masks = inputs.get("segmentation_masks", None)
+        scaled_size = inputs.get("scaled_sizes", None)
+        offset = inputs.get("offsets", None)
+
+        segmentation_masks = tf.image.resize(
+            segmentation_masks, tf.cast(scaled_size, tf.int32), method="nearest"
+        )
+        segmentation_masks = segmentation_masks[
+            offset[0] : offset[0] + self.crop_height,
+            offset[1] : offset[1] + self.crop_width,
+            :,
+        ]
+        segmentation_masks = tf.image.pad_to_bounding_box(
+            segmentation_masks, 0, 0, self.height, self.width
+        )
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()
