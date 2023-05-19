@@ -253,14 +253,14 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         scaled_sizes = transformations["scaled_sizes"]
         offsets = transformations["offsets"]
         inputs_for_resize_and_crop_single_segmentation_mask = {
-            "segmentation_masks": tf.cast(segmentation_masks, dtype=tf.float32),
+            "segmentation_masks": segmentation_masks,
             "scaled_sizes": scaled_sizes,
             "offsets": offsets,
         }
         segmentation_masks = tf.map_fn(
             self.resize_and_crop_single_segmentation_mask,
             inputs_for_resize_and_crop_single_segmentation_mask,
-            fn_output_signature=tf.float32,
+            fn_output_signature=segmentation_masks.dtype,
         )
         segmentation_masks = tf.ensure_shape(
             segmentation_masks, shape=(None, self.height, self.width, None)

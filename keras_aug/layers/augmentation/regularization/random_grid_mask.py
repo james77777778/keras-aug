@@ -212,20 +212,6 @@ class RandomGridMask(VectorizedBaseRandomLayer):
     def augment_bounding_boxes(self, bounding_boxes, transformations, **kwargs):
         return bounding_boxes
 
-    def augment_segmentation_masks(
-        self, segmentation_masks, transformations, **kwargs
-    ):
-        raise NotImplementedError(
-            "The effect of RandomGridMask for segmentation masks is not clear."
-            "Feel free to file the issue if you have the idea about it."
-        )
-
-    def augment_keypoints(self, keypoints, transformations, **kwargs):
-        raise NotImplementedError(
-            "The effect of RandomGridMask for keypoints is not clear."
-            "Feel free to file the issue if you have the idea about it."
-        )
-
     def compute_grid_mask_single_image(self, inputs):
         mask_side_len = inputs.get("mask_side_lens", None)[0]
         rectangle_side_len = inputs.get("rectangle_side_lens", None)[0]

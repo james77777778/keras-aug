@@ -305,15 +305,7 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
         Returns:
             Augmented segmentation mask.
         """
-        raise NotImplementedError(
-            "A ragged image batch was passed to layer of type "
-            f"`{type(self).__name__}`. This layer does not implement "
-            "`augment_ragged_segmentation_mask()`. If this is a `keras_aug`, "
-            "open a GitHub issue requesting Ragged functionality on the layer "
-            f"titled: '`{type(self).__name__}`: ragged image support'. If this "
-            "is a custom layer, implement the "
-            "`augment_ragged_segmentation_mask()` method."
-        )
+        return segmentation_mask
 
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
