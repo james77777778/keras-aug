@@ -458,7 +458,40 @@ class RandomAffine(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
     def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        batch_size = tf.shape(segmentation_masks)[0]
+        combined_matrixes = transformations["combined_matrixes"]
+        combined_matrixes = tf.reshape(
+            combined_matrixes, shape=(batch_size, -1)
+        )
+        combined_matrixes = combined_matrixes[:, :-1]
+
+        segmentation_masks = preprocessing_utils.transform(
+            segmentation_masks,
+            combined_matrixes,
+            fill_mode=self.fill_mode,
+            fill_value=0,
+            interpolation="nearest",
+        )
+        return segmentation_masks
+
+    def augment_segmentation_masks_impl(
         self, segmentation_masks, transformations, raw_images=None, **kwargs
     ):
         batch_size = tf.shape(raw_images)[0]

@@ -392,3 +392,58 @@ class RandomAffineTest(tf.test.TestCase):
         )
 
         self.assertTrue(tf.math.reduce_all(new_area > old_area))
+
+    def test_dense_segmentation_masks(self):
+        images = tf.random.uniform((2, 10, 10, 3))
+        segmentation_masks = tf.random.uniform(
+            (2, 10, 10, 1), minval=0, maxval=10, dtype=tf.int32
+        )
+        args = self.no_aug_args.copy()
+        args.update(
+            {
+                "shear_height_factor": (0.3, 0.7),
+                "shear_width_factor": (0.4, 0.7),
+                "interpolation": "nearest",
+                "seed": 0,
+            }
+        )
+        layer = layers.RandomAffine(**args)
+
+        result = layer(
+            {"images": images, "segmentation_masks": segmentation_masks}
+        )
+
+        self.assertTrue(isinstance(result["segmentation_masks"], tf.Tensor))
+
+    def test_ragged_segmentation_masks(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
+        args = self.no_aug_args.copy()
+        args.update(
+            {
+                "shear_height_factor": (0.3, 0.7),
+                "shear_width_factor": (0.4, 0.7),
+                "interpolation": "nearest",
+                "seed": 0,
+            }
+        )
+        layer = layers.RandomAffine(**args)
+
+        result = layer(
+            {"images": images, "segmentation_masks": segmentation_masks}
+        )
+
+        self.assertTrue(
+            isinstance(result["segmentation_masks"], tf.RaggedTensor)
+        )

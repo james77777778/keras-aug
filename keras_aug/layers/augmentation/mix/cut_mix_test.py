@@ -82,7 +82,7 @@ class CutMixTest(tf.test.TestCase):
         inputs = {"images": xs}
         layer = layers.CutMix()
 
-        with self.assertRaisesRegexp(ValueError, "CutMix expects 'labels'"):
+        with self.assertRaisesRegexp(ValueError, "CutMix expects `labels`"):
             _ = layer(inputs)
 
     def test_image_input(self):
@@ -91,7 +91,7 @@ class CutMixTest(tf.test.TestCase):
 
         with self.assertRaisesRegexp(
             ValueError,
-            "CutMix expects 'labels' to be present in its inputs",
+            "CutMix expects `labels` or `segmentation_masks` to be present",
         ):
             _ = layer(xs)
 

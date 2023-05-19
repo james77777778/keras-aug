@@ -103,11 +103,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
         },
     ),
     (
-        "MixUp",
-        layers.MixUp,
-        {},
-    ),
-    (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
         {},
@@ -218,6 +213,7 @@ FORCE_DENSE_IMAGES_LAYERS = [
 
 NO_RAGGED_IMAGES_SUPPORT = [
     ("CutMix", layers.CutMix, {"alpha": 1.0}),
+    ("MixUp", layers.MixUp, {}),
 ]
 
 

@@ -51,7 +51,7 @@ KerasAug expects following types of input data:
 |||`labels`|[B, 1]||
 |||`bounding_boxes`<br>(boxes)|[B, N, 4]|N can be `None` if ragged|
 |||`bounding_boxes`<br>(classes)|[B, N]|N can be `None` if ragged|
-|||`segmentation_masks`|[B, H, W, 1]|value `0` for background, H, W can be `None` if ragged|
+|||`segmentation_masks`|[B, H, W, 1]<br>or [B, H, W, S]|value `0` for background, H, W can be `None` if ragged, can be one-hot format (`S` classes)|
 |||`keypoints`||WIP|
 |||`custom_annotations`||define by user|
 

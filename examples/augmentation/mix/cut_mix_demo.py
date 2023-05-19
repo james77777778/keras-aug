@@ -41,10 +41,9 @@ def main():
         dataset,
         image_value_range=(0, 255),
         mask_value_range=(0, 2),
-        output_image_path="demo_image.png",
-        output_mask_path="demo_mask.png",
+        output_path="demo_mask.png",
     )
-    print("saved image to ./demo_image.png; ./demo_masks.png")
+    print("saved image to ./demo_masks.png")
 
 
 if __name__ == "__main__":

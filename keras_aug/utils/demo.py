@@ -182,23 +182,20 @@ def visualize_segmentation_masks(
     data,
     image_value_range=(0, 255),
     mask_value_range=None,
-    output_image_path=None,
-    output_mask_path=None,
+    output_path=None,
 ):
     data = next(iter(data))
     images = data["images"]
     masks = data["segmentation_masks"]
-
-    keras_cv.visualization.plot_image_gallery(
-        images,
-        value_range=image_value_range,
-        path=output_image_path,
-        dpi=100,
+    masks = keras_cv.utils.transform_value_range(
+        masks, mask_value_range, (0, 255)
     )
+    masks = tf.concat([masks, masks, masks], axis=-1)
+    display_images = tf.concat([images, masks], axis=2)  # B, H, W, C
 
     keras_cv.visualization.plot_image_gallery(
-        masks,
-        value_range=mask_value_range,
-        path=output_mask_path,
+        display_images,
+        value_range=image_value_range,
+        path=output_path,
         dpi=100,
     )

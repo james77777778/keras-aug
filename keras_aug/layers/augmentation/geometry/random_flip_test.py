@@ -262,3 +262,44 @@ class RandomFlipTest(tf.test.TestCase, parameterized.TestCase):
         input = {"images": input_image, "bounding_boxes": bounding_boxes}
         layer = layers.RandomFlip(bounding_box_format="xyxy")
         _ = layer(input)
+
+    def test_dense_segmentation_masks(self):
+        images = tf.random.uniform((2, 10, 10, 3))
+        segmentation_masks = tf.random.uniform(
+            (2, 10, 10, 1), minval=0, maxval=10, dtype=tf.int32
+        )
+        layer = layers.RandomFlip()
+
+        result = layer(
+            {"images": images, "segmentation_masks": segmentation_masks}
+        )
+
+        self.assertTrue(isinstance(result["segmentation_masks"], tf.Tensor))
+        self.assertAllInSet(result["segmentation_masks"], tf.range(0, 10))
+
+    def test_ragged_segmentation_masks(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
+        layer = layers.RandomFlip()
+
+        result = layer(
+            {"images": images, "segmentation_masks": segmentation_masks}
+        )
+
+        self.assertTrue(
+            isinstance(result["segmentation_masks"], tf.RaggedTensor)
+        )
+        self.assertAllInSet(
+            result["segmentation_masks"].to_tensor(0), tf.range(0, 10)
+        )

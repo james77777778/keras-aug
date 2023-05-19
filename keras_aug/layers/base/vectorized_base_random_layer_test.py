@@ -13,15 +13,15 @@ class VectorizedRandomAddLayer(VectorizedBaseRandomLayer):
         self.add_range = add_range
         self.fixed_value = fixed_value
 
-    def augment_ragged_image(self, image, transformation, **kwargs):
-        return image + transformation[None, None]
-
     def get_random_transformation_batch(self, batch_size, **kwargs):
         if self.fixed_value:
             return tf.ones((batch_size,)) * self.fixed_value
         return self._random_generator.random_uniform(
             (batch_size,), minval=self.add_range[0], maxval=self.add_range[1]
         )
+
+    def augment_ragged_image(self, image, transformation, **kwargs):
+        return image + transformation[None, None, None]
 
     def augment_images(self, images, transformations, **kwargs):
         return images + transformations[:, None, None, None]
@@ -38,6 +38,11 @@ class VectorizedRandomAddLayer(VectorizedBaseRandomLayer):
     def augment_keypoints(self, keypoints, transformations, **kwargs):
         return keypoints + transformations[:, None, None]
 
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        return segmentation_mask + transformation[None, None, None]
+
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
@@ -50,6 +55,24 @@ TF_ALL_TENSOR_TYPES = (tf.Tensor, tf.RaggedTensor, tf.SparseTensor)
 class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def get_random_transformation_batch(
+        self,
+        batch_size,
+        images=None,
+        labels=None,
+        bounding_boxes=None,
+        keypoints=None,
+        segmentation_masks=None,
+        **kwargs
+    ):
+        assert isinstance(images, TF_ALL_TENSOR_TYPES)
+        assert isinstance(labels, TF_ALL_TENSOR_TYPES)
+        assert isinstance(bounding_boxes["boxes"], TF_ALL_TENSOR_TYPES)
+        assert isinstance(bounding_boxes["classes"], TF_ALL_TENSOR_TYPES)
+        assert isinstance(keypoints, TF_ALL_TENSOR_TYPES)
+        assert isinstance(segmentation_masks, TF_ALL_TENSOR_TYPES)
+        return self._random_generator.random_uniform((batch_size,))
 
     def augment_ragged_image(
         self,
@@ -69,24 +92,6 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         assert isinstance(segmentation_mask, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformation, TF_ALL_TENSOR_TYPES)
         return image
-
-    def get_random_transformation_batch(
-        self,
-        batch_size,
-        images=None,
-        labels=None,
-        bounding_boxes=None,
-        keypoints=None,
-        segmentation_masks=None,
-        **kwargs
-    ):
-        assert isinstance(images, TF_ALL_TENSOR_TYPES)
-        assert isinstance(labels, TF_ALL_TENSOR_TYPES)
-        assert isinstance(bounding_boxes["boxes"], TF_ALL_TENSOR_TYPES)
-        assert isinstance(bounding_boxes["classes"], TF_ALL_TENSOR_TYPES)
-        assert isinstance(keypoints, TF_ALL_TENSOR_TYPES)
-        assert isinstance(segmentation_masks, TF_ALL_TENSOR_TYPES)
-        return self._random_generator.random_uniform((batch_size,))
 
     def augment_images(
         self,
@@ -155,6 +160,25 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         assert isinstance(images, TF_ALL_TENSOR_TYPES)
         assert isinstance(raw_images, TF_ALL_TENSOR_TYPES)
         return keypoints
+
+    def augment_ragged_segmentation_mask(
+        self,
+        segmentation_mask,
+        transformation=None,
+        label=None,
+        bounding_boxes=None,
+        image=None,
+        raw_image=None,
+        **kwargs
+    ):
+        assert isinstance(segmentation_mask, TF_ALL_TENSOR_TYPES)
+        assert isinstance(transformation, TF_ALL_TENSOR_TYPES)
+        assert isinstance(label, TF_ALL_TENSOR_TYPES)
+        assert isinstance(bounding_boxes["boxes"], TF_ALL_TENSOR_TYPES)
+        assert isinstance(bounding_boxes["classes"], TF_ALL_TENSOR_TYPES)
+        assert isinstance(image, TF_ALL_TENSOR_TYPES)
+        assert isinstance(raw_image, TF_ALL_TENSOR_TYPES)
+        return segmentation_mask
 
     def augment_segmentation_masks(
         self,
@@ -553,7 +577,7 @@ class VectorizedBaseRandomLayerTest(tf.test.TestCase):
             ]
         )
         add_layer = VectorizedRandomAddLayer(fixed_value=0.5)
-        add_layer.force_output_dense_segmentation_masks = True
+        add_layer.force_output_dense_images = True
 
         result = add_layer(
             {"images": images, "segmentation_masks": segmentation_masks}

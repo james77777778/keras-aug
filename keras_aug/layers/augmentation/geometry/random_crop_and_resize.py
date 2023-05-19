@@ -88,7 +88,6 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         # set force_output_dense_images=True because the output images must
         # have same shape (B, height, width, C)
         self.force_output_dense_images = True
-        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
@@ -126,12 +125,11 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         return boxes
 
     def compute_ragged_image_signature(self, images):
-        ragged_spec = tf.RaggedTensorSpec(
+        return tf.RaggedTensorSpec(
             shape=(self.height, self.width, images.shape[-1]),
             ragged_rank=1,
             dtype=self.compute_dtype,
         )
-        return ragged_spec
 
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)
@@ -217,6 +215,25 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             images=images,
         )
         return bounding_boxes
+
+    def compute_ragged_segmentation_mask_signature(self, segmentation_masks):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, segmentation_masks.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = tf.expand_dims(transformation, axis=0)
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
 
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs

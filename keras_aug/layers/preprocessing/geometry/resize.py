@@ -91,7 +91,6 @@ class Resize(VectorizedBaseRandomLayer):
         # set force_output_dense_images=True because the output images must
         # have same shape (B, height, width, C)
         self.force_output_dense_images = True
-        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
@@ -280,23 +279,30 @@ class Resize(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
+    def compute_ragged_segmentation_mask_signature(self, segmentation_masks):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, segmentation_masks.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
-        if isinstance(segmentation_masks, tf.RaggedTensor):
-            inputs = {
-                augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
-                "transformations": transformations,
-            }
-            segmentation_masks = tf.vectorized_map(
-                self.augment_segmentation_mask_single,
-                inputs,
-            )
-            segmentation_masks = tf.ensure_shape(
-                segmentation_masks, shape=(None, self.height, self.width, None)
-            )
-            return tf.cast(segmentation_masks, dtype=self.compute_dtype)
-
         # resize keeping aspect ratio
         if self.crop_to_aspect_ratio:
             segmentation_masks = self.resize_with_crop_to_aspect_ratio(
@@ -316,57 +322,6 @@ class Resize(VectorizedBaseRandomLayer):
             segmentation_masks, shape=(None, self.height, self.width, None)
         )
         return tf.cast(segmentation_masks, dtype=self.compute_dtype)
-
-    def augment_segmentation_mask_single(self, inputs):
-        segmentation_mask = inputs.get(
-            augmentation_utils.SEGMENTATION_MASKS, None
-        )
-        transformation = inputs.get("transformations", None)
-        # resize
-        if not self.crop_to_aspect_ratio and not self.pad_to_aspect_ratio:
-            return tf.image.resize(
-                segmentation_mask,
-                size=(self.height, self.width),
-                method="nearest",
-            )
-
-        # resize keeping aspect ratio
-        scaled_size = transformation["scaled_sizes"]
-        new_height = scaled_size[0]
-        new_width = scaled_size[1]
-        segmentation_mask = tf.image.resize(
-            segmentation_mask,
-            size=(new_height, new_width),
-            method="nearest",
-        )
-        if self.crop_to_aspect_ratio:
-            # crop
-            top = tf.cast(transformation["tops"][0], dtype=tf.float32)
-            left = tf.cast(transformation["lefts"][0], dtype=tf.float32)
-            segmentation_mask = tf.image.crop_to_bounding_box(
-                segmentation_mask, top, left, self.height, self.width
-            )
-        else:
-            assert self.pad_to_aspect_ratio
-            # pad
-            pad_top = transformation["tops"][0]
-            pad_bottom = transformation["bottoms"][0]
-            pad_left = transformation["lefts"][0]
-            pad_right = transformation["rights"][0]
-            paddings = tf.stack(
-                (
-                    tf.stack((pad_top, pad_bottom)),
-                    tf.stack((pad_left, pad_right)),
-                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
-                )
-            )
-            segmentation_mask = tf.pad(
-                segmentation_mask,
-                paddings=paddings,
-                constant_values=0,
-            )
-
-        return segmentation_mask
 
     def resize_with_crop_to_aspect_ratio(self, images, transformations, method):
         batch_size = tf.shape(images)[0]
