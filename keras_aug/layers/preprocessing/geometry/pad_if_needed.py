@@ -208,35 +208,38 @@ class PadIfNeeded(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
-        if isinstance(segmentation_masks, tf.RaggedTensor):
-            inputs_for_augment_segmentation_mask_single = {
-                augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
-                "transformation": transformations,
-            }
-            segmentation_masks = tf.map_fn(
-                self.augment_segmentation_mask_single,
-                inputs_for_augment_segmentation_mask_single,
-                fn_output_signature=segmentation_masks.dtype,
+        pad_top = transformations["pad_tops"][0][0]
+        pad_bottom = transformations["pad_bottoms"][0][0]
+        pad_left = transformations["pad_lefts"][0][0]
+        pad_right = transformations["pad_rights"][0][0]
+        paddings = tf.stack(
+            (
+                tf.zeros(shape=(2,), dtype=pad_top.dtype),
+                tf.stack((pad_top, pad_bottom)),
+                tf.stack((pad_left, pad_right)),
+                tf.zeros(shape=(2,), dtype=pad_top.dtype),
             )
-        else:
-            pad_top = transformations["pad_tops"][0][0]
-            pad_bottom = transformations["pad_bottoms"][0][0]
-            pad_left = transformations["pad_lefts"][0][0]
-            pad_right = transformations["pad_rights"][0][0]
-            paddings = tf.stack(
-                (
-                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
-                    tf.stack((pad_top, pad_bottom)),
-                    tf.stack((pad_left, pad_right)),
-                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
-                )
-            )
-            segmentation_masks = tf.pad(
-                segmentation_masks, paddings=paddings, constant_values=0
-            )
+        )
+        segmentation_masks = tf.pad(
+            segmentation_masks, paddings=paddings, constant_values=0
+        )
         return segmentation_masks
 
     def augment_segmentation_mask_single(self, inputs):

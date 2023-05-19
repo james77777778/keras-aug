@@ -57,7 +57,6 @@ class CenterCrop(VectorizedBaseRandomLayer):
         # set force_output_dense_images=True because the output images must
         # have same shape (B, height, width, C)
         self.force_output_dense_images = True
-        self.force_output_dense_segmentation_masks = True
 
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
@@ -210,86 +209,61 @@ class CenterCrop(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
+    def compute_ragged_segmentation_mask_signature(self, segmentation_masks):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, segmentation_masks.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
-        if isinstance(segmentation_masks, tf.RaggedTensor):
-            inputs = {
-                augmentation_utils.SEGMENTATION_MASKS: segmentation_masks,
-                "transformation": transformations,
-            }
-            segmentation_masks = tf.map_fn(
-                self.augment_segmentation_mask_single,
-                inputs,
-                fn_output_signature=segmentation_masks.dtype,
-            )
-        else:
-            ori_height = tf.shape(segmentation_masks)[augmentation_utils.H_AXIS]
-            ori_width = tf.shape(segmentation_masks)[augmentation_utils.W_AXIS]
-            pad_top = transformations["pad_tops"][0][0]
-            pad_bottom = transformations["pad_bottoms"][0][0]
-            pad_left = transformations["pad_lefts"][0][0]
-            pad_right = transformations["pad_rights"][0][0]
-            paddings = tf.stack(
-                (
-                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
-                    tf.stack((pad_top, pad_bottom)),
-                    tf.stack((pad_left, pad_right)),
-                    tf.zeros(shape=(2,), dtype=pad_top.dtype),
-                )
-            )
-            segmentation_masks = tf.pad(
-                segmentation_masks, paddings=paddings, constant_values=0
-            )
-            # center crop
-            offset_height = (
-                ori_height + pad_top + pad_bottom - self.height
-            ) // 2
-            offset_width = (ori_width + pad_left + pad_right - self.width) // 2
-            segmentation_masks = tf.image.crop_to_bounding_box(
-                segmentation_masks,
-                offset_height,
-                offset_width,
-                self.height,
-                self.width,
-            )
-        segmentation_masks = tf.ensure_shape(
-            segmentation_masks, shape=(None, self.height, self.width, None)
-        )
-        return segmentation_masks
-
-    def augment_segmentation_mask_single(self, inputs):
-        segmentation_mask = inputs.get(
-            augmentation_utils.SEGMENTATION_MASKS, None
-        )
-        ori_height = tf.shape(segmentation_mask)[augmentation_utils.H_AXIS]
-        ori_width = tf.shape(segmentation_mask)[augmentation_utils.W_AXIS]
-        transformation = inputs.get("transformation", None)
-        pad_top = transformation["pad_tops"][0]
-        pad_bottom = transformation["pad_bottoms"][0]
-        pad_left = transformation["pad_lefts"][0]
-        pad_right = transformation["pad_rights"][0]
+        ori_height = tf.shape(segmentation_masks)[augmentation_utils.H_AXIS]
+        ori_width = tf.shape(segmentation_masks)[augmentation_utils.W_AXIS]
+        pad_top = transformations["pad_tops"][0][0]
+        pad_bottom = transformations["pad_bottoms"][0][0]
+        pad_left = transformations["pad_lefts"][0][0]
+        pad_right = transformations["pad_rights"][0][0]
         paddings = tf.stack(
             (
+                tf.zeros(shape=(2,), dtype=pad_top.dtype),
                 tf.stack((pad_top, pad_bottom)),
                 tf.stack((pad_left, pad_right)),
                 tf.zeros(shape=(2,), dtype=pad_top.dtype),
             )
         )
-        segmentation_mask = tf.pad(
-            segmentation_mask, paddings=paddings, constant_values=0
+        segmentation_masks = tf.pad(
+            segmentation_masks, paddings=paddings, constant_values=0
         )
         # center crop
         offset_height = (ori_height + pad_top + pad_bottom - self.height) // 2
         offset_width = (ori_width + pad_left + pad_right - self.width) // 2
-        segmentation_mask = tf.image.crop_to_bounding_box(
-            segmentation_mask,
+        segmentation_masks = tf.image.crop_to_bounding_box(
+            segmentation_masks,
             offset_height,
             offset_width,
             self.height,
             self.width,
         )
-        return segmentation_mask
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=(None, self.height, self.width, None)
+        )
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

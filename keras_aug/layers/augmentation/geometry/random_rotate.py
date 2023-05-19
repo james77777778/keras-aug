@@ -187,10 +187,24 @@ class RandomRotate(VectorizedBaseRandomLayer):
         )
         return bounding_boxes
 
-    def augment_segmentation_masks(
-        self, segmentation_masks, transformations, raw_images=None, **kwargs
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
     ):
-        batch_size = tf.shape(raw_images)[0]
+        segmentation_mask = tf.expand_dims(segmentation_mask, axis=0)
+        transformation = augmentation_utils.expand_dict_dims(
+            transformation, axis=0
+        )
+        segmentation_mask = self.augment_segmentation_masks(
+            segmentation_masks=segmentation_mask,
+            transformations=transformation,
+            **kwargs,
+        )
+        return tf.squeeze(segmentation_mask, axis=0)
+
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        batch_size = tf.shape(segmentation_masks)[0]
         rotation_matrixes = transformations["rotation_matrixes"]
         rotation_matrixes = tf.reshape(
             rotation_matrixes, shape=(batch_size, -1)

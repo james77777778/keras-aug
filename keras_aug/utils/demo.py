@@ -55,7 +55,7 @@ def load_oxford_dataset(
     img_size=(224, 224),
     as_supervised=True,
 ):
-    assert_tfds_installed("load_voc_dataset")
+    assert_tfds_installed("oxford_dataset")
 
     def preprocess_oxford(image, label, img_size=(224, 224), num_classes=10):
         image = tf.image.resize(image, img_size)
@@ -71,6 +71,37 @@ def load_oxford_dataset(
         lambda x, y: preprocess_oxford(
             x, y, img_size=img_size, num_classes=num_classes
         ),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    dataset = dataset.batch(batch_size)
+    return dataset
+
+
+def load_oxford_iiit_pet_dataset(
+    name="oxford_iiit_pet:3.*.*",
+    batch_size=9,
+    img_size=(224, 224),
+):
+    assert_tfds_installed("oxford_iiit_pet_dataset")
+
+    def preprocess_oxford_iiit_pet(data):
+        img_size = (224, 224)
+
+        input_image = tf.image.resize(data["image"], img_size)
+        input_mask = tf.image.resize(
+            data["segmentation_mask"],
+            img_size,
+            method="nearest",
+        )
+        input_image = tf.image.convert_image_dtype(input_image, tf.float32)
+        input_mask -= 1
+        input_mask = tf.cast(input_mask, tf.float32)
+        return {"images": input_image, "segmentation_masks": input_mask}
+
+    data = tfds.load(name)
+    dataset = data["train"]
+    dataset = dataset.map(
+        preprocess_oxford_iiit_pet,
         num_parallel_calls=tf.data.AUTOTUNE,
     )
     dataset = dataset.batch(batch_size)
@@ -145,3 +176,26 @@ def visualize_data_single(
             cols=1,
             dpi=300,
         )
+
+
+def visualize_segmentation_masks(
+    data,
+    image_value_range=(0, 255),
+    mask_value_range=None,
+    output_path=None,
+):
+    data = next(iter(data))
+    images = data["images"]
+    masks = data["segmentation_masks"]
+    masks = keras_cv.utils.transform_value_range(
+        masks, mask_value_range, (0, 255)
+    )
+    masks = tf.concat([masks, masks, masks], axis=-1)
+    display_images = tf.concat([images, masks], axis=2)  # B, H, W, C
+
+    keras_cv.visualization.plot_image_gallery(
+        display_images,
+        value_range=image_value_range,
+        path=output_path,
+        dpi=100,
+    )

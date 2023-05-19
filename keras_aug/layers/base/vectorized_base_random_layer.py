@@ -78,8 +78,7 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
 
     By default, the dense or ragged status of the output will be preserved.
     However, you can override this behavior by setting
-    ``self.force_output_dense_images = True``,
-    ``self.force_output_dense_segmentation_masks = True`` in your ``__init__()``
+    ``self.force_output_dense_images = True`` in your ``__init__()``
     method. When enabled, images and segmentation masks will be converted to
     dense tensor by ``to_tensor()`` if ragged.
 
@@ -89,7 +88,6 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
             def __init__(self):
                 super().__init__()
                 self.force_output_dense_images = True
-                self.force_output_dense_segmentation_masks = True
 
     Note that since the randomness is also a common functionality, this layer
     also includes a keras.backend.RandomGenerator, which can be used to
@@ -133,19 +131,6 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
     def force_output_dense_images(self, force_output_dense_images):
         self._force_output_dense_images = force_output_dense_images
 
-    @property
-    def force_output_dense_segmentation_masks(self):
-        """Control whether to force outputting of dense segmentation masks."""
-        return getattr(self, "_force_output_dense_segmentation_masks", False)
-
-    @force_output_dense_segmentation_masks.setter
-    def force_output_dense_segmentation_masks(
-        self, force_output_dense_segmentation_masks
-    ):
-        self._force_output_dense_segmentation_masks = (
-            force_output_dense_segmentation_masks
-        )
-
     def get_random_transformation_batch(
         self,
         batch_size,
@@ -179,23 +164,37 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
         return tf.zeros((batch_size))
 
     def compute_ragged_image_signature(self, images):
-        """Computes the output image signature for the `augment_image()`
-        function.
+        """Computes the output image signature for the
+        `_unwrap_ragged_image_call()` function.
 
         Must be overridden to return tensors with different shapes than the
         input images. By default, returns either a `tf.RaggedTensorSpec`
         matching the input image spec, or a `tf.TensorSpec` matching the input
         image spec.
         """
-        ragged_spec = tf.RaggedTensorSpec(
+        return tf.RaggedTensorSpec(
             shape=images.shape[1:],
             ragged_rank=1,
             dtype=self.compute_dtype,
         )
-        return ragged_spec
+
+    def compute_ragged_segmentation_mask_signature(self, segmentation_maks):
+        """Computes the output segmentation_mask signature for the
+        `_unwrap_ragged_segmentation_call()` function.
+
+        Must be overridden to return tensors with different shapes than the
+        input images. By default, returns either a `tf.RaggedTensorSpec`
+        matching the input image spec, or a `tf.TensorSpec` matching the input
+        image spec.
+        """
+        return tf.RaggedTensorSpec(
+            shape=segmentation_maks.shape[1:],
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
 
     def augment_ragged_image(self, image, transformation, **kwargs):
-        """Augment an image from a ragged image batch during training.
+        """Augment an image from a ragged image batch.
 
         This method accepts a single Dense image Tensor, and returns a Dense
         image. The resulting images are then stacked back into a ragged image
@@ -215,7 +214,7 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
         raise NotImplementedError(
             "A ragged image batch was passed to layer of type "
             f"`{type(self).__name__}`. This layer does not implement "
-            "`augment_ragged_image()`. If this is a `keras_cv`, open a GitHub "
+            "`augment_ragged_image()`. If this is a `keras_aug`, open a GitHub "
             "issue requesting Ragged functionality on the layer titled: "
             f"'`{type(self).__name__}`: ragged image support'. If this is a "
             "custom layer, implement the `augment_ragged_image()` method."
@@ -286,6 +285,28 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
         """
         raise NotImplementedError()
 
+    def augment_ragged_segmentation_mask(
+        self, segmentation_mask, transformation, **kwargs
+    ):
+        """Augment an image from a ragged segmentation mask batch.
+
+        This method accepts a single Dense image Tensor, and returns a Dense
+        image. The resulting images are then stacked back into a ragged image
+        batch. The behavior of this method should be identical to that of
+        `augment_segmentation_masks()` but is to operate on a batch-wise basis.
+
+        Args:
+            segmentation_mask: a single image from the batch
+            transformation: a single transformation sampled from
+                `get_random_transformations()`.
+            kwargs: all the other call arguments (i.e. bounding_boxes, labels,
+                etc.).
+
+        Returns:
+            Augmented segmentation mask.
+        """
+        return segmentation_mask
+
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
@@ -331,7 +352,7 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
         bounding_boxes = inputs.get(BOUNDING_BOXES, None)
         keypoints = inputs.get(KEYPOINTS, None)
         segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
-        transformation = inputs.get("transformations")
+        transformations = inputs.get("transformations")
         images = images.to_tensor()
         images = self.augment_ragged_image(
             image=images,
@@ -339,9 +360,27 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
             bounding_boxes=bounding_boxes,
             keypoints=keypoints,
             segmentation_mask=segmentation_masks,
-            transformation=transformation,
+            transformation=transformations,
         )
         return tf.RaggedTensor.from_tensor(images)
+
+    def _unwrap_ragged_segmentation_mask_call(self, inputs):
+        segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
+        transformations = inputs.get("transformations")
+        labels = inputs.get(LABELS, None)
+        bounding_boxes = inputs.get(BOUNDING_BOXES, None)
+        images = inputs.get(IMAGES, None)
+        raw_images = inputs.get("raw_images", None)
+        segmentation_masks = segmentation_masks.to_tensor()
+        segmentation_masks = self.augment_ragged_segmentation_mask(
+            segmentation_mask=segmentation_masks,
+            transformation=transformations,
+            label=labels,
+            bounding_boxes=bounding_boxes,
+            image=images,
+            raw_image=raw_images,
+        )
+        return tf.RaggedTensor.from_tensor(segmentation_masks)
 
     def _batch_augment(self, inputs):
         images = inputs.get(IMAGES, None)
@@ -420,17 +459,34 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
             result[KEYPOINTS] = keypoints
 
         if segmentation_masks is not None:
-            segmentation_masks = self.augment_segmentation_masks(
-                segmentation_masks,
-                transformations=transformations,
-                labels=labels,
-                bounding_boxes=bounding_boxes,
-                images=images,
-                raw_images=raw_images,
-            )
             if (
-                isinstance(images, tf.RaggedTensor)
-                and self.force_output_dense_segmentation_masks
+                isinstance(segmentation_masks, tf.RaggedTensor)
+                and not self.force_no_unwrap_ragged_image_call
+            ):
+                inputs_for_raggeds = {
+                    "transformations": transformations,
+                    "raw_images": raw_images,
+                    **inputs,
+                }
+                segmentation_masks = tf.map_fn(
+                    self._unwrap_ragged_segmentation_mask_call,
+                    inputs_for_raggeds,
+                    fn_output_signature=self.compute_ragged_segmentation_mask_signature(  # noqa: E501
+                        segmentation_masks
+                    ),
+                )
+            else:
+                segmentation_masks = self.augment_segmentation_masks(
+                    segmentation_masks,
+                    transformations=transformations,
+                    labels=labels,
+                    bounding_boxes=bounding_boxes,
+                    images=images,
+                    raw_images=raw_images,
+                )
+            if (
+                isinstance(segmentation_masks, tf.RaggedTensor)
+                and self.force_output_dense_images
             ):
                 segmentation_masks = segmentation_masks.to_tensor()
             result[SEGMENTATION_MASKS] = segmentation_masks

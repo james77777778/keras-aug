@@ -103,11 +103,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
         },
     ),
     (
-        "MixUp",
-        layers.MixUp,
-        {},
-    ),
-    (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
         {},
@@ -160,11 +155,6 @@ CONSISTENT_OUTPUTS_LAYERS = [
             ]
         },
     ),
-    (
-        "PadIfNeeded",
-        layers.PadIfNeeded,
-        {"min_height": 2, "min_width": 2},
-    ),
     ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
     ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
     ("Grayscale", layers.Grayscale, {"output_channels": 3}),
@@ -176,14 +166,14 @@ CONSISTENT_OUTPUTS_LAYERS = [
         {"scale": 1.0 / 255.0},
     ),
     ("Identity", layers.Identity, {}),
+    (
+        "PadIfNeeded",
+        layers.PadIfNeeded,
+        {"min_height": 2, "min_width": 2},
+    ),
 ]
 
 FORCE_DENSE_IMAGES_LAYERS = [
-    (
-        "CenterCrop",
-        layers.CenterCrop,
-        {"height": 2, "width": 2},
-    ),
     ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
     (
         "RandomCropAndResize",
@@ -202,17 +192,22 @@ FORCE_DENSE_IMAGES_LAYERS = [
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
     ),
     (
-        "Resize",
-        layers.Resize,
-        {"height": 2, "width": 2},
-    ),
-    (
         "Mosaic",
         layers.Mosaic,
         {
             "height": 2,
             "width": 2,
         },
+    ),
+    (
+        "CenterCrop",
+        layers.CenterCrop,
+        {"height": 2, "width": 2},
+    ),
+    (
+        "Resize",
+        layers.Resize,
+        {"height": 2, "width": 2},
     ),
 ]
 
@@ -222,6 +217,7 @@ NO_RAGGED_IMAGES_SUPPORT = [
         layers.CutMix,
         {"alpha": 1.0},
     ),
+    ("MixUp", layers.MixUp, {}),
 ]
 
 

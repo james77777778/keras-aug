@@ -9,6 +9,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
 from keras_aug.utils.augmentation import BATCHED
 from keras_aug.utils.augmentation import H_AXIS
 from keras_aug.utils.augmentation import LABELS
+from keras_aug.utils.augmentation import SEGMENTATION_MASKS
 from keras_aug.utils.augmentation import W_AXIS
 
 
@@ -126,6 +127,29 @@ class CutMix(VectorizedBaseRandomLayer):
         labels = lambda_sample * labels + (1.0 - lambda_sample) * cutmix_labels
         return labels
 
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        if isinstance(segmentation_masks, tf.RaggedTensor):
+            raise ValueError(
+                "CutMix expects dense segmentation_masks. Received: "
+                f"segmentation_masks type: {type(segmentation_masks)}"
+            )
+        permutation_order = transformations["permutation_order"]
+        center_xs = transformations["center_xs"]
+        center_ys = transformations["center_ys"]
+        cut_heights = transformations["cut_heights"]
+        cut_widths = transformations["cut_widths"]
+        segmentation_masks = fill_utils.fill_rectangle(
+            segmentation_masks,
+            center_xs,
+            center_ys,
+            cut_widths,
+            cut_heights,
+            tf.gather(segmentation_masks, permutation_order),
+        )
+        return segmentation_masks
+
     def _batch_augment(self, inputs):
         self._validate_inputs(inputs)
         return super()._batch_augment(inputs)
@@ -143,13 +167,11 @@ class CutMix(VectorizedBaseRandomLayer):
 
     def _validate_inputs(self, inputs):
         labels = inputs.get(LABELS, None)
-        if labels is None:
+        segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
+        if labels is None and segmentation_masks is None:
             raise ValueError(
-                "CutMix expects 'labels' to be present in its inputs. "
-                "CutMix relies on both images an labels. "
-                "Please pass a dictionary with keys 'images' "
-                "containing the image Tensor, and 'labels' containing "
-                "the classification labels. "
+                "CutMix expects `labels` or `segmentation_masks` to be present "
+                "in its inputs. "
                 "For example, `cut_mix({'images': images, 'labels': labels})`."
             )
 

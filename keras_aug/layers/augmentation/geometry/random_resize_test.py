@@ -188,3 +188,50 @@ class RandomResizeTest(tf.test.TestCase):
             output = layer(images)
             self.assertIn(output.shape[1], [4, 6, 8, 10])
             self.assertIn(output.shape[2], [4, 6, 8, 10])
+
+    def test_dense_segmentation_masks(self):
+        images = tf.random.uniform((2, 10, 10, 3))
+        segmentation_masks = tf.random.uniform(
+            (2, 10, 10, 1), minval=0, maxval=10, dtype=tf.int32
+        )
+        args = self.regular_args.copy()
+        args.update({"heights": [4, 6, 8, 10]})
+        layer = layers.RandomResize(**args, seed=2023)
+
+        for _ in range(3):
+            output = layer(
+                {"images": images, "segmentation_masks": segmentation_masks}
+            )
+
+            self.assertTrue(isinstance(output["segmentation_masks"], tf.Tensor))
+            self.assertIn(output["segmentation_masks"].shape[1], [4, 6, 8, 10])
+            self.assertIn(output["segmentation_masks"].shape[2], [4, 6, 8, 10])
+            self.assertAllInSet(output["segmentation_masks"], tf.range(0, 10))
+
+    def test_ragged_segmentation_masks(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
+        args = self.regular_args.copy()
+        args.update({"heights": [4, 6, 8, 10]})
+        layer = layers.RandomResize(**args, seed=2023)
+
+        for _ in range(3):
+            output = layer(
+                {"images": images, "segmentation_masks": segmentation_masks}
+            )
+
+            self.assertTrue(isinstance(output["segmentation_masks"], tf.Tensor))
+            self.assertIn(output["segmentation_masks"].shape[1], [4, 6, 8, 10])
+            self.assertIn(output["segmentation_masks"].shape[2], [4, 6, 8, 10])
+            self.assertAllInSet(output["segmentation_masks"], tf.range(0, 10))
