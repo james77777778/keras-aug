@@ -290,13 +290,13 @@ def get_rotation_matrix(
                 tf.sin(angles),
                 tf.cos(angles),
                 y_offset,
-                tf.zeros((num_angles, 2), tf.float32),
+                tf.zeros((num_angles, 2), angles.dtype),
             ],
             axis=1,
         )
         if to_square:
             matrix = tf.concat(
-                [matrix, tf.ones((num_angles, 1), tf.float32)], axis=1
+                [matrix, tf.ones((num_angles, 1), angles.dtype)], axis=1
             )
             matrix = tf.reshape(matrix, (num_angles, 3, 3))
         return matrix
@@ -329,19 +329,20 @@ def get_translation_matrix(
         # Translation matrices are always float32.
         matrix = tf.concat(
             values=[
-                tf.ones((num_translations, 1), tf.float32),
-                tf.zeros((num_translations, 1), tf.float32),
+                tf.ones((num_translations, 1), translations.dtype),
+                tf.zeros((num_translations, 1), translations.dtype),
                 -translations[:, 0, tf.newaxis] * image_width,
-                tf.zeros((num_translations, 1), tf.float32),
-                tf.ones((num_translations, 1), tf.float32),
+                tf.zeros((num_translations, 1), translations.dtype),
+                tf.ones((num_translations, 1), translations.dtype),
                 -translations[:, 1, tf.newaxis] * image_height,
-                tf.zeros((num_translations, 2), tf.float32),
+                tf.zeros((num_translations, 2), translations.dtype),
             ],
             axis=1,
         )
         if to_square:
             matrix = tf.concat(
-                [matrix, tf.ones((num_translations, 1), tf.float32)], axis=1
+                [matrix, tf.ones((num_translations, 1), translations.dtype)],
+                axis=1,
             )
             matrix = tf.reshape(matrix, (num_translations, 3, 3))
         return matrix
@@ -379,18 +380,18 @@ def get_zoom_matrix(
         matrix = tf.concat(
             values=[
                 zooms[:, 0, tf.newaxis],
-                tf.zeros((num_zooms, 1), tf.float32),
+                tf.zeros((num_zooms, 1), zooms.dtype),
                 x_offset,
-                tf.zeros((num_zooms, 1), tf.float32),
+                tf.zeros((num_zooms, 1), zooms.dtype),
                 zooms[:, 1, tf.newaxis],
                 y_offset,
-                tf.zeros((num_zooms, 2), tf.float32),
+                tf.zeros((num_zooms, 2), zooms.dtype),
             ],
             axis=1,
         )
         if to_square:
             matrix = tf.concat(
-                [matrix, tf.ones((num_zooms, 1), tf.float32)], axis=1
+                [matrix, tf.ones((num_zooms, 1), zooms.dtype)], axis=1
             )
             matrix = tf.reshape(matrix, (num_zooms, 3, 3))
         return matrix
@@ -418,18 +419,18 @@ def get_shear_matrix(shears, to_square=False, name=None):
         # where the last entry is implicit.
         matrix = tf.concat(
             values=[
-                tf.ones((num_shears, 1), tf.float32),
+                tf.ones((num_shears, 1), shears.dtype),
                 shears[:, 0, tf.newaxis],
-                tf.zeros((num_shears, 1), tf.float32),
+                tf.zeros((num_shears, 1), shears.dtype),
                 shears[:, 1, tf.newaxis],
-                tf.ones((num_shears, 1), tf.float32),
-                tf.zeros((num_shears, 3), tf.float32),
+                tf.ones((num_shears, 1), shears.dtype),
+                tf.zeros((num_shears, 3), shears.dtype),
             ],
             axis=1,
         )
         if to_square:
             matrix = tf.concat(
-                [matrix, tf.ones((num_shears, 1), tf.float32)], axis=1
+                [matrix, tf.ones((num_shears, 1), shears.dtype)], axis=1
             )
             matrix = tf.reshape(matrix, (num_shears, 3, 3))
         return matrix

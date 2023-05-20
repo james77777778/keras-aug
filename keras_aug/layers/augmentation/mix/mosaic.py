@@ -6,6 +6,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 from keras_aug.utils.augmentation import BATCHED
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
@@ -232,7 +233,7 @@ class Mosaic(VectorizedBaseRandomLayer):
             "boxes": boxes_for_mosaic,
             "classes": classes_for_mosaic,
         }
-        boxes_for_mosaic = bounding_box.clip_to_image(
+        boxes_for_mosaic = bounding_box_utils.clip_to_image(
             boxes_for_mosaic,
             bounding_box_format="xyxy",
             image_shape=(self.height, self.width, None),

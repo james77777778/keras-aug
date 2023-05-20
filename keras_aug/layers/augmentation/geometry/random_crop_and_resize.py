@@ -7,6 +7,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -202,7 +203,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = output
 
-        bounding_boxes = bounding_box.clip_to_image(
+        bounding_boxes = bounding_box_utils.clip_to_image(
             bounding_boxes,
             bounding_box_format="rel_xyxy",
             images=images,

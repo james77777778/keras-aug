@@ -7,6 +7,7 @@ from tensorflow import keras
 from keras_aug import layers
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
@@ -16,7 +17,10 @@ TEST_CONFIGURATIONS = [
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
-        {"value_range": (0, 255)},
+        {
+            "value_range": (0, 255),
+            "use_geometry": False,
+        },
     ),
     (
         "RandomAffine",
@@ -265,14 +269,40 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_can_run_in_mixed_precision(self, layer_cls, args):
         keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            tf.random.uniform(shape=(2, 32, 32, 3)) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
-            tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
+            tf.random.uniform(shape=(2, 1)) * 10.0, dtype=tf.float64
         )
-        layer = layer_cls(**args)
-        layer({IMAGES: images, LABELS: labels})
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant(
+                [[0, 1], [2]],
+                dtype=tf.float32,
+            ),
+        }
+        try:
+            layer = layer_cls(**args, bounding_box_format="xyxy")
+            has_bounding_boxes = True
+        except TypeError:
+            layer = layer_cls(**args)
+            has_bounding_boxes = False
+
+        if has_bounding_boxes:
+            result = layer(
+                {IMAGES: images, LABELS: labels, BOUNDING_BOXES: bounding_boxes}
+            )
+            self.assertDTypeEqual(result[IMAGES], tf.float16)
+        else:
+            result = layer({IMAGES: images, LABELS: labels})
+            self.assertDTypeEqual(result[IMAGES], tf.float16)
 
     @parameterized.named_parameters(*BUILD_IN_RUNTIME)
     def test_can_run_in_mixed_precision_build_in_runtime(

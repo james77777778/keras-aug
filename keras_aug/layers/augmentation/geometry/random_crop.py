@@ -69,10 +69,10 @@ class RandomCrop(VectorizedBaseRandomLayer):
         self, batch_size, images=None, **kwargs
     ):
         tops = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
         )
         lefts = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
         )
         return {"crop_tops": tops, "crop_lefts": lefts}
 
@@ -135,6 +135,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
+            dtype=self.compute_dtype,
         )
         original_bounding_boxes = bounding_boxes.copy()
 
@@ -155,7 +156,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
             ),
         )
         bounding_boxes["boxes"] = boxes
-        bounding_boxes = bounding_box.clip_to_image(
+        bounding_boxes = bounding_box_utils.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=images,
@@ -223,7 +224,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
     def crop_images(self, images, transformations):
         batch_size = tf.shape(images)[0]
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
+            images, dtype=self.compute_dtype
         )
         tops = transformations["crop_tops"]
         lefts = transformations["crop_lefts"]
@@ -239,7 +240,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
         boxes = tf.concat([y1s, x1s, y2s, x2s], axis=-1)
         images = tf.image.crop_and_resize(
             images,
-            boxes,
+            tf.cast(boxes, dtype=tf.float32),  # must be tf.float32
             tf.range(batch_size),
             [self.height, self.width],
             method="nearest",
@@ -259,7 +260,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
         tops = transformation["crop_tops"]
         lefts = transformation["crop_lefts"]
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
+            images, dtype=self.compute_dtype
         )
 
         # compute offsets for xyxy bounding_boxes

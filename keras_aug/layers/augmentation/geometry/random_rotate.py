@@ -9,6 +9,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -73,9 +74,9 @@ class RandomRotate(VectorizedBaseRandomLayer):
         self, batch_size, images=None, **kwargs
     ):
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=tf.float32
+            images, dtype=self.compute_dtype
         )
-        angles = self.factor(shape=(batch_size, 1))
+        angles = self.factor(shape=(batch_size, 1), dtype=self.compute_dtype)
         angles = angles / 360.0 * 2.0 * math.pi
         rotation_matrixes = augmentation_utils.get_rotation_matrix(
             angles, heights, widths, to_square=True
@@ -105,7 +106,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         rotation_matrixes = rotation_matrixes[:, :-1]
         images = preprocessing_utils.transform(
             images,
-            rotation_matrixes,
+            tf.cast(rotation_matrixes, dtype=tf.float32),  # must be tf.float32
             fill_mode=self.fill_mode,
             fill_value=self.fill_value,
             interpolation=self.interpolation,
@@ -134,7 +135,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
-            dtype=tf.float32,
+            dtype=self.compute_dtype,
         )
         boxes = bounding_boxes["boxes"]
 
@@ -172,7 +173,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
-        bounding_boxes = bounding_box.clip_to_image(
+        bounding_boxes = bounding_box_utils.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=raw_images,

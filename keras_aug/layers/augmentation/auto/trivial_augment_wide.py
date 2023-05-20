@@ -153,69 +153,73 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
                         **policy[key], value_range=(0, 255), seed=seed, **kwargs
                     )
                 )
-            elif key == "rotate" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "rotate":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "shear_x" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "shear_x":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "shear_y" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "shear_y":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "translate_x" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "translate_x":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "translate_y" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "translate_y":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
             else:
-                if key not in exclude_ops:
-                    raise ValueError(f"Not recognized policy key: {key}")
+                raise ValueError(f"Not recognized policy key: {key}")
         return aug_layers
 
     def get_random_transformation_batch(self, batch_size):
