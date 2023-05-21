@@ -186,7 +186,7 @@ class CenterCrop(VectorizedBaseRandomLayer):
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = outputs
-        bounding_boxes = bounding_box.clip_to_image(
+        bounding_boxes = bounding_box_utils.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=images,

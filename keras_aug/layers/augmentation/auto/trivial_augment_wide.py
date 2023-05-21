@@ -1,6 +1,7 @@
 from functools import partial
 
 import tensorflow as tf
+from keras_cv import bounding_box
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
@@ -10,6 +11,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 
 
@@ -108,114 +110,142 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
             elif key == "auto_contrast":
                 aug_layers.append(
                     layers.AutoContrast(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "equalize":
                 aug_layers.append(
                     layers.Equalize(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "posterize":
                 aug_layers.append(
                     layers.RandomPosterize(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "solarize":
                 aug_layers.append(
                     layers.RandomSolarize(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "color":
                 aug_layers.append(
                     layers.RandomColorJitter(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "contrast":
                 aug_layers.append(
                     layers.RandomColorJitter(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "brightness":
                 aug_layers.append(
                     layers.RandomColorJitter(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
+                        **policy[key],
+                        value_range=(0, 255),
+                        seed=seed,
+                        **kwargs,
                     )
                 )
             elif key == "sharpness":
                 aug_layers.append(
                     layers.RandomSharpness(
-                        **policy[key], value_range=(0, 255), seed=seed, **kwargs
-                    )
-                )
-            elif key == "rotate" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
                         **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
+                        value_range=(0, 255),
                         seed=seed,
                         **kwargs,
                     )
                 )
-            elif key == "shear_x" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "rotate":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "shear_y" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "shear_x":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "translate_x" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "shear_y":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
-            elif key == "translate_y" and use_geometry:
-                aug_layers.append(
-                    layers.RandomAffine(
-                        **policy[key],
-                        interpolation=self.interpolation,
-                        fill_mode=self.fill_mode,
-                        fill_value=self.fill_value,
-                        bounding_box_format=bounding_box_format,
-                        seed=seed,
-                        **kwargs,
+            elif key == "translate_x":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
                     )
-                )
+            elif key == "translate_y":
+                if use_geometry:
+                    aug_layers.append(
+                        layers.RandomAffine(
+                            **policy[key],
+                            interpolation=self.interpolation,
+                            fill_mode=self.fill_mode,
+                            fill_value=self.fill_value,
+                            bounding_box_format=bounding_box_format,
+                            seed=seed,
+                            **kwargs,
+                        )
+                    )
             else:
-                if key not in exclude_ops:
-                    raise ValueError(f"Not recognized policy key: {key}")
+                raise ValueError(f"Not recognized policy key: {key}")
         return aug_layers
 
     def get_random_transformation_batch(self, batch_size):
@@ -234,9 +264,15 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
 
         # images value_range transform to [0, 255]
         images = preprocessing_utils.transform_value_range(
-            images, self.value_range, (0, 255), self.compute_dtype
+            images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs[IMAGES] = images
+
+        # make bounding_boxes to dense first
+        if BOUNDING_BOXES in inputs:
+            inputs[BOUNDING_BOXES] = bounding_box.to_dense(
+                inputs[BOUNDING_BOXES]
+            )
 
         inputs_for_trivial_augment_single_input = {
             "inputs": inputs,
@@ -245,9 +281,10 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
         result = tf.map_fn(
             self.trivial_augment_single_input,
             inputs_for_trivial_augment_single_input,
+            fn_output_signature=augmentation_utils.compute_signature(
+                inputs, self.compute_dtype
+            ),
         )
-        # unpack result to normal inputs
-        result = result["inputs"]
 
         # recover value_range
         images = result.get(IMAGES, None)
@@ -264,8 +301,17 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
         branch_fns = {}
         for idx, layer in enumerate(self.aug_layers):
             branch_fns[idx] = partial(layer, input)
-        input = tf.switch_case(random_indice, branch_fns=branch_fns)
-        return {"inputs": input, "transformations": random_indice}
+
+        # TODO:
+        # figure out why tf will make tf.float32 instead of tf.float16
+        # keras.mixed_precision.set_global_policy("mixed_float16")
+        result = tf.switch_case(random_indice, branch_fns=branch_fns)
+        if BOUNDING_BOXES in result:
+            result[BOUNDING_BOXES] = bounding_box.to_ragged(
+                result[BOUNDING_BOXES]
+            )
+        result = augmentation_utils.cast_to(result, self.compute_dtype)
+        return result
 
     def get_config(self):
         config = super().get_config()
