@@ -17,10 +17,7 @@ TEST_CONFIGURATIONS = [
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
-        {
-            "value_range": (0, 255),
-            "use_geometry": False,
-        },
+        {"value_range": (0, 255)},
     ),
     (
         "RandomAffine",
@@ -171,20 +168,6 @@ TEST_CONFIGURATIONS = [
     ("Invert", layers.Invert, {"value_range": (0, 255)}),
     ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     (
-        "RepeatedAugment",
-        layers.RepeatedAugment,
-        {
-            "layers": [
-                layers.RandomColorJitter(
-                    value_range=(0, 255), brightness_factor=(1.5, 1.5)
-                ),
-                layers.RandomColorJitter(
-                    value_range=(0, 255), contrast_factor=(1.5, 1.5)
-                ),
-            ]
-        },
-    ),
-    (
         "CenterCrop",
         layers.CenterCrop,
         {"height": 2, "width": 2},
@@ -236,6 +219,13 @@ BUILD_IN_RUNTIME = [
         {"name": "layers", "value": "multiple", "args": {"batchwise": True}},
         layers.RandomChannelDropout,
         {},
+    ),
+    (
+        "RepeatedAugment",
+        layers.RepeatedAugment,
+        {"name": "layers", "value": "multiple", "args": {}},
+        layers.RandomColorJitter,
+        {"value_range": (0, 255), "brightness_factor": (1.5, 1.5)},
     ),
 ]
 

@@ -1,6 +1,7 @@
 from functools import partial
 
 import tensorflow as tf
+from keras_cv import bounding_box
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
@@ -11,6 +12,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 
 
@@ -271,9 +273,15 @@ class RandAugment(VectorizedBaseRandomLayer):
 
         # images value_range transform to [0, 255]
         images = preprocessing_utils.transform_value_range(
-            images, self.value_range, (0, 255), self.compute_dtype
+            images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs[IMAGES] = images
+
+        # make bounding_boxes to dense first
+        if BOUNDING_BOXES in inputs:
+            inputs[BOUNDING_BOXES] = bounding_box.to_dense(
+                inputs[BOUNDING_BOXES]
+            )
 
         inputs_for_rand_augment_single_input = {
             "inputs": inputs,
@@ -282,9 +290,10 @@ class RandAugment(VectorizedBaseRandomLayer):
         result = tf.map_fn(
             self.rand_augment_single_input,
             inputs_for_rand_augment_single_input,
+            fn_output_signature=augmentation_utils.compute_signature(
+                inputs, self.compute_dtype
+            ),
         )
-        # unpack result to normal inputs
-        result = result["inputs"]
 
         # recover value_range
         images = result.get(IMAGES, None)
@@ -298,14 +307,38 @@ class RandAugment(VectorizedBaseRandomLayer):
         input = inputs.get("inputs")
         random_indices = inputs.get("transformations")
 
-        for random_indice in random_indices:
+        # TODO:
+        # figure out why tf will make tf.float32 instead of tf.float16
+        # keras.mixed_precision.set_global_policy("mixed_float16")
+        for i in range(self.augmentations_per_image):
+            random_indice = random_indices[i]
+            if BOUNDING_BOXES in input:
+                tf.autograph.experimental.set_loop_options(
+                    shape_invariants=[
+                        (
+                            input[BOUNDING_BOXES]["boxes"],
+                            tf.TensorSpec([None, 4]),
+                        ),
+                        (
+                            input[BOUNDING_BOXES]["classes"],
+                            tf.TensorSpec([None]),
+                        ),
+                    ]
+                )
             # construct branch_fns
             branch_fns = {}
             for idx, layer in enumerate(self.aug_layers):
                 branch_fns[idx] = partial(layer, input)
             # augment
             input = tf.switch_case(random_indice, branch_fns=branch_fns)
-        return {"inputs": input, "transformations": random_indices}
+            input = augmentation_utils.cast_to(input, self.compute_dtype)
+        result = input
+        if BOUNDING_BOXES in result:
+            result[BOUNDING_BOXES] = bounding_box.to_ragged(
+                result[BOUNDING_BOXES]
+            )
+        result = augmentation_utils.cast_to(result, self.compute_dtype)
+        return result
 
     def get_config(self):
         config = super().get_config()

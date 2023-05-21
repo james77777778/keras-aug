@@ -104,6 +104,39 @@ def get_position_params(
     return tops, bottoms, lefts, rights
 
 
+def parse_factor(
+    param,
+    min_value=0.0,
+    max_value=1.0,
+    center_value=0.5,
+    param_name="factor",
+    seed=None,
+):
+    if isinstance(param, FactorSampler):
+        return param
+
+    if isinstance(param, float) or isinstance(param, int):
+        param = (center_value - param, center_value + param)
+
+    if param[0] > param[1]:
+        raise ValueError(
+            f"`{param_name}[0] > {param_name}[1]`, `{param_name}[0]` must be "
+            f"<= `{param_name}[1]`. Got `{param_name}={param}`"
+        )
+    if (min_value is not None and param[0] < min_value) or (
+        max_value is not None and param[1] > max_value
+    ):
+        raise ValueError(
+            f"`{param_name}` should be inside of range "
+            f"[{min_value}, {max_value}]. Got {param_name}={param}"
+        )
+
+    if param[0] == param[1]:
+        return ConstantFactorSampler(param[0])
+
+    return UniformFactorSampler(param[0], param[1], seed=seed)
+
+
 def is_factor_working(factor, not_working_value=0.0):
     """Check whether ``factor`` is working or not.
 
@@ -140,6 +173,14 @@ def is_factor_working(factor, not_working_value=0.0):
     return True
 
 
+def expand_dict_dims(dicts, axis):
+    new_dicts = {}
+    for key in dicts.keys():
+        tensor = dicts[key]
+        new_dicts[key] = tf.expand_dims(tensor, axis=axis)
+    return new_dicts
+
+
 def get_images_shape(images, dtype=tf.int32):
     """Get ``heights`` and ``widths`` of the input images.
 
@@ -165,45 +206,80 @@ def get_images_shape(images, dtype=tf.int32):
     return tf.cast(heights, dtype=dtype), tf.cast(widths, dtype=dtype)
 
 
-def expand_dict_dims(dicts, axis):
-    new_dicts = {}
-    for key in dicts.keys():
-        tensor = dicts[key]
-        new_dicts[key] = tf.expand_dims(tensor, axis=axis)
-    return new_dicts
-
-
-def parse_factor(
-    param,
-    min_value=0.0,
-    max_value=1.0,
-    center_value=0.5,
-    param_name="factor",
-    seed=None,
-):
-    if isinstance(param, FactorSampler):
-        return param
-
-    if isinstance(param, float) or isinstance(param, int):
-        param = (center_value - param, center_value + param)
-
-    if param[0] > param[1]:
-        raise ValueError(
-            f"`{param_name}[0] > {param_name}[1]`, `{param_name}[0]` must be "
-            f"<= `{param_name}[1]`. Got `{param_name}={param}`"
+def cast_to(inputs, dtype):
+    if IMAGES in inputs:
+        inputs[IMAGES] = tf.cast(inputs[IMAGES], dtype)
+    if LABELS in inputs:
+        inputs[LABELS] = tf.cast(inputs[LABELS], dtype)
+    if BOUNDING_BOXES in inputs:
+        inputs[BOUNDING_BOXES]["boxes"] = tf.cast(
+            inputs[BOUNDING_BOXES]["boxes"], dtype
         )
-    if (min_value is not None and param[0] < min_value) or (
-        max_value is not None and param[1] > max_value
-    ):
-        raise ValueError(
-            f"`{param_name}` should be inside of range "
-            f"[{min_value}, {max_value}]. Got {param_name}={param}"
+        inputs[BOUNDING_BOXES]["classes"] = tf.cast(
+            inputs[BOUNDING_BOXES]["classes"], dtype
         )
+    if SEGMENTATION_MASKS in inputs:
+        inputs[SEGMENTATION_MASKS] = tf.cast(inputs[SEGMENTATION_MASKS], dtype)
+    if KEYPOINTS in inputs:
+        inputs[KEYPOINTS] = tf.cast(inputs[KEYPOINTS], dtype)
+    if CUSTOM_ANNOTATIONS in inputs:
+        raise NotImplementedError()
+    return inputs
 
-    if param[0] == param[1]:
-        return ConstantFactorSampler(param[0])
 
-    return UniformFactorSampler(param[0], param[1], seed=seed)
+def compute_signature(inputs, dtype):
+    fn_output_signature = {}
+    if IMAGES in inputs:
+        if isinstance(inputs[IMAGES], tf.Tensor):
+            fn_output_signature[IMAGES] = tf.TensorSpec(
+                inputs[IMAGES].shape[1:], dtype
+            )
+        else:
+            fn_output_signature[IMAGES] = tf.RaggedTensorSpec(
+                shape=inputs[IMAGES].shape[1:],
+                ragged_rank=1,
+                dtype=dtype,
+            )
+    if LABELS in inputs:
+        fn_output_signature[LABELS] = tf.TensorSpec(
+            inputs[LABELS].shape[1:], dtype
+        )
+    if BOUNDING_BOXES in inputs:
+        fn_output_signature[BOUNDING_BOXES] = {
+            "boxes": tf.RaggedTensorSpec(
+                shape=[None, 4],
+                ragged_rank=1,
+                dtype=dtype,
+            ),
+            "classes": tf.RaggedTensorSpec(
+                shape=[None], ragged_rank=0, dtype=dtype
+            ),
+        }
+    if SEGMENTATION_MASKS in inputs:
+        if isinstance(inputs[SEGMENTATION_MASKS], tf.Tensor):
+            fn_output_signature[SEGMENTATION_MASKS] = tf.TensorSpec(
+                inputs[SEGMENTATION_MASKS].shape[1:], dtype
+            )
+        else:
+            fn_output_signature[SEGMENTATION_MASKS] = tf.RaggedTensorSpec(
+                shape=inputs[SEGMENTATION_MASKS].shape[1:],
+                ragged_rank=1,
+                dtype=dtype,
+            )
+    if KEYPOINTS in inputs:
+        if isinstance(inputs[KEYPOINTS], tf.Tensor):
+            fn_output_signature[KEYPOINTS] = tf.TensorSpec(
+                inputs[KEYPOINTS].shape[1:], dtype
+            )
+        else:
+            fn_output_signature[KEYPOINTS] = tf.RaggedTensorSpec(
+                shape=inputs[KEYPOINTS].shape[1:],
+                ragged_rank=1,
+                dtype=dtype,
+            )
+    if CUSTOM_ANNOTATIONS in inputs:
+        raise NotImplementedError()
+    return fn_output_signature
 
 
 def blend(images_1, images_2, factors, value_range=None):
