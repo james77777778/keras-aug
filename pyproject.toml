@@ -1,9 +1,24 @@
 [tool.black]
 line-length = 80
 
-[tool.isort]
-profile = "black"
-force_single_line = "True"
-known_first_party = ["keras_aug"]
-default_section = "THIRDPARTY"
-line_length = 80
+[tool.ruff]
+line-length = 80
+select = ["E", "W", "F"]
+exclude = [
+    ".venv",
+    ".vscode",
+    ".github",
+    ".devcontainer",
+    "venv",
+    "__pycache__",
+]
+
+[tool.ruff.per-file-ignores]
+"/keras_aug/__init__.py" = ["F401"]
+"./examples/**/*" = ["E402"]
+"**/__init__.py" = ["F401"]
+"**/*_utils.py" = ["F401"]
+
+[tool.ruff.isort]
+force-single-line = true
+known-first-party = ["keras_aug"]

@@ -42,8 +42,7 @@ setup(
     python_requires=">=3.8",
     extras_require={
         "tests": [
-            "flake8",
-            "isort",
+            "ruff",
             "black[jupyter]",
             "pytest",
             "pytest-cov",

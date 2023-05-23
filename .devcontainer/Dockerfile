@@ -17,8 +17,7 @@ RUN pip install \
     matplotlib \
     opencv-python-headless \
     # pytest
-    flake8 \
-    isort \
+    ruff \
     black[jupyter] \
     pycocotools \
     pytest \

@@ -26,3 +26,6 @@ docs/build/
 # venv
 ./venv
 ./.venv
+
+# ruff
+.ruff_cache

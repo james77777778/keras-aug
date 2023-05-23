@@ -12,27 +12,34 @@
     "customizations": {
         "vscode": {
             "settings": {
-                "python.linting.enabled": true,
-                "python.linting.flake8Enabled": true,
-                "python.linting.pylintEnabled": false,
-                "python.testing.pytestEnabled": true,
+                "editor.rulers": [
+                    80
+                ],
                 "editor.formatOnSave": true,
                 "editor.codeActionsOnSave": {
                     "source.organizeImports": true
                 },
+                "python.linting.enabled": true,
+                "python.languageServer": "Pylance",
+                "python.formatting.provider": "black",
+                "python.formatting.blackArgs": [
+                    "--line-length=80"
+                ],
                 "[python]": {
-                    "editor.defaultFormatter": "ms-python.black-formatter"
-                },
-                "editor.rulers": [
-                    80
-                ]
+                    "editor.formatOnSave": true,
+                    "editor.formatOnType": true,
+                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": true
+                    }
+                }  
             },
             "extensions": [
                 "ms-python.python",
-                "ms-python.isort",
-                "ms-python.flake8",
+                "ms-python.vscode-pylance",
                 "ms-python.black-formatter",
                 "ms-vscode.cpptools",
+                "charliermarsh.ruff",
                 "xaver.clang-format"
             ]
         }
