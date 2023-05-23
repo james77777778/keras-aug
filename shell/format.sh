@@ -1,3 +1,3 @@
 #!/bin/bash
-isort .
+ruff check .
 black .

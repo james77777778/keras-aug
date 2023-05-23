@@ -13,23 +13,13 @@ if [ $# -ne 0  ]
     files=$@
 fi
 
-isort -c $files
-if ! [ $? -eq 0 ]
-then
-  echo "Please run \"sh shell/format.sh\" to format the code."
-  isort --version
-  black --version
-  exit 1
-fi
-[ $# -eq 0  ] && echo "no issues with isort"
-
-flake8 $files
+ruff check $files
 if ! [ $? -eq 0 ]
 then
   echo "Please fix the code style issue."
   exit 1
 fi
-[ $# -eq 0 ] && echo "no issues with flake8"
+[ $# -eq 0 ] && echo "no issues with ruff"
 
 black --check $files
 if ! [ $? -eq 0 ]
