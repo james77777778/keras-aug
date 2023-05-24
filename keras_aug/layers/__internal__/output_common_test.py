@@ -6,10 +6,12 @@ from absl.testing import parameterized
 from keras_aug import layers
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
-CONSISTENT_OUTPUTS_LAYERS = [
+SEED = 2025
+TEST_CONFIGURATIONS = [
     ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
     (
         "RandAugment",
@@ -34,8 +36,18 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "shear_width_factor": 0.1,
         },
     ),
-    ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
+    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
+    (
+        "RandomFlip",
+        layers.RandomFlip,
+        {"mode": "horizontal_and_vertical", "seed": 1},
+    ),
     ("RandomRotate", layers.RandomRotate, {"factor": 10}),
+    (
+        "RandomZoomAndCrop",
+        layers.RandomZoomAndCrop,
+        {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+    ),
     ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
     ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
     (
@@ -43,7 +55,11 @@ CONSISTENT_OUTPUTS_LAYERS = [
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},
     ),
-    ("RandomCLAHE", layers.RandomCLAHE, {"value_range": (0, 255)}),
+    (
+        "RandomCLAHE",
+        layers.RandomCLAHE,
+        {"value_range": (0, 255), "factor": (1, 8), "tile_grid_size": (4, 4)},
+    ),
     (
         "RandomColorJitter",
         layers.RandomColorJitter,
@@ -129,15 +145,15 @@ CONSISTENT_OUTPUTS_LAYERS = [
     (
         "RandomApply",
         layers.RandomApply,
-        {"layer": layers.RandomChannelDropout()},
+        {"layer": layers.RandomChannelDropout(seed=SEED)},
     ),
     (
         "RandomChoice",
         layers.RandomChoice,
         {
             "layers": [
-                layers.RandomChannelDropout(),
-                layers.RandomChannelDropout(),
+                layers.RandomChannelDropout(seed=1),
+                layers.RandomChannelDropout(seed=4),
             ]
         },
     ),
@@ -171,53 +187,64 @@ CONSISTENT_OUTPUTS_LAYERS = [
         {"scale": 1.0 / 255.0},
     ),
     ("Identity", layers.Identity, {}),
-]
-
-FORCE_DENSE_IMAGES_LAYERS = [
     (
-        "CenterCrop",
-        layers.CenterCrop,
-        {"height": 2, "width": 2},
-    ),
-    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
-    (
-        "RandomCropAndResize",
-        layers.RandomCropAndResize,
-        {
-            "height": 2,
-            "width": 2,
-            "crop_area_factor": (0.8, 1.0),
-            "aspect_ratio_factor": (3 / 4, 4 / 3),
-        },
-    ),
-    ("RandomResize", layers.RandomResize, {"heights": [2]}),
-    (
-        "RandomZoomAndCrop",
-        layers.RandomZoomAndCrop,
-        {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10},
     ),
     (
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
     ),
-    (
-        "Mosaic",
-        layers.Mosaic,
-        {
-            "height": 2,
-            "width": 2,
-        },
-    ),
 ]
 
-NO_RAGGED_IMAGES_SUPPORT = [
-    ("CutMix", layers.CutMix, {"alpha": 1.0}),
-    ("MixUp", layers.MixUp, {}),
+NO_PRESERVED_SHAPE_LAYERS = [
+    layers.RandomCrop,
+    layers.RandomCropAndResize,
+    layers.RandomResize,
+    layers.RandomZoomAndCrop,
+    layers.Mosaic,
+    layers.RepeatedAugment,
+    layers.CenterCrop,
+    layers.Resize,
+]
+
+NO_BFLOAT16_DTYPE_LAYERS = [
+    layers.RandAugment,
+    layers.RandomAffine,
+    layers.RandomCrop,
+    layers.RandomCropAndResize,
+    layers.RandomRotate,
+]
+
+SKIP_DTYPE_LAYERS = [
+    # hard to test the policy of RandAugment
+    layers.RandAugment,
+    # it is impossible to change dtype in runtime for RandomApply
+    layers.RandomApply,
+    layers.RepeatedAugment,
+]
+
+ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS = [
+    layers.CenterCrop,
+    layers.PadIfNeeded,
+    layers.Resize,
+    layers.AutoContrast,
+    layers.Equalize,
+    layers.Grayscale,
+    layers.Invert,
+    layers.Normalize,
+    layers.Rescale,
+    layers.CutMix,  # cannot test CutMix with same images
+    layers.MixUp,  # cannot test MixUp with same images
+    layers.Identity,
+    layers.RandomApply,
+    layers.SanitizeBoundingBox,
 ]
 
 
-class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
+class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
         all_2d_aug_layers = inspect.getmembers(
@@ -231,67 +258,156 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
             item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
         ]
         all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        cosistent_names = set(item[0] for item in CONSISTENT_OUTPUTS_LAYERS)
-        force_dense_names = set(item[0] for item in FORCE_DENSE_IMAGES_LAYERS)
-        no_ragged_names = set(item[0] for item in NO_RAGGED_IMAGES_SUPPORT)
-        all_test_conf_names = cosistent_names.union(force_dense_names).union(
-            no_ragged_names
-        )
+        test_configuration_names = set(item[0] for item in TEST_CONFIGURATIONS)
 
         for name in all_2d_aug_layer_names:
             self.assertIn(
                 name,
-                all_test_conf_names,
+                test_configuration_names,
                 msg=f"{name} not found in TEST_CONFIGURATIONS",
             )
 
-    @parameterized.named_parameters(*CONSISTENT_OUTPUTS_LAYERS)
-    def test_preserves_ragged_status(self, layer_cls, args):
-        layer = layer_cls(**args)
-        # MixUp needs two same shape image
-        if layer_cls == layers.MixUp:
-            images = tf.ragged.stack(
+    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    def test_preserves_output_shape(self, layer_cls, args):
+        images = tf.random.uniform(shape=(2, 16, 16, 3), seed=SEED) * 255.0
+        labels = tf.random.uniform(shape=(2, 1), seed=SEED) * 10.0
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
                 [
-                    tf.ones((8, 8, 3)),
-                    tf.ones((8, 8, 3)),
-                ]
-            )
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        try:
+            # try bounding_box_format
+            layer_cls(**args, bounding_box_format="xyxy")
+            args["bounding_box_format"] = "xyxy"
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        except (TypeError, ValueError):
+            inputs = {IMAGES: images, LABELS: labels}
+        try:
+            layer_cls(**args, seed=SEED)
+            args["seed"] = SEED
+        except TypeError:
+            pass
+        layer = layer_cls(**args)
+
+        outputs = layer(inputs)
+
+        if layer_cls not in NO_PRESERVED_SHAPE_LAYERS:
+            self.assertEqual(images.shape, outputs[IMAGES].shape)
         else:
-            images = tf.ragged.stack(
+            self.assertNotEqual(images.shape, outputs[IMAGES].shape)
+
+    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    def test_layer_dtypes(self, layer_cls, args):
+        if layer_cls in SKIP_DTYPE_LAYERS:
+            return
+        images = tf.cast(
+            tf.random.uniform(shape=(2, 16, 16, 3), seed=SEED) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(2, 1), seed=SEED) * 10.0, dtype=tf.float64
+        )
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
                 [
-                    tf.ones((5, 5, 3)),
-                    tf.ones((8, 8, 3)),
-                ]
-            )
-        labels = tf.ragged.stack(
-            [
-                tf.ones((1,)),
-                tf.ones((1,)),
-            ]
-        )
-        inputs = {IMAGES: images, LABELS: labels}
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        try:
+            # try bounding_box_format
+            layer_cls(**args, bounding_box_format="xyxy")
+            args["bounding_box_format"] = "xyxy"
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        except (TypeError, ValueError):
+            inputs = {IMAGES: images, LABELS: labels}
+        try:
+            layer_cls(**args, seed=SEED)
+            args["seed"] = SEED
+        except TypeError:
+            pass
 
-        outputs = layer(inputs)
-
-        self.assertTrue(isinstance(outputs[IMAGES], tf.RaggedTensor))
-
-    @parameterized.named_parameters(*FORCE_DENSE_IMAGES_LAYERS)
-    def test_force_dense_images(self, layer_cls, args):
+        # float32
         layer = layer_cls(**args)
-        images = tf.ragged.stack(
-            [
-                tf.ones((5, 5, 3)),
-                tf.ones((8, 8, 3)),
-            ]
-        )
-        labels = tf.ragged.stack(
-            [
-                tf.ones((1,)),
-                tf.ones((1,)),
-            ]
-        )
-        inputs = {IMAGES: images, LABELS: labels}
+        results = layer(inputs)
+        self.assertAllEqual(results[IMAGES].dtype, "float32")
 
-        outputs = layer(inputs)
+        # float16
+        layer = layer_cls(**args, dtype="float16")
+        results = layer(inputs)
+        self.assertAllEqual(results[IMAGES].dtype, "float16")
 
-        self.assertTrue(isinstance(outputs[IMAGES], tf.Tensor))
+        # bfloat16
+        if layer_cls not in NO_BFLOAT16_DTYPE_LAYERS:
+            layer = layer_cls(**args, dtype="bfloat16")
+            results = layer(inputs)
+            self.assertAllEqual(results[IMAGES].dtype, "bfloat16")
+        else:
+            with self.assertRaises(
+                (TypeError, ValueError, tf.errors.InvalidArgumentError)
+            ):
+                layer = layer_cls(**args, dtype="bfloat16")
+                results = layer(inputs)
+
+    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    def test_independence_on_batched_images(self, layer_cls, args):
+        image = tf.random.uniform((16, 16, 3), seed=SEED) * 255.0
+        label = tf.random.uniform((1,), seed=SEED) * 255.0
+        batched_images = tf.stack((image, image, image, image, image), axis=0)
+        batched_labels = tf.stack((label, label, label, label, label), axis=0)
+        batched_bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                    [[200, 200, 400, 400]],
+                    [[200, 200, 400, 400]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant(
+                [[0, 1], [2], [2], [2], [2]], dtype=tf.float32
+            ),
+        }
+        try:
+            # try bounding_box_format
+            layer_cls(**args, bounding_box_format="xyxy")
+            args["bounding_box_format"] = "xyxy"
+            inputs = {
+                IMAGES: batched_images,
+                LABELS: batched_labels,
+                BOUNDING_BOXES: batched_bounding_boxes,
+            }
+        except (TypeError, ValueError):
+            inputs = {IMAGES: batched_images, LABELS: batched_labels}
+        try:
+            layer_cls(**args, seed=SEED)
+            args["seed"] = SEED
+        except TypeError:
+            pass
+        layer = layer_cls(**args)
+
+        results = layer(inputs)
+
+        if layer_cls not in ALWAYS_SAME_OUTPUT_WITHIN_BATCH_LAYERS:
+            self.assertNotAllClose(results[IMAGES][0], results[IMAGES][1])
+        else:
+            self.assertAllClose(results[IMAGES][0], results[IMAGES][1])

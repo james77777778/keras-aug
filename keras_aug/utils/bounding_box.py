@@ -156,6 +156,7 @@ def sanitize_bounding_boxes(
             source=bounding_box_format,
             target="xywh",
             images=images,
+            dtype=boxes.dtype,
         )
         _, _, widths, heights = tf.split(boxes, 4, axis=-1)
         min_sides = tf.minimum(widths, heights)
@@ -181,6 +182,7 @@ def sanitize_bounding_boxes(
             source=bounding_box_format,
             target="xyxy",
             images=reference_images,
+            dtype=ref_boxes.dtype,
         )
         boxes = bounding_boxes["boxes"]
         boxes = bounding_box.convert_format(
@@ -188,6 +190,7 @@ def sanitize_bounding_boxes(
             source=bounding_box_format,
             target="xyxy",
             images=images,
+            dtype=boxes.dtype,
         )
         ref_areas = _compute_area(ref_boxes)
         areas = _compute_area(boxes)
@@ -209,6 +212,7 @@ def sanitize_bounding_boxes(
             source=bounding_box_format,
             target="xywh",
             images=images,
+            dtype=boxes.dtype,
         )
         _, _, widths, heights = tf.split(boxes, 4, axis=-1)
         max_aspect_ratios = tf.squeeze(

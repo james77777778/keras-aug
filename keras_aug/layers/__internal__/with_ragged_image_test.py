@@ -6,6 +6,7 @@ from absl.testing import parameterized
 from keras_aug import layers
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
@@ -171,6 +172,11 @@ CONSISTENT_OUTPUTS_LAYERS = [
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
     ),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10},
+    ),
 ]
 
 FORCE_DENSE_IMAGES_LAYERS = [
@@ -251,29 +257,32 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*CONSISTENT_OUTPUTS_LAYERS)
     def test_preserves_ragged_status(self, layer_cls, args):
-        layer = layer_cls(**args)
         # MixUp needs two same shape image
         if layer_cls == layers.MixUp:
-            images = tf.ragged.stack(
-                [
-                    tf.ones((8, 8, 3)),
-                    tf.ones((8, 8, 3)),
-                ]
-            )
+            images = tf.ragged.stack([tf.ones((8, 8, 3)), tf.ones((8, 8, 3))])
         else:
-            images = tf.ragged.stack(
+            images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
+        labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
                 [
-                    tf.ones((5, 5, 3)),
-                    tf.ones((8, 8, 3)),
-                ]
-            )
-        labels = tf.ragged.stack(
-            [
-                tf.ones((1,)),
-                tf.ones((1,)),
-            ]
-        )
-        inputs = {IMAGES: images, LABELS: labels}
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        try:
+            layer = layer_cls(**args, bounding_box_format="xyxy")
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        except (TypeError, ValueError):
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
 
         outputs = layer(inputs)
 
@@ -281,20 +290,28 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*FORCE_DENSE_IMAGES_LAYERS)
     def test_force_dense_images(self, layer_cls, args):
-        layer = layer_cls(**args)
-        images = tf.ragged.stack(
-            [
-                tf.ones((5, 5, 3)),
-                tf.ones((8, 8, 3)),
-            ]
-        )
-        labels = tf.ragged.stack(
-            [
-                tf.ones((1,)),
-                tf.ones((1,)),
-            ]
-        )
-        inputs = {IMAGES: images, LABELS: labels}
+        images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
+        labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        try:
+            layer = layer_cls(**args, bounding_box_format="xyxy")
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        except TypeError:
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
 
         outputs = layer(inputs)
 

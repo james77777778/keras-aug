@@ -189,6 +189,11 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     ("Identity", layers.Identity, {}),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10, "bounding_box_format": "xyxy"},
+    ),
 ]
 
 BUILD_IN_RUNTIME = [
@@ -273,10 +278,7 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
                 ],
                 dtype=tf.float32,
             ),
-            "classes": tf.ragged.constant(
-                [[0, 1], [2]],
-                dtype=tf.float32,
-            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
         }
         try:
             layer = layer_cls(**args, bounding_box_format="xyxy")

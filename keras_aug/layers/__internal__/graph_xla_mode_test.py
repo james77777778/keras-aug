@@ -6,6 +6,7 @@ from absl.testing import parameterized
 from keras_aug import layers
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
+from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
@@ -220,8 +221,14 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     ("Identity", layers.Identity, {}),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10, "bounding_box_format": "xyxy"},
+    ),
 ]
 
+# only for record
 NO_XLA_SUPPORT_LAYERS = [
     layers.AugMix,
     layers.RandAugment,
@@ -238,14 +245,7 @@ NO_XLA_SUPPORT_LAYERS = [
     layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
     layers.RepeatedAugment,  # tf.random.state_less.shuffle
     layers.Equalize,  # tf.histogram_fixed_width
-]
-
-SKIP_XLA_TEST_LAYERS = [
-    layers.AugMix,  # too slow to compile
-    layers.RandAugment,  # too slow to compile
-    layers.TrivialAugmentWide,  # too slow to compile
-    layers.RandomColorJitter,  # too slow to compile
-    layers.Equalize,  # too slow to compile
+    layers.SanitizeBoundingBox,  # with bounding_boxes
 ]
 
 
@@ -276,28 +276,28 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
     def test_can_run_in_graph_mode(self, layer_cls, args):
         images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
         labels = tf.random.uniform(shape=(1, 1)) * 10.0
-        layer = layer_cls(**args)
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        try:
+            layer = layer_cls(**args, bounding_box_format="xyxy")
+            has_bounding_boxes = True
+        except TypeError:
+            layer = layer_cls(**args)
+            has_bounding_boxes = False
 
         @tf.function
         def fn(inputs):
             layer(inputs)
 
-        fn({IMAGES: images, LABELS: labels})
-
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_xla_mode(self, layer_cls, args):
-        if layer_cls in SKIP_XLA_TEST_LAYERS:
-            return
-        images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
-        labels = tf.random.uniform(shape=(1, 1)) * 10.0
-        layer = layer_cls(**args)
-
-        @tf.function(jit_compile=True)
-        def fn(inputs):
-            layer(inputs)
-
-        if layer_cls not in NO_XLA_SUPPORT_LAYERS:
-            fn({IMAGES: images, LABELS: labels})
+        if has_bounding_boxes:
+            fn({IMAGES: images, LABELS: labels, BOUNDING_BOXES: bounding_boxes})
         else:
-            with self.assertRaises(tf.errors.InvalidArgumentError):
-                fn({IMAGES: images, LABELS: labels})
+            fn({IMAGES: images, LABELS: labels})

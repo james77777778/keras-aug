@@ -212,6 +212,11 @@ TEST_CONFIGURATIONS = [
         {"scale": 1.0 / 255.0},
     ),
     ("Identity", layers.Identity, {}),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10, "bounding_box_format": "xyxy"},
+    ),
 ]
 
 
