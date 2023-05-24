@@ -38,6 +38,16 @@ TEST_CONFIGURATIONS = [
     ),
     ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
     (
+        "RandomCropAndResize",
+        layers.RandomCropAndResize,
+        {
+            "height": 2,
+            "width": 2,
+            "crop_area_factor": (0.8, 1.0),
+            "aspect_ratio_factor": (3 / 4, 4 / 3),
+        },
+    ),
+    (
         "RandomFlip",
         layers.RandomFlip,
         {"mode": "horizontal_and_vertical", "seed": 1},
@@ -58,7 +68,7 @@ TEST_CONFIGURATIONS = [
     (
         "RandomCLAHE",
         layers.RandomCLAHE,
-        {"value_range": (0, 255), "factor": (1, 8), "tile_grid_size": (4, 4)},
+        {"value_range": (0, 255), "factor": (1, 100), "tile_grid_size": (2, 2)},
     ),
     (
         "RandomColorJitter",
@@ -153,7 +163,7 @@ TEST_CONFIGURATIONS = [
         {
             "layers": [
                 layers.RandomChannelDropout(seed=1),
-                layers.RandomChannelDropout(seed=4),
+                layers.RandomChannelDropout(seed=5),
             ]
         },
     ),
@@ -306,6 +316,10 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
         else:
             self.assertNotEqual(images.shape, outputs[IMAGES].shape)
 
+        # clean up
+        args.pop("bounding_box_format", None)
+        args.pop("seed")
+
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_layer_dtypes(self, layer_cls, args):
         if layer_cls in SKIP_DTYPE_LAYERS:
@@ -366,6 +380,10 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
                 layer = layer_cls(**args, dtype="bfloat16")
                 results = layer(inputs)
 
+        # clean up
+        args.pop("bounding_box_format", None)
+        args.pop("seed")
+
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
     def test_independence_on_batched_images(self, layer_cls, args):
         image = tf.random.uniform((16, 16, 3), seed=SEED) * 255.0
@@ -411,3 +429,7 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
             self.assertNotAllClose(results[IMAGES][0], results[IMAGES][1])
         else:
             self.assertAllClose(results[IMAGES][0], results[IMAGES][1])
+
+        # clean up
+        args.pop("bounding_box_format", None)
+        args.pop("seed")
