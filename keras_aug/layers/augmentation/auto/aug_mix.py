@@ -120,6 +120,7 @@ class AugMix(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
+        original_shape = images.shape
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
@@ -135,6 +136,7 @@ class AugMix(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, self.compute_dtype
         )
+        images = tf.ensure_shape(images, shape=original_shape)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

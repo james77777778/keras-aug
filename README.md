@@ -5,8 +5,10 @@
 ![Tensorflow](https://img.shields.io/badge/tensorflow-v2.12.0+-success.svg)
 ![Tensorflow Probability](https://img.shields.io/badge/tensorflow_probability-v0.20.0+-success.svg)
 ![KerasCV](https://img.shields.io/badge/keras_cv-v0.5.0+-success.svg)
-[![Tests Status](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml/badge.svg?branch=main)](https://github.com/james77777778/keras-aug/actions?query=branch%3Amain)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/james77777778/keras-aug/actions.yml?label=tests)](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml?query=branch%3Amain++)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
+[![PyPI](https://img.shields.io/pypi/v/keras-aug)](https://pypi.org/project/keras-aug/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/keras-aug)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/james77777778/keras-aug/issues)
 
 ## Description
@@ -40,12 +42,18 @@ KerasAug is:
 
     > KerasCV struggles to reproduce the YOLOV8 training pipeline, whereas KerasAug executes it flawlessly. See [Quickstart](https://github.com/james77777778/keras-aug/tree/main#quickstart) for more details.
 
-3. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
+3. KerasAug comes with built-in support for mixed precision training
+
+    > All layers in KerasAug can run with `tf.keras.mixed_precision.set_global_policy('mixed_float16')`
+
+4. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
 
     > The current layers in KerasAug support the sanitizing process by incorporating the `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio` arguments.
-    > In addition, you can bring the sanitizing functionality to your custom layer by utilizing `keras_aug.utils.bounding_box.sanitize_bounding_boxes`.
 
     <div align="center"><img width="60%" src="https://user-images.githubusercontent.com/20734616/238520600-34f0b7b5-d9ee-4483-859a-51e9644ded4c.jpg"></div>
+
+    > **Note**
+    > The degenerate bounding boxes (those located at the bottom of the image) are removed.
 
 ## Installation
 
@@ -281,31 +289,31 @@ visualize_dataset(
 
 KerasAug is generally faster than KerasCV.
 
-| Type           | Layer                     | KerasAug | KerasCV   |      |
-|----------------|---------------------------|----------|-----------|------|
-| Geometry       | RandomHFlip               | 2148     | 1859      |+15%  |
-|                | RandomVFlip               | 2182     | 2075      |+5%   |
-|                | RandomRotate              | 2451     | 1829      |+34%  |
-|                | RandomAffine              | 2141     | 1240      |+73%  |
-|                | RandomCropAndResize       | 3014     | 209       |+1342%|
-|                | Resize (224, 224)         | 2853     | 213       |+1239%|
-| Intensity      | RandomBrightness          | 3028     | 3097      |close |
-|                | RandomContrast            | 2806     | 2645      |+6%   |
-|                | RandomBrightnessContrast  | 3068     | 612       |+401% |
-|                | RandomColorJitter         | 1932     | 1221      |+58%  |
-|                | RandomGaussianBlur        | 2758     | 207       |+1232%|
-|                | Grayscale                 | 2841     | 2872      |close |
-|                | Equalize                  | 206      | 139       |+48%  |
-|                | AutoContrast              | 3116     | 2991      |+4%   |
-|                | Posterize                 | 2917     | 2445      |+19%  |
-|                | Solarize                  | 3025     | 2882      |+5%   |
-|                | Sharpness                 | 2969     | 2915      |close |
-| Regularization | RandomCutout              | 3222     | 3268      |close |
-|                | RandomGridMask            | 947      | 197       |+381% |
-| Mix            | CutMix                    | 2671     | 2445      |+9%   |
-|                | MixUp                     | 2593     | 1996      |+29%  |
-| Auto           | AugMix                    | 83       | X (Error) |X     |
-|                | RandAugment               | 282      | 249       |+13%  |
+| Type           | Layer                    | KerasAug | KerasCV   |        |
+|----------------|--------------------------|----------|-----------|--------|
+| Geometry       | RandomHFlip              | 2148     | 1859      | +15%   |
+|                | RandomVFlip              | 2182     | 2075      | +5%    |
+|                | RandomRotate             | 2451     | 1829      | +34%   |
+|                | RandomAffine             | 2141     | 1240      | +73%   |
+|                | RandomCropAndResize      | 3014     | 209       | +1342% |
+|                | Resize (224, 224)        | 2853     | 213       | +1239% |
+| Intensity      | RandomBrightness         | 3028     | 3097      | close  |
+|                | RandomContrast           | 2806     | 2645      | +6%    |
+|                | RandomBrightnessContrast | 3068     | 612       | +401%  |
+|                | RandomColorJitter        | 1932     | 1221      | +58%   |
+|                | RandomGaussianBlur       | 2758     | 207       | +1232% |
+|                | Grayscale                | 2841     | 2872      | close  |
+|                | Equalize                 | 206      | 139       | +48%   |
+|                | AutoContrast             | 3116     | 2991      | +4%    |
+|                | Posterize                | 2917     | 2445      | +19%   |
+|                | Solarize                 | 3025     | 2882      | +5%    |
+|                | Sharpness                | 2969     | 2915      | close  |
+| Regularization | RandomCutout             | 3222     | 3268      | close  |
+|                | RandomGridMask           | 947      | 197       | +381%  |
+| Mix            | CutMix                   | 2671     | 2445      | +9%    |
+|                | MixUp                    | 2593     | 1996      | +29%   |
+| Auto           | AugMix                   | 83       | X (Error) | X      |
+|                | RandAugment              | 282      | 249       | +13%   |
 
 > **Note**
 > FPS (frames per second)
