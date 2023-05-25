@@ -7,6 +7,8 @@
 ![KerasCV](https://img.shields.io/badge/keras_cv-v0.5.0+-success.svg)
 [![Tests Status](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml/badge.svg?branch=main)](https://github.com/james77777778/keras-aug/actions?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
+[![PyPI](https://img.shields.io/pypi/v/keras-aug)](https://pypi.org/project/keras-aug/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/keras-aug)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/james77777778/keras-aug/issues)
 
 ## Description
@@ -287,31 +289,31 @@ visualize_dataset(
 
 KerasAug is generally faster than KerasCV.
 
-| Type           | Layer                     | KerasAug | KerasCV   |      |
-|----------------|---------------------------|----------|-----------|------|
-| Geometry       | RandomHFlip               | 2148     | 1859      |+15%  |
-|                | RandomVFlip               | 2182     | 2075      |+5%   |
-|                | RandomRotate              | 2451     | 1829      |+34%  |
-|                | RandomAffine              | 2141     | 1240      |+73%  |
-|                | RandomCropAndResize       | 3014     | 209       |+1342%|
-|                | Resize (224, 224)         | 2853     | 213       |+1239%|
-| Intensity      | RandomBrightness          | 3028     | 3097      |close |
-|                | RandomContrast            | 2806     | 2645      |+6%   |
-|                | RandomBrightnessContrast  | 3068     | 612       |+401% |
-|                | RandomColorJitter         | 1932     | 1221      |+58%  |
-|                | RandomGaussianBlur        | 2758     | 207       |+1232%|
-|                | Grayscale                 | 2841     | 2872      |close |
-|                | Equalize                  | 206      | 139       |+48%  |
-|                | AutoContrast              | 3116     | 2991      |+4%   |
-|                | Posterize                 | 2917     | 2445      |+19%  |
-|                | Solarize                  | 3025     | 2882      |+5%   |
-|                | Sharpness                 | 2969     | 2915      |close |
-| Regularization | RandomCutout              | 3222     | 3268      |close |
-|                | RandomGridMask            | 947      | 197       |+381% |
-| Mix            | CutMix                    | 2671     | 2445      |+9%   |
-|                | MixUp                     | 2593     | 1996      |+29%  |
-| Auto           | AugMix                    | 83       | X (Error) |X     |
-|                | RandAugment               | 282      | 249       |+13%  |
+| Type           | Layer                    | KerasAug | KerasCV   |        |
+|----------------|--------------------------|----------|-----------|--------|
+| Geometry       | RandomHFlip              | 2148     | 1859      | +15%   |
+|                | RandomVFlip              | 2182     | 2075      | +5%    |
+|                | RandomRotate             | 2451     | 1829      | +34%   |
+|                | RandomAffine             | 2141     | 1240      | +73%   |
+|                | RandomCropAndResize      | 3014     | 209       | +1342% |
+|                | Resize (224, 224)        | 2853     | 213       | +1239% |
+| Intensity      | RandomBrightness         | 3028     | 3097      | close  |
+|                | RandomContrast           | 2806     | 2645      | +6%    |
+|                | RandomBrightnessContrast | 3068     | 612       | +401%  |
+|                | RandomColorJitter        | 1932     | 1221      | +58%   |
+|                | RandomGaussianBlur       | 2758     | 207       | +1232% |
+|                | Grayscale                | 2841     | 2872      | close  |
+|                | Equalize                 | 206      | 139       | +48%   |
+|                | AutoContrast             | 3116     | 2991      | +4%    |
+|                | Posterize                | 2917     | 2445      | +19%   |
+|                | Solarize                 | 3025     | 2882      | +5%    |
+|                | Sharpness                | 2969     | 2915      | close  |
+| Regularization | RandomCutout             | 3222     | 3268      | close  |
+|                | RandomGridMask           | 947      | 197       | +381%  |
+| Mix            | CutMix                   | 2671     | 2445      | +9%    |
+|                | MixUp                    | 2593     | 1996      | +29%   |
+| Auto           | AugMix                   | 83       | X (Error) | X      |
+|                | RandAugment              | 282      | 249       | +13%   |
 
 > **Note**
 > FPS (frames per second)
