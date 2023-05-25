@@ -10,17 +10,31 @@ from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
+#   (
+#       name,
+#       layer_cls,
+#       args,
+#       is_xla_compatible,
+#   )
+# all configurations should be expanded for readability
 TEST_CONFIGURATIONS = [
-    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
+    (
+        "AugMix",
+        layers.AugMix,
+        {"value_range": (0, 255)},
+        False,  # containing invalid operations
+    ),
     (
         "RandAugment",
         layers.RandAugment,
         {"value_range": (0, 255), "seed": 2023},
+        False,  # containing invalid operations
     ),
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
         {"value_range": (0, 255)},
+        False,  # containing invalid operations
     ),
     (
         "RandomAffine",
@@ -34,8 +48,14 @@ TEST_CONFIGURATIONS = [
             "shear_height_factor": 0.1,
             "shear_width_factor": 0.1,
         },
+        False,  # tf.raw_ops.ImageProjectiveTransformV3
     ),
-    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
+    (
+        "RandomCrop",
+        layers.RandomCrop,
+        {"height": 2, "width": 2},
+        False,  # tf.image.crop_and_resize
+    ),
     (
         "RandomCropAndResize",
         layers.RandomCropAndResize,
@@ -45,26 +65,55 @@ TEST_CONFIGURATIONS = [
             "crop_area_factor": (0.8, 1.0),
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
+        False,  # tf.image.crop_and_resize
     ),
-    ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
-    ("RandomResize", layers.RandomResize, {"heights": [2]}),
-    ("RandomRotate", layers.RandomRotate, {"factor": 10}),
+    (
+        "RandomFlip",
+        layers.RandomFlip,
+        {"mode": "horizontal"},
+        True,
+    ),
+    (
+        "RandomResize",
+        layers.RandomResize,
+        {"heights": [2]},
+        False,  # tf.image.resize
+    ),
+    (
+        "RandomRotate",
+        layers.RandomRotate,
+        {"factor": 10},
+        False,  # tf.raw_ops.ImageProjectiveTransformV3
+    ),
     (
         "RandomZoomAndCrop",
         layers.RandomZoomAndCrop,
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+        False,  # tf.image.resize
     ),
-    ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
+    (
+        "ChannelShuffle",
+        layers.ChannelShuffle,
+        {"groups": 3},
+        True,
+    ),
+    (
+        "RandomBlur",
+        layers.RandomBlur,
+        {"factor": (3, 7)},
+        False,  # tf.map_fn
+    ),
     (
         "RandomChannelShift",
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomCLAHE",
         layers.RandomCLAHE,
         {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
+        True,
     ),
     (
         "RandomColorJitter",
@@ -76,16 +125,19 @@ TEST_CONFIGURATIONS = [
             "saturation_factor": 0.1,
             "hue_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomGamma",
         layers.RandomGamma,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomGaussianBlur",
         layers.RandomGaussianBlur,
         {"kernel_size": 3, "factor": 2.0},
+        True,
     ),
     (
         "RandomHSV",
@@ -96,6 +148,7 @@ TEST_CONFIGURATIONS = [
             "saturation_factor": 0.1,
             "value_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomJpegQuality",
@@ -104,16 +157,19 @@ TEST_CONFIGURATIONS = [
             "value_range": (0, 255),
             "factor": (75, 100),
         },
+        False,  # tf.image.adjust_jpeg_quality
     ),
     (
         "RandomPosterize",
         layers.RandomPosterize,
         {"value_range": (0, 255), "factor": (5, 8)},
+        True,
     ),
     (
         "RandomSharpness",
         layers.RandomSharpness,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomSolarize",
@@ -123,16 +179,19 @@ TEST_CONFIGURATIONS = [
             "threshold_factor": 10,
             "addition_factor": 10,
         },
+        True,
     ),
     (
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
+        True,
     ),
     (
         "MixUp",
         layers.MixUp,
         {},
+        True,
     ),
     (
         "Mosaic",
@@ -141,21 +200,25 @@ TEST_CONFIGURATIONS = [
             "height": 100,
             "width": 100,
         },
+        False,  # tf.map_fn
     ),
     (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
         {},
+        True,
     ),
     (
         "RandomCutout",
         layers.RandomCutout,
         {"height_factor": 0.3, "width_factor": 0.3},
+        True,
     ),
     (
         "RandomErase",
         layers.RandomErase,
         {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
+        True,
     ),
     (
         "RandomGridMask",
@@ -165,11 +228,13 @@ TEST_CONFIGURATIONS = [
             "ratio_factor": (0.6, 0.6),
             "rotation_factor": (-10, 10),
         },
+        False,  # tf.raw_ops.ImageProjectiveTransformV3
     ),
     (
         "RandomApply",
         layers.RandomApply,
         {"layer": layers.RandomChannelDropout()},
+        True,  # depends on the `layer`
     ),
     (
         "RandomChoice",
@@ -180,6 +245,7 @@ TEST_CONFIGURATIONS = [
                 layers.RandomChannelDropout(),
             ]
         },
+        True,  # depends on the `layers`
     ),
     (
         "RepeatedAugment",
@@ -194,88 +260,110 @@ TEST_CONFIGURATIONS = [
                 ),
             ]
         },
+        False,  # tf.random.state_less.shuffle
     ),
     (
         "CenterCrop",
         layers.CenterCrop,
         {"height": 2, "width": 2},
+        True,
     ),
     (
         "PadIfNeeded",
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
+        True,
     ),
     (
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
+        True,
     ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
+    (
+        "AutoContrast",
+        layers.AutoContrast,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Equalize",
+        layers.Equalize,
+        {"value_range": (0, 255)},
+        False,  # tf.histogram_fixed_width
+    ),
+    (
+        "Grayscale",
+        layers.Grayscale,
+        {"output_channels": 3},
+        True,
+    ),
+    (
+        "Identity",
+        layers.Identity,
+        {},
+        True,
+    ),
+    (
+        "Invert",
+        layers.Invert,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Normalize",
+        layers.Normalize,
+        {"value_range": (0, 255)},
+        True,
+    ),
     (
         "Rescale",
         layers.Rescale,
         {"scale": 1.0 / 255.0},
-    ),
-    ("Identity", layers.Identity, {}),
-    (
-        "SanitizeBoundingBox",
-        layers.SanitizeBoundingBox,
-        {"min_size": 10, "bounding_box_format": "xyxy"},
+        True,
     ),
 ]
 
-# only for record
-NO_XLA_SUPPORT_LAYERS = [
-    layers.AugMix,
-    layers.RandAugment,
-    layers.TrivialAugmentWide,
-    layers.RandomAffine,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.RandomCrop,  # tf.image.crop_and_resize
-    layers.RandomCropAndResize,  # tf.image.crop_and_resize
-    layers.RandomResize,  # tf.image.resize
-    layers.RandomRotate,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.RandomZoomAndCrop,  # tf.image.resize
-    layers.RandomBlur,  # tf.map_fn
-    layers.RandomJpegQuality,  # tf.image.adjust_jpeg_quality
-    layers.Mosaic,  # tf.map_fn
-    layers.RandomGridMask,  # tf.raw_ops.ImageProjectiveTransformV3
-    layers.RepeatedAugment,  # tf.random.state_less.shuffle
-    layers.Equalize,  # tf.histogram_fixed_width
-    layers.SanitizeBoundingBox,  # with bounding_boxes
+MUST_RUN_WITH_BOUNDING_BOXES = [
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10},
+        False,  # bounding_box.to_dense
+    ),
 ]
 
 
 class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
-    def test_all_2d_aug_layers_included(self):
+    def test_all_2d_aug_layers_are_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
-        all_2d_aug_layers = inspect.getmembers(
-            augmentation,
-            predicate=inspect.isclass,
-        ) + inspect.getmembers(
-            preprocessing,
-            predicate=inspect.isclass,
+        cls_spaces = [augmentation, preprocessing]
+        all_2d_aug_layers = []
+        for cls_space in cls_spaces:
+            all_2d_aug_layers.extend(
+                inspect.getmembers(cls_space, predicate=inspect.isclass)
+            )
+        all_2d_aug_layer_names = set(
+            item[0]
+            for item in all_2d_aug_layers
+            if issubclass(item[1], base_cls)
         )
-        all_2d_aug_layers = [
-            item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
-        ]
-        all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
+
         test_configuration_names = set(item[0] for item in TEST_CONFIGURATIONS)
+        must_run_with_bounding_boxes_names = set(
+            item[0] for item in MUST_RUN_WITH_BOUNDING_BOXES
+        )
+        all_test_names = test_configuration_names.union(
+            must_run_with_bounding_boxes_names
+        )
 
         for name in all_2d_aug_layer_names:
-            self.assertIn(
-                name,
-                test_configuration_names,
-                msg=f"{name} not found in TEST_CONFIGURATIONS",
-            )
+            self.assertIn(name, all_test_names, msg=f"{name} not found")
 
     @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_graph_mode(self, layer_cls, args):
-        images = tf.random.uniform(shape=(1, 8, 8, 3)) * 255.0
-        labels = tf.random.uniform(shape=(1, 1)) * 10.0
+    def test_run_in_graph_mode(self, layer_cls, args, is_xla_compatible):
+        images = tf.random.uniform(shape=(2, 8, 8, 3)) * 255.0
+        labels = tf.random.uniform(shape=(2, 1)) * 10.0
         bounding_boxes = {
             "boxes": tf.ragged.constant(
                 [
@@ -301,3 +389,39 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
             fn({IMAGES: images, LABELS: labels, BOUNDING_BOXES: bounding_boxes})
         else:
             fn({IMAGES: images, LABELS: labels})
+
+    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    def test_run_in_xla_mode(self, layer_cls, args, is_xla_compatible):
+        if is_xla_compatible is False:
+            return
+        images = tf.random.uniform(shape=(1, 4, 4, 3)) * 255.0
+        labels = tf.random.uniform(shape=(1, 1)) * 10.0
+        layer = layer_cls(**args)
+
+        @tf.function(jit_compile=True)
+        def fn(inputs):
+            layer(inputs)
+
+        fn({IMAGES: images, LABELS: labels})
+
+    @parameterized.named_parameters(*MUST_RUN_WITH_BOUNDING_BOXES)
+    def test_run_in_graph_mode_bbox(self, layer_cls, args, is_xla_compatible):
+        images = tf.random.uniform(shape=(2, 4, 4, 3)) * 255.0
+        labels = tf.random.uniform(shape=(2, 1)) * 10.0
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[0, 0, 1, 1], [0, 0, 4, 4]],
+                    [[0, 0, 2, 3]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        layer = layer_cls(**args, bounding_box_format="xyxy")
+
+        @tf.function
+        def fn(inputs):
+            layer(inputs)
+
+        fn({IMAGES: images, LABELS: labels, BOUNDING_BOXES: bounding_boxes})
