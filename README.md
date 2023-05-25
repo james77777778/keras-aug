@@ -40,12 +40,18 @@ KerasAug is:
 
     > KerasCV struggles to reproduce the YOLOV8 training pipeline, whereas KerasAug executes it flawlessly. See [Quickstart](https://github.com/james77777778/keras-aug/tree/main#quickstart) for more details.
 
-3. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
+3. KerasAug comes with built-in support for mixed precision training
+
+    > All layers in KerasAug can run with `tf.keras.mixed_precision.set_global_policy('mixed_float16')`
+
+4. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
 
     > The current layers in KerasAug support the sanitizing process by incorporating the `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio` arguments.
-    > In addition, you can bring the sanitizing functionality to your custom layer by utilizing `keras_aug.utils.bounding_box.sanitize_bounding_boxes`.
 
     <div align="center"><img width="60%" src="https://user-images.githubusercontent.com/20734616/238520600-34f0b7b5-d9ee-4483-859a-51e9644ded4c.jpg"></div>
+
+    > **Note**
+    > The degenerate bounding boxes (those located at the bottom of the image) are removed.
 
 ## Installation
 

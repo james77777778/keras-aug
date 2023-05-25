@@ -117,6 +117,15 @@ class AugmentationUtilsTest(tf.test.TestCase, parameterized.TestCase):
             True,
         )
 
+    def test_expand_dict_dims(self):
+        key = "factor"
+        shape = [3, 3]
+        transformation = {key: tf.random.uniform(shape=shape)}
+
+        result = augmentation_utils.expand_dict_dims(transformation, axis=0)
+
+        self.assertEqual(result[key].shape, [1] + [3, 3])
+
     def test_get_images_shape_dense(self):
         height = 5
         width = 6
@@ -140,14 +149,75 @@ class AugmentationUtilsTest(tf.test.TestCase, parameterized.TestCase):
         self.assertAllEqual(heights, [[5], [8]])
         self.assertAllEqual(widths, [[5], [8]])
 
-    def test_expand_dict_dims(self):
-        key = "factor"
-        shape = [3, 3]
-        transformation = {key: tf.random.uniform(shape=shape)}
+    def test_cast_to_float16(self):
+        inputs = {
+            augmentation_utils.IMAGES: tf.random.uniform((2, 4, 4, 3)),
+            augmentation_utils.LABELS: tf.random.uniform((2, 1)),
+            augmentation_utils.BOUNDING_BOXES: {
+                "boxes": tf.zeros((2, 2, 4)),
+                "classes": tf.zeros((2, 2)),
+            },
+            augmentation_utils.SEGMENTATION_MASKS: tf.random.uniform(
+                (2, 4, 4, 10)
+            ),
+            augmentation_utils.KEYPOINTS: tf.random.uniform((2, 4, 17)),
+        }
 
-        result = augmentation_utils.expand_dict_dims(transformation, axis=0)
+        result = augmentation_utils.cast_to(inputs, dtype=tf.float16)
 
-        self.assertEqual(result[key].shape, [1] + [3, 3])
+        self.assertDTypeEqual(result[augmentation_utils.IMAGES], tf.float16)
+        self.assertDTypeEqual(result[augmentation_utils.LABELS], tf.float16)
+        self.assertDTypeEqual(
+            result[augmentation_utils.BOUNDING_BOXES]["boxes"], tf.float16
+        )
+        self.assertDTypeEqual(
+            result[augmentation_utils.BOUNDING_BOXES]["classes"], tf.float16
+        )
+        self.assertDTypeEqual(result[augmentation_utils.KEYPOINTS], tf.float16)
+
+    def test_cast_to_int8(self):
+        inputs = {
+            augmentation_utils.IMAGES: tf.random.uniform((2, 4, 4, 3)),
+            augmentation_utils.LABELS: tf.random.uniform((2, 1)),
+            augmentation_utils.BOUNDING_BOXES: {
+                "boxes": tf.zeros((2, 2, 4)),
+                "classes": tf.zeros((2, 2)),
+            },
+            augmentation_utils.SEGMENTATION_MASKS: tf.random.uniform(
+                (2, 4, 4, 10)
+            ),
+            augmentation_utils.KEYPOINTS: tf.random.uniform((2, 4, 17)),
+        }
+
+        result = augmentation_utils.cast_to(inputs, dtype=tf.int8)
+
+        self.assertDTypeEqual(result[augmentation_utils.IMAGES], tf.int8)
+        self.assertDTypeEqual(result[augmentation_utils.LABELS], tf.int8)
+        self.assertDTypeEqual(
+            result[augmentation_utils.BOUNDING_BOXES]["boxes"], tf.int8
+        )
+        self.assertDTypeEqual(
+            result[augmentation_utils.BOUNDING_BOXES]["classes"], tf.int8
+        )
+        self.assertDTypeEqual(result[augmentation_utils.KEYPOINTS], tf.int8)
+
+    def test_compute_signature(self):
+        inputs = {
+            augmentation_utils.IMAGES: tf.random.uniform((2, 4, 4, 3)),
+            augmentation_utils.LABELS: tf.random.uniform((2, 1)),
+            augmentation_utils.BOUNDING_BOXES: {
+                "boxes": tf.zeros((2, 2, 4)),
+                "classes": tf.zeros((2, 2)),
+            },
+            augmentation_utils.SEGMENTATION_MASKS: tf.random.uniform(
+                (2, 4, 4, 10)
+            ),
+            augmentation_utils.KEYPOINTS: tf.random.uniform((2, 4, 17)),
+        }
+
+        signatures = augmentation_utils.compute_signature(inputs, tf.float16)
+
+        self.assertTrue(inputs.keys() == signatures.keys())
 
     def test_blend(self):
         ones = tf.ones(shape=(2, 4, 4, 3))

@@ -319,6 +319,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
+        original_shape = images.shape
         batch_size = tf.shape(images)[0]
         combined_matrixes = transformations["combined_matrixes"]
         combined_matrixes = tf.reshape(
@@ -333,6 +334,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             fill_value=self.fill_value,
             interpolation=self.interpolation,
         )
+        images = tf.ensure_shape(images, shape=original_shape)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -489,6 +491,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
+        original_shape = segmentation_masks.shape
         batch_size = tf.shape(segmentation_masks)[0]
         combined_matrixes = transformations["combined_matrixes"]
         combined_matrixes = tf.reshape(
@@ -502,6 +505,9 @@ class RandomAffine(VectorizedBaseRandomLayer):
             fill_mode=self.fill_mode,
             fill_value=0,
             interpolation="nearest",
+        )
+        segmentation_masks = tf.ensure_shape(
+            segmentation_masks, shape=original_shape
         )
         return segmentation_masks
 
