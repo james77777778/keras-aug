@@ -17,7 +17,7 @@ from keras_aug.utils.augmentation import LABELS
 #       is_xla_compatible,
 #   )
 # all configurations should be expanded for readability
-TEST_CONFIGURATIONS = [
+GENERAL_TESTS = [
     (
         "AugMix",
         layers.AugMix,
@@ -334,7 +334,7 @@ MUST_RUN_WITH_BOUNDING_BOXES = [
 ]
 
 
-class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
+class GraphAndXLAModeTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_are_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
         cls_spaces = [augmentation, preprocessing]
@@ -349,18 +349,14 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
             if issubclass(item[1], base_cls)
         )
 
-        test_configuration_names = set(item[0] for item in TEST_CONFIGURATIONS)
-        must_run_with_bounding_boxes_names = set(
-            item[0] for item in MUST_RUN_WITH_BOUNDING_BOXES
-        )
-        all_test_names = test_configuration_names.union(
-            must_run_with_bounding_boxes_names
-        )
+        general_names = set(item[0] for item in GENERAL_TESTS)
+        bbox_names = set(item[0] for item in MUST_RUN_WITH_BOUNDING_BOXES)
+        all_test_names = general_names.union(bbox_names)
 
         for name in all_2d_aug_layer_names:
             self.assertIn(name, all_test_names, msg=f"{name} not found")
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    @parameterized.named_parameters(*GENERAL_TESTS)
     def test_run_in_graph_mode(self, layer_cls, args, is_xla_compatible):
         images = tf.random.uniform(shape=(2, 8, 8, 3)) * 255.0
         labels = tf.random.uniform(shape=(2, 1)) * 10.0
@@ -390,7 +386,7 @@ class GraphModeTest(tf.test.TestCase, parameterized.TestCase):
         else:
             fn({IMAGES: images, LABELS: labels})
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    @parameterized.named_parameters(*GENERAL_TESTS)
     def test_run_in_xla_mode(self, layer_cls, args, is_xla_compatible):
         if is_xla_compatible is False:
             return

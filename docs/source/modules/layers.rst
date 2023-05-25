@@ -63,6 +63,7 @@ Table of Layers
     Normalize
     Rescale
     Identity
+    SanitizeBoundingBox
 
 **Base 2D**
 
@@ -169,6 +170,7 @@ Preprocessing 2D
 ----
 
 .. autoclass:: Identity(**kwargs)
+.. autoclass:: SanitizeBoundingBox(min_size, bounding_box_format, **kwargs)
 
 Base 2D
 ****************

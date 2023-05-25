@@ -14,10 +14,9 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
     """Remove degenerate/invalid bounding boxes.
 
     Args:
-        min_size (int, optional): The number of the color channels of
-            the outputs. Defaults to ``3``.
-        bounding_box_format (str, optional): The format of bounding
-            boxes of input dataset. Refer
+        min_size (int): The minimum size of the smaller side of bounding boxes.
+        bounding_box_format (str): The format of bounding boxes of input
+            dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
             for more details on supported bounding box formats.
 
@@ -46,7 +45,9 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
             bounding_box_format=self.bounding_box_format,
             images=images,
         )
-        bounding_boxes = bounding_box.to_ragged(bounding_boxes)
+        bounding_boxes = bounding_box.to_ragged(
+            bounding_boxes, dtype=self.compute_dtype
+        )
         result = {IMAGES: images, BOUNDING_BOXES: bounding_boxes}
 
         # preserve any additional inputs unmodified by this layer.

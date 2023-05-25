@@ -308,9 +308,8 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
         result = tf.switch_case(random_indice, branch_fns=branch_fns)
         if BOUNDING_BOXES in result:
             result[BOUNDING_BOXES] = bounding_box.to_ragged(
-                result[BOUNDING_BOXES]
+                result[BOUNDING_BOXES], dtype=self.compute_dtype
             )
-        result = augmentation_utils.cast_to(result, self.compute_dtype)
         return result
 
     def get_config(self):

@@ -7,6 +7,7 @@ from tensorflow import keras
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation as augmentation_utils
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import CUSTOM_ANNOTATIONS
 from keras_aug.utils.augmentation import IMAGES
@@ -119,6 +120,11 @@ class RandomChoice(VectorizedBaseRandomLayer):
                 {"inputs": inputs, "transformations": selected_op_idx}
             )
         else:
+            # make bounding_boxes to dense first
+            if BOUNDING_BOXES in inputs:
+                inputs[BOUNDING_BOXES] = bounding_box.to_dense(
+                    inputs[BOUNDING_BOXES]
+                )
             inputs_for_random_choice_single_input = {
                 "inputs": inputs,
                 "transformations": transformations,
@@ -128,16 +134,6 @@ class RandomChoice(VectorizedBaseRandomLayer):
                 inputs_for_random_choice_single_input,
                 fn_output_signature=self.compute_inputs_signature(inputs),
             )
-
-        # workaround: force bounding_boxes to be ragged
-        # sometimes tf will output tf.Tensor instead of tf.RaggedTensor
-        # the root cause is not clear right now
-        bounding_boxes = result.get(BOUNDING_BOXES, None)
-        if bounding_boxes is not None:
-            bounding_boxes = bounding_box.to_dense(bounding_boxes)
-            bounding_boxes = bounding_box.to_ragged(bounding_boxes)
-            result[BOUNDING_BOXES] = bounding_boxes
-
         return result
 
     def augment(self, inputs):
@@ -151,8 +147,9 @@ class RandomChoice(VectorizedBaseRandomLayer):
         result = tf.switch_case(selected_op_idx, branch_fns=branch_fns)
         if BOUNDING_BOXES in result:
             result[BOUNDING_BOXES] = bounding_box.to_ragged(
-                result[BOUNDING_BOXES]
+                result[BOUNDING_BOXES], dtype=self.compute_dtype
             )
+        result = augmentation_utils.cast_to(result, dtype=self.compute_dtype)
         return result
 
     def get_config(self):

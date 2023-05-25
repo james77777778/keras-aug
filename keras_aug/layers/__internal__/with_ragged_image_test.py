@@ -10,17 +10,31 @@ from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
+#   (
+#       name,
+#       layer_cls,
+#       args,
+#       is_bbox_compatible,
+#   )
+# all configurations should be expanded for readability
 CONSISTENT_OUTPUTS_LAYERS = [
-    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
+    (
+        "AugMix",
+        layers.AugMix,
+        {"value_range": (0, 255)},
+        False,
+    ),
     (
         "RandAugment",
         layers.RandAugment,
         {"value_range": (0, 255), "seed": 2023},
+        True,
     ),
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
         {"value_range": (0, 255)},
+        True,
     ),
     (
         "RandomAffine",
@@ -34,17 +48,44 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "shear_height_factor": 0.1,
             "shear_width_factor": 0.1,
         },
+        True,
     ),
-    ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
-    ("RandomRotate", layers.RandomRotate, {"factor": 10}),
-    ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
+    (
+        "RandomFlip",
+        layers.RandomFlip,
+        {"mode": "horizontal"},
+        True,
+    ),
+    (
+        "RandomRotate",
+        layers.RandomRotate,
+        {"factor": 10},
+        True,
+    ),
+    (
+        "ChannelShuffle",
+        layers.ChannelShuffle,
+        {"groups": 3},
+        True,
+    ),
+    (
+        "RandomBlur",
+        layers.RandomBlur,
+        {"factor": (3, 7)},
+        True,
+    ),
     (
         "RandomChannelShift",
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
-    ("RandomCLAHE", layers.RandomCLAHE, {"value_range": (0, 255)}),
+    (
+        "RandomCLAHE",
+        layers.RandomCLAHE,
+        {"value_range": (0, 255)},
+        True,
+    ),
     (
         "RandomColorJitter",
         layers.RandomColorJitter,
@@ -55,16 +96,19 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "saturation_factor": 0.1,
             "hue_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomGamma",
         layers.RandomGamma,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomGaussianBlur",
         layers.RandomGaussianBlur,
         {"kernel_size": 3, "factor": 2.0},
+        True,
     ),
     (
         "RandomHSV",
@@ -75,6 +119,7 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "saturation_factor": 0.1,
             "value_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomJpegQuality",
@@ -83,16 +128,19 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "value_range": (0, 255),
             "factor": (75, 100),
         },
+        True,
     ),
     (
         "RandomPosterize",
         layers.RandomPosterize,
         {"value_range": (0, 255), "factor": (5, 8)},
+        True,
     ),
     (
         "RandomSharpness",
         layers.RandomSharpness,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomSolarize",
@@ -102,21 +150,25 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "threshold_factor": 10,
             "addition_factor": 10,
         },
+        True,
     ),
     (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
         {},
+        True,
     ),
     (
         "RandomCutout",
         layers.RandomCutout,
         {"height_factor": 0.3, "width_factor": 0.3},
+        True,
     ),
     (
         "RandomErase",
         layers.RandomErase,
         {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
+        False,
     ),
     (
         "RandomGridMask",
@@ -126,11 +178,13 @@ CONSISTENT_OUTPUTS_LAYERS = [
             "ratio_factor": (0.6, 0.6),
             "rotation_factor": (-10, 10),
         },
+        True,
     ),
     (
         "RandomApply",
         layers.RandomApply,
         {"layer": layers.RandomChannelDropout()},
+        True,
     ),
     (
         "RandomChoice",
@@ -141,6 +195,7 @@ CONSISTENT_OUTPUTS_LAYERS = [
                 layers.RandomChannelDropout(),
             ]
         },
+        True,
     ),
     (
         "RepeatedAugment",
@@ -155,32 +210,71 @@ CONSISTENT_OUTPUTS_LAYERS = [
                 ),
             ]
         },
+        True,
     ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
-    (
-        "Rescale",
-        layers.Rescale,
-        {"scale": 1.0 / 255.0},
-    ),
-    ("Identity", layers.Identity, {}),
     (
         "PadIfNeeded",
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
+        True,
+    ),
+    (
+        "AutoContrast",
+        layers.AutoContrast,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Equalize",
+        layers.Equalize,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Grayscale",
+        layers.Grayscale,
+        {"output_channels": 3},
+        True,
+    ),
+    (
+        "Identity",
+        layers.Identity,
+        {},
+        True,
+    ),
+    (
+        "Invert",
+        layers.Invert,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Normalize",
+        layers.Normalize,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Rescale",
+        layers.Rescale,
+        {"scale": 1.0 / 255.0},
+        True,
     ),
     (
         "SanitizeBoundingBox",
         layers.SanitizeBoundingBox,
         {"min_size": 10},
+        True,
     ),
 ]
 
 FORCE_DENSE_IMAGES_LAYERS = [
-    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
+    (
+        "RandomCrop",
+        layers.RandomCrop,
+        {"height": 2, "width": 2},
+        True,
+    ),
     (
         "RandomCropAndResize",
         layers.RandomCropAndResize,
@@ -190,12 +284,19 @@ FORCE_DENSE_IMAGES_LAYERS = [
             "crop_area_factor": (0.8, 1.0),
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
+        True,
     ),
-    ("RandomResize", layers.RandomResize, {"heights": [2]}),
+    (
+        "RandomResize",
+        layers.RandomResize,
+        {"heights": [2]},
+        True,
+    ),
     (
         "RandomZoomAndCrop",
         layers.RandomZoomAndCrop,
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+        True,
     ),
     (
         "Mosaic",
@@ -204,16 +305,19 @@ FORCE_DENSE_IMAGES_LAYERS = [
             "height": 2,
             "width": 2,
         },
+        True,
     ),
     (
         "CenterCrop",
         layers.CenterCrop,
         {"height": 2, "width": 2},
+        True,
     ),
     (
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
+        True,
     ),
 ]
 
@@ -222,74 +326,44 @@ NO_RAGGED_IMAGES_SUPPORT = [
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
+        False,
     ),
-    ("MixUp", layers.MixUp, {}),
+    (
+        "MixUp",
+        layers.MixUp,
+        {},
+        True,
+    ),
 ]
 
 
 class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
-        all_2d_aug_layers = inspect.getmembers(
-            augmentation,
-            predicate=inspect.isclass,
-        ) + inspect.getmembers(
-            preprocessing,
-            predicate=inspect.isclass,
+        cls_spaces = [augmentation, preprocessing]
+        all_2d_aug_layers = []
+        for cls_space in cls_spaces:
+            all_2d_aug_layers.extend(
+                inspect.getmembers(cls_space, predicate=inspect.isclass)
+            )
+        all_2d_aug_layer_names = set(
+            item[0]
+            for item in all_2d_aug_layers
+            if issubclass(item[1], base_cls)
         )
-        all_2d_aug_layers = [
-            item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
-        ]
-        all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
+
         cosistent_names = set(item[0] for item in CONSISTENT_OUTPUTS_LAYERS)
-        force_dense_names = set(item[0] for item in FORCE_DENSE_IMAGES_LAYERS)
+        dense_names = set(item[0] for item in FORCE_DENSE_IMAGES_LAYERS)
         no_ragged_names = set(item[0] for item in NO_RAGGED_IMAGES_SUPPORT)
-        all_test_conf_names = cosistent_names.union(force_dense_names).union(
+        all_test_names = cosistent_names.union(dense_names).union(
             no_ragged_names
         )
 
         for name in all_2d_aug_layer_names:
-            self.assertIn(
-                name,
-                all_test_conf_names,
-                msg=f"{name} not found in TEST_CONFIGURATIONS",
-            )
+            self.assertIn(name, all_test_names, msg=f"{name} not found")
 
     @parameterized.named_parameters(*CONSISTENT_OUTPUTS_LAYERS)
-    def test_preserves_ragged_status(self, layer_cls, args):
-        # MixUp needs two same shape image
-        if layer_cls == layers.MixUp:
-            images = tf.ragged.stack([tf.ones((8, 8, 3)), tf.ones((8, 8, 3))])
-        else:
-            images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
-        labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
-        bounding_boxes = {
-            "boxes": tf.ragged.constant(
-                [
-                    [[10, 10, 20, 20], [100, 100, 150, 150]],
-                    [[200, 200, 400, 400]],
-                ],
-                dtype=tf.float32,
-            ),
-            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
-        }
-        try:
-            layer = layer_cls(**args, bounding_box_format="xyxy")
-            inputs = {
-                IMAGES: images,
-                LABELS: labels,
-                BOUNDING_BOXES: bounding_boxes,
-            }
-        except (TypeError, ValueError):
-            layer = layer_cls(**args)
-            inputs = {IMAGES: images, LABELS: labels}
-
-        outputs = layer(inputs)
-
-        self.assertTrue(isinstance(outputs[IMAGES], tf.RaggedTensor))
-
-    @parameterized.named_parameters(*FORCE_DENSE_IMAGES_LAYERS)
-    def test_force_dense_images(self, layer_cls, args):
+    def test_consistent_images(self, layer_cls, args, is_bbox_compatible):
         images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
         labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
         bounding_boxes = {
@@ -302,17 +376,83 @@ class WithRaggedImageTest(tf.test.TestCase, parameterized.TestCase):
             ),
             "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
         }
-        try:
-            layer = layer_cls(**args, bounding_box_format="xyxy")
+        if is_bbox_compatible:
+            try:
+                layer = layer_cls(**args, bounding_box_format="xyxy")
+            except TypeError:
+                layer = layer_cls(**args)
             inputs = {
                 IMAGES: images,
                 LABELS: labels,
                 BOUNDING_BOXES: bounding_boxes,
             }
-        except TypeError:
+        else:
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
+
+        outputs = layer(inputs)
+
+        self.assertTrue(isinstance(outputs[IMAGES], tf.RaggedTensor))
+
+    @parameterized.named_parameters(*FORCE_DENSE_IMAGES_LAYERS)
+    def test_force_dense_images(self, layer_cls, args, is_bbox_compatible):
+        images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
+        labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        if is_bbox_compatible:
+            try:
+                layer = layer_cls(**args, bounding_box_format="xyxy")
+            except TypeError:
+                layer = layer_cls(**args)
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        else:
             layer = layer_cls(**args)
             inputs = {IMAGES: images, LABELS: labels}
 
         outputs = layer(inputs)
 
         self.assertTrue(isinstance(outputs[IMAGES], tf.Tensor))
+
+    @parameterized.named_parameters(*NO_RAGGED_IMAGES_SUPPORT)
+    def test_no_ragged_images(self, layer_cls, args, is_bbox_compatible):
+        images = tf.ragged.stack([tf.ones((5, 5, 3)), tf.ones((8, 8, 3))])
+        labels = tf.ragged.stack([tf.ones((1,)), tf.ones((1,))])
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        if is_bbox_compatible:
+            try:
+                layer = layer_cls(**args, bounding_box_format="xyxy")
+            except TypeError:
+                layer = layer_cls(**args)
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        else:
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
+
+        with self.assertRaises(ValueError):
+            layer(inputs)
