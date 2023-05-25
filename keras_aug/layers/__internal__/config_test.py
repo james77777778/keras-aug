@@ -9,9 +9,17 @@ from keras_aug.core import UniformFactorSampler
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
 
-TEST_CONFIGURATIONS = [
-    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
-    ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
+GENERAL_TESTS = [
+    (
+        "AugMix",
+        layers.AugMix,
+        {"value_range": (0, 255)},
+    ),
+    (
+        "RandAugment",
+        layers.RandAugment,
+        {"value_range": (0, 255)},
+    ),
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
@@ -30,7 +38,11 @@ TEST_CONFIGURATIONS = [
             "shear_width_factor": 0.1,
         },
     ),
-    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
+    (
+        "RandomCrop",
+        layers.RandomCrop,
+        {"height": 2, "width": 2},
+    ),
     (
         "RandomCropAndResize",
         layers.RandomCropAndResize,
@@ -41,9 +53,21 @@ TEST_CONFIGURATIONS = [
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
     ),
-    ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
-    ("RandomResize", layers.RandomResize, {"heights": [2]}),
-    ("RandomRotate", layers.RandomRotate, {"factor": 10}),
+    (
+        "RandomFlip",
+        layers.RandomFlip,
+        {"mode": "horizontal"},
+    ),
+    (
+        "RandomResize",
+        layers.RandomResize,
+        {"heights": [2]},
+    ),
+    (
+        "RandomRotate",
+        layers.RandomRotate,
+        {"factor": 10},
+    ),
     (
         "RandomZoomAndCrop",
         layers.RandomZoomAndCrop,
@@ -59,14 +83,26 @@ TEST_CONFIGURATIONS = [
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
     ),
-    ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
+    (
+        "ChannelShuffle",
+        layers.ChannelShuffle,
+        {"groups": 3},
+    ),
+    (
+        "RandomBlur",
+        layers.RandomBlur,
+        {"factor": (3, 7)},
+    ),
     (
         "RandomChannelShift",
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},
     ),
-    ("RandomCLAHE", layers.RandomCLAHE, {"value_range": (0, 255)}),
+    (
+        "RandomCLAHE",
+        layers.RandomCLAHE,
+        {"value_range": (0, 255)},
+    ),
     (
         "RandomColorJitter",
         layers.RandomColorJitter,
@@ -201,44 +237,71 @@ TEST_CONFIGURATIONS = [
         layers.Resize,
         {"height": 2, "width": 2},
     ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
+    (
+        "AutoContrast",
+        layers.AutoContrast,
+        {"value_range": (0, 255)},
+    ),
+    (
+        "Equalize",
+        layers.Equalize,
+        {"value_range": (0, 255)},
+    ),
+    (
+        "Grayscale",
+        layers.Grayscale,
+        {"output_channels": 3},
+    ),
+    (
+        "Identity",
+        layers.Identity,
+        {},
+    ),
+    (
+        "Invert",
+        layers.Invert,
+        {"value_range": (0, 255)},
+    ),
+    (
+        "Normalize",
+        layers.Normalize,
+        {"value_range": (0, 255)},
+    ),
     (
         "Rescale",
         layers.Rescale,
         {"scale": 1.0 / 255.0},
     ),
-    ("Identity", layers.Identity, {}),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10, "bounding_box_format": "xyxy"},
+    ),
 ]
 
 
 class ConfigTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
-        all_2d_aug_layers = inspect.getmembers(
-            augmentation,
-            predicate=inspect.isclass,
-        ) + inspect.getmembers(
-            preprocessing,
-            predicate=inspect.isclass,
+        cls_spaces = [augmentation, preprocessing]
+        all_2d_aug_layers = []
+        for cls_space in cls_spaces:
+            all_2d_aug_layers.extend(
+                inspect.getmembers(cls_space, predicate=inspect.isclass)
+            )
+        all_2d_aug_layer_names = set(
+            item[0]
+            for item in all_2d_aug_layers
+            if issubclass(item[1], base_cls)
         )
-        all_2d_aug_layers = [
-            item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
-        ]
-        all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        test_configuration_names = set(item[0] for item in TEST_CONFIGURATIONS)
+
+        general_names = set(item[0] for item in GENERAL_TESTS)
+        all_test_names = general_names
 
         for name in all_2d_aug_layer_names:
-            self.assertIn(
-                name,
-                test_configuration_names,
-                msg=f"{name} not found in TEST_CONFIGURATIONS",
-            )
+            self.assertIn(name, all_test_names, msg=f"{name} not found")
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    @parameterized.named_parameters(*GENERAL_TESTS)
     def test_config(self, layer_cls, args):
         layer = layer_cls(**args)
 
@@ -252,7 +315,7 @@ class ConfigTest(tf.test.TestCase, parameterized.TestCase):
             else:
                 self.assertEqual(config[key], args[key])
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
+    @parameterized.named_parameters(*GENERAL_TESTS)
     def test_config_with_custom_name(self, layer_cls, args):
         layer = layer_cls(**args, name="image_preproc")
         config = layer.get_config()

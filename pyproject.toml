@@ -14,7 +14,6 @@ exclude = [
 ]
 
 [tool.ruff.per-file-ignores]
-"/keras_aug/__init__.py" = ["F401"]
 "./examples/**/*" = ["E402"]
 "**/__init__.py" = ["F401"]
 "**/*_utils.py" = ["F401"]

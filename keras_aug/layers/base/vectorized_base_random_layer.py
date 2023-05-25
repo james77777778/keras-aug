@@ -444,7 +444,9 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
                 images=images,
                 raw_images=raw_images,
             )
-            bounding_boxes = bounding_box.to_ragged(bounding_boxes)
+            bounding_boxes = bounding_box.to_ragged(
+                bounding_boxes, dtype=self.compute_dtype
+            )
             result[BOUNDING_BOXES] = bounding_boxes
 
         if keypoints is not None:

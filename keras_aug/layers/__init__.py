@@ -75,3 +75,6 @@ from keras_aug.layers.preprocessing.intensity.identity import Identity
 from keras_aug.layers.preprocessing.intensity.invert import Invert
 from keras_aug.layers.preprocessing.intensity.normalize import Normalize
 from keras_aug.layers.preprocessing.intensity.rescale import Rescale
+from keras_aug.layers.preprocessing.utility.sanitize_bounding_box import (
+    SanitizeBoundingBox,
+)

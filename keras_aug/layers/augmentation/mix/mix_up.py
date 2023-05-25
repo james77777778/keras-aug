@@ -61,6 +61,11 @@ class MixUp(VectorizedBaseRandomLayer):
         }
 
     def augment_images(self, images, transformations, **kwargs):
+        if isinstance(images, tf.RaggedTensor):
+            raise ValueError(
+                "MixUp expects dense images. Received: images type: "
+                f"{type(images)}"
+            )
         permutation_order = transformations["permutation_order"]
         lambda_samples = transformations["lambda_samples"]
         mixup_images = tf.gather(images, permutation_order)
@@ -110,7 +115,6 @@ class MixUp(VectorizedBaseRandomLayer):
         images = inputs.get("images", None)
         labels = inputs.get("labels", None)
         bounding_boxes = inputs.get("bounding_boxes", None)
-
         if images is None or (labels is None and bounding_boxes is None):
             raise ValueError(
                 "MixUp expects inputs in a dictionary with format "
@@ -118,7 +122,6 @@ class MixUp(VectorizedBaseRandomLayer):
                 '{"images": images, "bounding_boxes": bounding_boxes}'
                 f"Got: inputs = {inputs}."
             )
-
         if bounding_boxes is not None:
             _ = bounding_box.validate_format(bounding_boxes)
 

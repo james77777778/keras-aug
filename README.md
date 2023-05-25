@@ -325,7 +325,7 @@ Please refer to [benchmarks/README.md](benchmarks/README.md) for more details.
 
 ```bibtex
 @misc{chiu2023kerasaug,
-  title={KeraAug},
+  title={KerasAug},
   author={Hongyu, Chiu},
   year={2023},
   howpublished={\url{https://github.com/james77777778/keras-aug}},

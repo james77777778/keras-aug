@@ -82,8 +82,12 @@ class AugMix(VectorizedBaseRandomLayer):
         )
 
         # initialize layers
-        self.auto_contrast = layers.AutoContrast(value_range=self.value_range)
-        self.equalize = layers.Equalize(value_range=self.value_range)
+        self.auto_contrast = layers.AutoContrast(
+            value_range=self.value_range, dtype=self.compute_dtype
+        )
+        self.equalize = layers.Equalize(
+            value_range=self.value_range, dtype=self.compute_dtype
+        )
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # sample from dirichlet
@@ -117,7 +121,7 @@ class AugMix(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         images = preprocessing_utils.transform_value_range(
-            images, self.value_range, (0, 255), self.compute_dtype
+            images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs_for_aug_mix_single_image = {
             IMAGES: images,
@@ -143,7 +147,7 @@ class AugMix(VectorizedBaseRandomLayer):
         chain_mixing_weights = transformation["chain_mixing_weights"]
         weight_sample = transformation["weight_sample"]
 
-        result = tf.zeros_like(image)
+        result = tf.zeros_like(image, dtype=image.dtype)
         curr_chain = tf.constant([0], dtype=tf.int32)
         image, chain_mixing_weights, curr_chain, result = tf.while_loop(
             lambda image, chain_mixing_weights, curr_chain, result: tf.less(
@@ -239,7 +243,8 @@ class AugMix(VectorizedBaseRandomLayer):
         image = tf.bitwise.left_shift(
             tf.bitwise.right_shift(image, shift), shift
         )
-        return tf.cast(image, dtype=ori_dtype)
+        image = tf.cast(image, dtype=ori_dtype)
+        return image
 
     def rotate(self, image):
         angle = tf.expand_dims(

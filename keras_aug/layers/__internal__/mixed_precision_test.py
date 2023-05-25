@@ -2,6 +2,7 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
+from keras_cv import bounding_box
 from tensorflow import keras
 
 from keras_aug import layers
@@ -11,13 +12,31 @@ from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
 
-TEST_CONFIGURATIONS = [
-    ("AugMix", layers.AugMix, {"value_range": (0, 255)}),
-    ("RandAugment", layers.RandAugment, {"value_range": (0, 255)}),
+#   (
+#       name,
+#       layer_cls,
+#       args,
+#       is_bbox_compatible,
+#   )
+# all configurations should be expanded for readability
+GENERAL_TESTS = [
+    (
+        "AugMix",
+        layers.AugMix,
+        {"value_range": (0, 255)},
+        False,
+    ),
+    (
+        "RandAugment",
+        layers.RandAugment,
+        {"value_range": (0, 255)},
+        True,
+    ),
     (
         "TrivialAugmentWide",
         layers.TrivialAugmentWide,
         {"value_range": (0, 255)},
+        True,
     ),
     (
         "RandomAffine",
@@ -31,8 +50,14 @@ TEST_CONFIGURATIONS = [
             "shear_height_factor": 0.1,
             "shear_width_factor": 0.1,
         },
+        True,
     ),
-    ("RandomCrop", layers.RandomCrop, {"height": 2, "width": 2}),
+    (
+        "RandomCrop",
+        layers.RandomCrop,
+        {"height": 2, "width": 2},
+        True,
+    ),
     (
         "RandomCropAndResize",
         layers.RandomCropAndResize,
@@ -42,26 +67,55 @@ TEST_CONFIGURATIONS = [
             "crop_area_factor": (0.8, 1.0),
             "aspect_ratio_factor": (3 / 4, 4 / 3),
         },
+        True,
     ),
-    ("RandomFlip", layers.RandomFlip, {"mode": "horizontal"}),
-    ("RandomResize", layers.RandomResize, {"heights": [2]}),
-    ("RandomRotate", layers.RandomRotate, {"factor": 10}),
+    (
+        "RandomFlip",
+        layers.RandomFlip,
+        {"mode": "horizontal"},
+        True,
+    ),
+    (
+        "RandomResize",
+        layers.RandomResize,
+        {"heights": [2]},
+        True,
+    ),
+    (
+        "RandomRotate",
+        layers.RandomRotate,
+        {"factor": 10},
+        True,
+    ),
     (
         "RandomZoomAndCrop",
         layers.RandomZoomAndCrop,
         {"height": 2, "width": 2, "scale_factor": (0.8, 1.25)},
+        True,
     ),
-    ("ChannelShuffle", layers.ChannelShuffle, {"groups": 3}),
-    ("RandomBlur", layers.RandomBlur, {"factor": (3, 7)}),
+    (
+        "ChannelShuffle",
+        layers.ChannelShuffle,
+        {"groups": 3},
+        True,
+    ),
+    (
+        "RandomBlur",
+        layers.RandomBlur,
+        {"factor": (3, 7)},
+        True,
+    ),
     (
         "RandomChannelShift",
         layers.RandomChannelShift,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomCLAHE",
         layers.RandomCLAHE,
         {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
+        True,
     ),
     (
         "RandomColorJitter",
@@ -73,16 +127,19 @@ TEST_CONFIGURATIONS = [
             "saturation_factor": 0.1,
             "hue_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomGamma",
         layers.RandomGamma,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomGaussianBlur",
         layers.RandomGaussianBlur,
         {"kernel_size": 3, "factor": 2.0},
+        True,
     ),
     (
         "RandomHSV",
@@ -93,6 +150,7 @@ TEST_CONFIGURATIONS = [
             "saturation_factor": 0.1,
             "value_factor": 0.1,
         },
+        True,
     ),
     (
         "RandomJpegQuality",
@@ -101,16 +159,19 @@ TEST_CONFIGURATIONS = [
             "value_range": (0, 255),
             "factor": (75, 100),
         },
+        True,
     ),
     (
         "RandomPosterize",
         layers.RandomPosterize,
         {"value_range": (0, 255), "factor": (5, 8)},
+        True,
     ),
     (
         "RandomSharpness",
         layers.RandomSharpness,
         {"value_range": (0, 255), "factor": 0.1},
+        True,
     ),
     (
         "RandomSolarize",
@@ -120,16 +181,19 @@ TEST_CONFIGURATIONS = [
             "threshold_factor": 10,
             "addition_factor": 10,
         },
+        True,
     ),
     (
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
+        False,
     ),
     (
         "MixUp",
         layers.MixUp,
         {},
+        True,
     ),
     (
         "Mosaic",
@@ -138,21 +202,25 @@ TEST_CONFIGURATIONS = [
             "height": 100,
             "width": 100,
         },
+        True,
     ),
     (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
         {},
+        True,
     ),
     (
         "RandomCutout",
         layers.RandomCutout,
         {"height_factor": 0.3, "width_factor": 0.3},
+        True,
     ),
     (
         "RandomErase",
         layers.RandomErase,
         {"area_factor": (0.02, 0.4), "aspect_ratio_factor": (0.3, 1.0 / 0.3)},
+        False,
     ),
     (
         "RandomGridMask",
@@ -162,33 +230,74 @@ TEST_CONFIGURATIONS = [
             "ratio_factor": (0.6, 0.6),
             "rotation_factor": (-10, 10),
         },
+        True,
     ),
-    ("Equalize", layers.Equalize, {"value_range": (0, 255)}),
-    ("Grayscale", layers.Grayscale, {"output_channels": 3}),
-    ("Invert", layers.Invert, {"value_range": (0, 255)}),
-    ("Normalize", layers.Normalize, {"value_range": (0, 255)}),
     (
         "CenterCrop",
         layers.CenterCrop,
         {"height": 2, "width": 2},
+        True,
     ),
     (
         "PadIfNeeded",
         layers.PadIfNeeded,
         {"min_height": 2, "min_width": 2},
+        True,
     ),
     (
         "Resize",
         layers.Resize,
         {"height": 2, "width": 2},
+        True,
     ),
-    ("AutoContrast", layers.AutoContrast, {"value_range": (0, 255)}),
+    (
+        "AutoContrast",
+        layers.AutoContrast,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Equalize",
+        layers.Equalize,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Grayscale",
+        layers.Grayscale,
+        {"output_channels": 3},
+        True,
+    ),
+    (
+        "Identity",
+        layers.Identity,
+        {},
+        True,
+    ),
+    (
+        "Invert",
+        layers.Invert,
+        {"value_range": (0, 255)},
+        True,
+    ),
+    (
+        "Normalize",
+        layers.Normalize,
+        {"value_range": (0, 255)},
+        True,
+    ),
     (
         "Rescale",
         layers.Rescale,
         {"scale": 1.0 / 255.0},
+        True,
     ),
-    ("Identity", layers.Identity, {}),
+    (
+        "SanitizeBoundingBox",
+        layers.SanitizeBoundingBox,
+        {"min_size": 10},
+        True,
+    ),
 ]
 
 BUILD_IN_RUNTIME = [
@@ -230,33 +339,30 @@ BUILD_IN_RUNTIME = [
 ]
 
 
-class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
+class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
-        all_2d_aug_layers = inspect.getmembers(
-            augmentation,
-            predicate=inspect.isclass,
-        ) + inspect.getmembers(
-            preprocessing,
-            predicate=inspect.isclass,
+        cls_spaces = [augmentation, preprocessing]
+        all_2d_aug_layers = []
+        for cls_space in cls_spaces:
+            all_2d_aug_layers.extend(
+                inspect.getmembers(cls_space, predicate=inspect.isclass)
+            )
+        all_2d_aug_layer_names = set(
+            item[0]
+            for item in all_2d_aug_layers
+            if issubclass(item[1], base_cls)
         )
-        all_2d_aug_layers = [
-            item for item in all_2d_aug_layers if issubclass(item[1], base_cls)
-        ]
-        all_2d_aug_layer_names = set(item[0] for item in all_2d_aug_layers)
-        test_configs = set(item[0] for item in TEST_CONFIGURATIONS)
-        build_in_runtime = set(item[0] for item in BUILD_IN_RUNTIME)
-        all_test_conf_names = test_configs.union(build_in_runtime)
+
+        general_names = set(item[0] for item in GENERAL_TESTS)
+        build_names = set(item[0] for item in BUILD_IN_RUNTIME)
+        all_test_names = general_names.union(build_names)
 
         for name in all_2d_aug_layer_names:
-            self.assertIn(
-                name,
-                all_test_conf_names,
-                msg=f"{name} not found in TEST_CONFIGURATIONS",
-            )
+            self.assertIn(name, all_test_names, msg=f"{name} not found")
 
-    @parameterized.named_parameters(*TEST_CONFIGURATIONS)
-    def test_can_run_in_mixed_precision(self, layer_cls, args):
+    @parameterized.named_parameters(*GENERAL_TESTS)
+    def test_run_in_mixed_precision(self, layer_cls, args, is_bbox_compatible):
         keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
             tf.random.uniform(shape=(2, 32, 32, 3)) * 255.0,
@@ -273,30 +379,36 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
                 ],
                 dtype=tf.float32,
             ),
-            "classes": tf.ragged.constant(
-                [[0, 1], [2]],
-                dtype=tf.float32,
-            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
         }
-        try:
-            layer = layer_cls(**args, bounding_box_format="xyxy")
-            has_bounding_boxes = True
-        except TypeError:
-            layer = layer_cls(**args)
-            has_bounding_boxes = False
-
-        if has_bounding_boxes:
-            result = layer(
-                {IMAGES: images, LABELS: labels, BOUNDING_BOXES: bounding_boxes}
-            )
-            self.assertDTypeEqual(result[IMAGES], tf.float16)
+        if is_bbox_compatible:
+            try:
+                layer = layer_cls(**args, bounding_box_format="xyxy")
+            except TypeError:
+                layer = layer_cls(**args)
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
         else:
-            result = layer({IMAGES: images, LABELS: labels})
-            self.assertDTypeEqual(result[IMAGES], tf.float16)
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
+
+        outputs = layer(inputs)
+
+        if is_bbox_compatible:
+            self.assertDTypeEqual(outputs[IMAGES], tf.float16)
+            dense_bounding_boxes = bounding_box.to_dense(
+                outputs[BOUNDING_BOXES]
+            )
+            self.assertDTypeEqual(dense_bounding_boxes["boxes"], tf.float16)
+        else:
+            self.assertDTypeEqual(outputs[IMAGES], tf.float16)
 
     @parameterized.named_parameters(*BUILD_IN_RUNTIME)
-    def test_can_run_in_mixed_precision_build_in_runtime(
-        self, layer_cls, args, build_layer, build_args
+    def test_run_in_mixed_precision_and_build_in_runtime(
+        self, layer_cls, args, build_layer_cls, build_args
     ):
         keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
@@ -310,18 +422,20 @@ class WithMixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
         value = args["value"]
         other_args = args["args"]
         if value == "single":
-            build_layers = build_layer(**build_args)
+            build_layers = build_layer_cls(**build_args)
         elif value == "multiple":
             build_layers = [
-                build_layer(**build_args),
-                build_layer(**build_args),
-                build_layer(**build_args),
+                build_layer_cls(**build_args),
+                build_layer_cls(**build_args),
             ]
         else:
             raise NotImplementedError()
         args = {name: build_layers, **other_args}
         layer = layer_cls(**args)
-        layer({IMAGES: images, LABELS: labels})
+
+        outputs = layer({IMAGES: images, LABELS: labels})
+
+        self.assertDTypeEqual(outputs[IMAGES], tf.float16)
 
     @classmethod
     def tearDownClass(cls) -> None:
