@@ -68,3 +68,36 @@ class MosaicTest(tf.test.TestCase):
             "Mosaic expects inputs in a dictionary with format",
         ):
             _ = layer(xs)
+
+    def test_ragged_input_with_graph_mode(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        # randomly sample labels
+        labels = tf.random.categorical(tf.math.log([[0.5, 0.5, 0.5, 0.5]]), 2)
+        labels = tf.squeeze(labels)
+        labels = tf.one_hot(labels, 10)
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        segmentation_masks
+        layer = layers.Mosaic(height=8, width=8)
+
+        # TODO: not support segmentation_masks yet
+        @tf.function
+        def fn(inputs):
+            outputs = layer(inputs)
+            image_shape = outputs["images"].shape
+            assert image_shape == (4, 8, 8, 3), f"shape={image_shape}"
+
+        fn({"images": images, "labels": labels})

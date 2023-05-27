@@ -113,6 +113,7 @@ class Mosaic(VectorizedBaseRandomLayer):
         }
 
     def augment_images(self, images, transformations, **kwargs):
+        ori_shape = images.shape
         permutation_order = transformations["permutation_order"]
         mosaic_images = tf.gather(images, permutation_order)
         inputs_for_pad_and_mosaic_single_image = {
@@ -125,7 +126,8 @@ class Mosaic(VectorizedBaseRandomLayer):
             fn_output_signature=self.compute_dtype,
         )
         images = tf.ensure_shape(
-            images, shape=(None, self.height, self.width, None)
+            images,
+            shape=(ori_shape[0], self.height, self.width, ori_shape[-1]),
         )
         return images
 

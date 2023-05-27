@@ -95,6 +95,13 @@ class CenterCrop(VectorizedBaseRandomLayer):
             "pad_rights": rights,
         }
 
+    def compute_ragged_image_signature(self, images):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, images.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)
         transformation = augmentation_utils.expand_dict_dims(
@@ -138,7 +145,7 @@ class CenterCrop(VectorizedBaseRandomLayer):
         images = tf.ensure_shape(
             images, shape=(None, self.height, self.width, None)
         )
-        return images
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -263,7 +270,7 @@ class CenterCrop(VectorizedBaseRandomLayer):
         segmentation_masks = tf.ensure_shape(
             segmentation_masks, shape=(None, self.height, self.width, None)
         )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def get_config(self):
         config = super().get_config()

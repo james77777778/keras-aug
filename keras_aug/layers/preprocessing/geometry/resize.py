@@ -157,6 +157,13 @@ class Resize(VectorizedBaseRandomLayer):
             "rights": rights,
         }
 
+    def compute_ragged_image_signature(self, images):
+        return tf.RaggedTensorSpec(
+            shape=(self.height, self.width, images.shape[-1]),
+            ragged_rank=1,
+            dtype=self.compute_dtype,
+        )
+
     def augment_ragged_image(self, image, transformation, **kwargs):
         image = tf.expand_dims(image, axis=0)
         transformation = augmentation_utils.expand_dict_dims(
