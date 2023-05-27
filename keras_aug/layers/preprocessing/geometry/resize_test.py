@@ -597,3 +597,30 @@ class ResizeTest(tf.test.TestCase, parameterized.TestCase):
         self.assertTrue(isinstance(result["segmentation_masks"], tf.Tensor))
         self.assertEqual(result["segmentation_masks"].shape[1:3], (8, 8))
         self.assertAllInSet(result["segmentation_masks"], tf.range(0, 10))
+
+    def test_ragged_input_with_graph_mode(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        args = self.regular_args.copy()
+        args.update({"height": 8, "width": 8})
+        layer = layers.Resize(**args)
+
+        @tf.function
+        def fn(inputs):
+            outputs = layer(inputs)
+            image_shape = outputs["images"].shape
+            segmentation_mask_shape = outputs["segmentation_masks"].shape
+            assert image_shape == (2, 8, 8, 3)
+            assert segmentation_mask_shape == (2, 8, 8, 1)
+
+        fn({"images": images, "segmentation_masks": segmentation_masks})

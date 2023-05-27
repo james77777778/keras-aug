@@ -283,3 +283,37 @@ class RandomCropAndResizeTest(tf.test.TestCase):
 
         self.assertTrue(isinstance(result["segmentation_masks"], tf.Tensor))
         self.assertAllInSet(result["segmentation_masks"], tf.range(0, 10))
+
+    def test_ragged_input_with_graph_mode(self):
+        images = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 3), dtype=tf.float32),
+                tf.random.uniform((16, 8, 3), dtype=tf.float32),
+            ]
+        )
+        segmentation_masks = tf.ragged.stack(
+            [
+                tf.random.uniform((8, 8, 1), maxval=10, dtype=tf.int32),
+                tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
+            ]
+        )
+        args = self.no_aug_args.copy()
+        args.update(
+            {
+                "height": 8,
+                "width": 8,
+                "aspect_ratio_factor": (0.5**2, 0.5**2),
+                "crop_area_factor": (1.0, 1.0),
+            }
+        )
+        layer = layers.RandomCropAndResize(**args)
+
+        @tf.function
+        def fn(inputs):
+            outputs = layer(inputs)
+            image_shape = outputs["images"].shape
+            segmentation_mask_shape = outputs["segmentation_masks"].shape
+            assert image_shape == (2, 8, 8, 3)
+            assert segmentation_mask_shape == (2, 8, 8, 1)
+
+        fn({"images": images, "segmentation_masks": segmentation_masks})
