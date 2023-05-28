@@ -90,14 +90,20 @@ class MosaicTest(tf.test.TestCase):
                 tf.random.uniform((16, 8, 1), maxval=10, dtype=tf.int32),
             ]
         )
-        segmentation_masks
         layer = layers.Mosaic(height=8, width=8)
 
-        # TODO: not support segmentation_masks yet
         @tf.function
         def fn(inputs):
             outputs = layer(inputs)
             image_shape = outputs["images"].shape
-            assert image_shape == (4, 8, 8, 3), f"shape={image_shape}"
+            segmentation_mask_shape = outputs["segmentation_masks"].shape
+            self.assertEqual(image_shape, (4, 8, 8, 3))
+            self.assertEqual(segmentation_mask_shape, (4, 8, 8, 1))
 
-        fn({"images": images, "labels": labels})
+        fn(
+            {
+                "images": images,
+                "labels": labels,
+                "segmentation_masks": segmentation_masks,
+            }
+        )
