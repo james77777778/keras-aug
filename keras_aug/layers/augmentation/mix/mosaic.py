@@ -11,6 +11,7 @@ from keras_aug.utils.augmentation import BATCHED
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import LABELS
+from keras_aug.utils.augmentation import SEGMENTATION_MASKS
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -249,6 +250,29 @@ class Mosaic(VectorizedBaseRandomLayer):
         )
         return boxes_for_mosaic
 
+    def augment_segmentation_masks(
+        self, segmentation_masks, transformations, **kwargs
+    ):
+        ori_shape = segmentation_masks.shape
+        permutation_order = transformations["permutation_order"]
+        mosaic_segmentation_masks = tf.gather(
+            segmentation_masks, permutation_order
+        )
+        inputs_for_pad_and_mosaic_single_image = {
+            "transformations": transformations,
+            IMAGES: mosaic_segmentation_masks,
+        }
+        mosaic_segmentation_masks = tf.map_fn(
+            self.get_mosaic_single_image,
+            inputs_for_pad_and_mosaic_single_image,
+            fn_output_signature=self.compute_dtype,
+        )
+        mosaic_segmentation_masks = tf.ensure_shape(
+            mosaic_segmentation_masks,
+            shape=(ori_shape[0], self.height, self.width, ori_shape[-1]),
+        )
+        return mosaic_segmentation_masks
+
     def _batch_augment(self, inputs):
         self._validate_inputs(inputs)
         return super()._batch_augment(inputs)
@@ -268,11 +292,17 @@ class Mosaic(VectorizedBaseRandomLayer):
         images = inputs.get(IMAGES, None)
         labels = inputs.get(LABELS, None)
         bounding_boxes = inputs.get(BOUNDING_BOXES, None)
-        if images is None or (labels is None and bounding_boxes is None):
+        segmentation_masks = inputs.get(SEGMENTATION_MASKS, None)
+        if images is None or (
+            labels is None
+            and bounding_boxes is None
+            and segmentation_masks is None
+        ):
             raise ValueError(
                 "Mosaic expects inputs in a dictionary with format "
-                '{"images": images, "labels": labels}. or'
-                '{"images": images, "bounding_boxes": bounding_boxes}'
+                '{"images": images, "labels": labels}. or '
+                '{"images": images, "bounding_boxes": bounding_boxes} or '
+                '{"images": images, "segmentation_masks": segmentation_masks}'
                 f"Got: inputs = {inputs}"
             )
         if bounding_boxes is not None and self.bounding_box_format is None:
