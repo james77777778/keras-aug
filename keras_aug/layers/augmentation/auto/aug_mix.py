@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
@@ -11,6 +10,8 @@ from keras_aug.utils import augmentation as augmentation_utils
 from keras_aug.utils.augmentation import H_AXIS
 from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import W_AXIS
+from keras_aug.utils.distribution import stateless_random_beta
+from keras_aug.utils.distribution import stateless_random_dirichlet
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -75,12 +76,6 @@ class AugMix(VectorizedBaseRandomLayer):
         self.alpha = alpha
         self.seed = seed
 
-        # distribution
-        self.beta_dist = tfp.distributions.Beta(self.alpha, self.alpha)
-        self.dirichlet_dist = tfp.distributions.Dirichlet(
-            tf.ones([self.num_chains]) * self.alpha
-        )
-
         # initialize layers
         self.auto_contrast = layers.AutoContrast(
             value_range=self.value_range, dtype=self.compute_dtype
@@ -91,22 +86,27 @@ class AugMix(VectorizedBaseRandomLayer):
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
         # sample from dirichlet
-        seed = tf.cast(
-            self._random_generator.make_seed_for_stateless_op(), dtype=tf.int32
+        alpha = (
+            tf.ones([self.num_chains], dtype=self.compute_dtype) * self.alpha
         )
-        chain_mixing_weights = self.dirichlet_dist.sample(
-            (batch_size,), seed=seed
+        chain_mixing_weights = stateless_random_dirichlet(
+            (batch_size, self.num_chains),
+            seed=self._random_generator.make_seed_for_stateless_op(),
+            alpha=alpha,
+            dtype=self.compute_dtype,
         )
         # sample from beta
-        seed = tf.cast(
-            self._random_generator.make_seed_for_stateless_op(), dtype=tf.int32
+        weight_sample = stateless_random_beta(
+            (batch_size, 1),
+            seed_alpha=self._random_generator.make_seed_for_stateless_op(),
+            seed_beta=self._random_generator.make_seed_for_stateless_op(),
+            alpha=self.alpha,
+            beta=self.alpha,
+            dtype=self.compute_dtype,
         )
-        weight_sample = self.beta_dist.sample((batch_size, 1), seed=seed)
         return {
-            "chain_mixing_weights": tf.cast(
-                chain_mixing_weights, dtype=self.compute_dtype
-            ),
-            "weight_sample": tf.cast(weight_sample, dtype=self.compute_dtype),
+            "chain_mixing_weights": chain_mixing_weights,
+            "weight_sample": weight_sample,
         }
 
     def augment_ragged_image(self, image, transformation, **kwargs):

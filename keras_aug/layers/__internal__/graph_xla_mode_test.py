@@ -185,13 +185,13 @@ GENERAL_TESTS = [
         "CutMix",
         layers.CutMix,
         {"alpha": 1.0},
-        True,
+        False,
     ),
     (
         "MixUp",
         layers.MixUp,
         {},
-        True,
+        False,
     ),
     (
         "Mosaic",

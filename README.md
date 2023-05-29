@@ -3,7 +3,6 @@
 
 ![Python](https://img.shields.io/badge/python-v3.8.0+-success.svg)
 ![Tensorflow](https://img.shields.io/badge/tensorflow-v2.12.0+-success.svg)
-![Tensorflow Probability](https://img.shields.io/badge/tensorflow_probability-v0.20.0+-success.svg)
 ![KerasCV](https://img.shields.io/badge/keras_cv-v0.5.0+-success.svg)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/james77777778/keras-aug/actions.yml?label=tests)](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml?query=branch%3Amain++)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
@@ -58,7 +57,7 @@ KerasAug is:
 ## Installation
 
 ```bash
-pip install keras-aug keras-cv tensorflow tensorflow_probability --upgrade
+pip install keras-aug keras-cv tensorflow --upgrade
 ```
 
 > **Warning**
