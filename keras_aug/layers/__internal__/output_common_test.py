@@ -367,9 +367,12 @@ NO_BFLOAT16 = [
     layers.RandomCrop,
     layers.RandomCropAndResize,
     layers.RandomRotate,
+    layers.CutMix,  # tf.random.stateless_gamma
+    layers.MixUp,  # tf.random.stateless_gamma
 ]
 
 NO_UINT8 = [
+    layers.AugMix,  # alpha
     layers.RandAugment,  # stateless_random_uniform
     layers.TrivialAugmentWide,  # stateless_random_uniform
     layers.RandomAffine,  # stateless_random_uniform

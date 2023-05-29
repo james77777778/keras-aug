@@ -13,7 +13,7 @@ Updated: 2023/05/16
 - KerasAug 0.5.1
 
 ```bash
-pip install keras-aug==0.5.1 keras-cv==0.5.0 tensorflow==2.12.0 tensorflow_probability==0.20.0 --upgrade
+pip install keras-aug==0.5.1 keras-cv==0.5.0 tensorflow==2.12.0 --upgrade
 ```
 
 ## Usage

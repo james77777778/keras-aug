@@ -48,7 +48,6 @@ setup(
             "pytest-cov",
             "pycocotools",
             "tensorflow",
-            "tensorflow-probability",
             "keras-cv",
         ],
         "examples": ["tensorflow-datasets", "matplotlib"],

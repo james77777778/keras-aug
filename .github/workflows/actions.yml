@@ -4,7 +4,6 @@ name: Tests
 env:
   PYTHON_VERSION: '3.8'
   TF_VERSION: '2.12.0'
-  TFP_VERSION: '0.20.0'
   KERASCV_VERSION: '0.5.0'
 on:
   push:
@@ -41,7 +40,6 @@ jobs:
         source ./.venv/bin/activate
         pip install --upgrade pip setuptools
         pip install tensorflow-cpu==${{ env.TF_VERSION }}
-        pip install tensorflow_probability==${{ env.TFP_VERSION }}
         pip install keras-cv==${{ env.KERASCV_VERSION }}
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -75,7 +73,6 @@ jobs:
         python -m venv ./.venv
         source ./.venv/bin/activate
         pip install tensorflow-cpu==${{ env.TF_VERSION }}
-        pip install tensorflow_probability==${{ env.TFP_VERSION }}
         pip install keras-cv==${{ env.KERASCV_VERSION }}
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'

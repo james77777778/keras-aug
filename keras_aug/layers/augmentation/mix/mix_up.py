@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 from keras_cv import bounding_box
 from tensorflow import keras
 
@@ -7,6 +6,7 @@ from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils.augmentation import BATCHED
+from keras_aug.utils.distribution import stateless_random_beta
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -39,9 +39,6 @@ class MixUp(VectorizedBaseRandomLayer):
         self.alpha = alpha
         self.seed = seed
 
-        # beta distribution
-        self.beta_dist = tfp.distributions.Beta(self.alpha, self.alpha)
-
         # set force_no_unwrap_ragged_image_call=True because MixUp needs
         # to process images in batch.
         self.force_no_unwrap_ragged_image_call = True
@@ -50,11 +47,14 @@ class MixUp(VectorizedBaseRandomLayer):
         permutation_order = tf.argsort(
             self._random_generator.random_uniform((batch_size,)), axis=-1
         )
-        seed = tf.cast(
-            self._random_generator.make_seed_for_stateless_op(), dtype=tf.int32
+        lambda_samples = stateless_random_beta(
+            (batch_size, 1, 1, 1),
+            seed_alpha=self._random_generator.make_seed_for_stateless_op(),
+            seed_beta=self._random_generator.make_seed_for_stateless_op(),
+            alpha=self.alpha,
+            beta=self.alpha,
+            dtype=self.compute_dtype,
         )
-        lambda_samples = self.beta_dist.sample((batch_size, 1, 1, 1), seed=seed)
-        lambda_samples = tf.cast(lambda_samples, dtype=self.compute_dtype)
         return {
             "permutation_order": permutation_order,
             "lambda_samples": lambda_samples,
