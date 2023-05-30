@@ -21,3 +21,37 @@ exclude = [
 [tool.ruff.isort]
 force-single-line = true
 known-first-party = ["keras_aug"]
+
+[tool.pytest.ini_options]
+addopts = "--durations=10 --cov --cov-report html --cov-report term:skip-covered"
+testpaths = [
+    "keras_aug",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::ImportWarning",
+    "ignore::RuntimeWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::FutureWarning",
+]
+
+[tool.coverage.run]
+source = ["keras_aug"]
+omit = [
+    "**/__init__.py",
+    "**/demo.py",
+    "**/conditional_imports.py",
+    "*test*",
+    "./docs/**/*",
+    "./examples/**/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "@abstract",
+    "raise NotImplementedError",
+    "raise ValueError",
+]
