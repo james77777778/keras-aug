@@ -30,7 +30,7 @@ jobs:
       id: cache-venv
       with:
         path: ./.venv/
-        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
     - name: Install dependencies
@@ -64,7 +64,7 @@ jobs:
       id: cache-venv
       with:
         path: ./.venv/
-        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
     - name: Install dependencies

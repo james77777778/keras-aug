@@ -30,7 +30,7 @@ class Normalize(VectorizedBaseRandomLayer):
         value_range,
         mean=(0.485, 0.456, 0.406),
         std=(0.229, 0.224, 0.225),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.value_range = value_range

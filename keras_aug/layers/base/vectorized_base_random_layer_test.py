@@ -64,7 +64,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         bounding_boxes=None,
         keypoints=None,
         segmentation_masks=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(images, TF_ALL_TENSOR_TYPES)
         assert isinstance(labels, TF_ALL_TENSOR_TYPES)
@@ -82,7 +82,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         keypoints=None,
         segmentation_mask=None,
         transformation=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(image, TF_ALL_TENSOR_TYPES)
         assert isinstance(label, TF_ALL_TENSOR_TYPES)
@@ -99,7 +99,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         transformations=None,
         bounding_boxes=None,
         labels=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(images, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformations, TF_ALL_TENSOR_TYPES)
@@ -115,7 +115,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         bounding_boxes=None,
         images=None,
         raw_images=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(labels, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformations, TF_ALL_TENSOR_TYPES)
@@ -132,7 +132,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         labels=None,
         images=None,
         raw_images=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(bounding_boxes["boxes"], TF_ALL_TENSOR_TYPES)
         assert isinstance(bounding_boxes["classes"], TF_ALL_TENSOR_TYPES)
@@ -150,7 +150,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         bounding_boxes=None,
         images=None,
         raw_images=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(keypoints, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformations, TF_ALL_TENSOR_TYPES)
@@ -169,7 +169,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         bounding_boxes=None,
         image=None,
         raw_image=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(segmentation_mask, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformation, TF_ALL_TENSOR_TYPES)
@@ -188,7 +188,7 @@ class VectorizedAssertionLayer(VectorizedBaseRandomLayer):
         bounding_boxes=None,
         images=None,
         raw_images=None,
-        **kwargs
+        **kwargs,
     ):
         assert isinstance(segmentation_masks, TF_ALL_TENSOR_TYPES)
         assert isinstance(transformations, TF_ALL_TENSOR_TYPES)

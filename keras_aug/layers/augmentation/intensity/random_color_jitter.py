@@ -56,7 +56,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         saturation_factor=None,
         hue_factor=None,
         seed=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
         self.brightness_factor = None

@@ -1,3 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keras-aug"
+authors = [{ name = "Hongyu, Chiu (james77777778)" }]
+description = "A library that includes pure TF/Keras preprocessing and augmentation layers"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Operating System :: Unix",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+]
+dynamic = ["version"]
+dependencies = ["packaging", "absl-py", "regex", "tensorflow", "keras-cv"]
+
+[project.optional-dependencies]
+tests = [
+    "ruff",
+    "black[jupyter]",
+    "pytest",
+    "pytest-cov",
+    "pycocotools",
+    "tensorflow",
+    "keras-cv",
+]
+examples = ["tensorflow-datasets", "matplotlib"]
+
+[project.urls]
+homepage = "https://github.com/james77777778/keras-aug"
+repository = "https://github.com/james77777778/keras-aug"
+documentation = "https://kerasaug.readthedocs.io/en/latest/"
+
+[tool.setuptools]
+packages = ["keras_aug"]
+
+[tool.setuptools.dynamic]
+version = { attr = "keras_aug.__version__" }
+
 [tool.black]
 line-length = 80
 
@@ -24,9 +71,7 @@ known-first-party = ["keras_aug"]
 
 [tool.pytest.ini_options]
 addopts = "--durations=10 --cov --cov-report html --cov-report term:skip-covered"
-testpaths = [
-    "keras_aug",
-]
+testpaths = ["keras_aug"]
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
@@ -45,7 +90,6 @@ omit = [
     "*test*",
     "./docs/**/*",
     "./examples/**/*",
-    "setup.py",
 ]
 
 [tool.coverage.report]
