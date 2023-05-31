@@ -47,7 +47,7 @@ class RandomSolarize(VectorizedBaseRandomLayer):
         threshold_factor,
         addition_factor=0,
         seed=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(seed=seed, **kwargs)
         self.value_range = value_range

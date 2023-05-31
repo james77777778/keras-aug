@@ -22,7 +22,7 @@ jobs:
       id: cache-venv
       with:
         path: ./.venv/
-        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.py') }}
+        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
     - name: Install dependencies
@@ -42,6 +42,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         source ./.venv/bin/activate
-        pip install --upgrade pip setuptools wheel twine
-        python setup.py sdist bdist_wheel
+        pip install --upgrade pip setuptools wheel twine build
+        python -m build
         twine upload dist/*.whl

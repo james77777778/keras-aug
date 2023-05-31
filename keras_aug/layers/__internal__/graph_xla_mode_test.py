@@ -1,5 +1,6 @@
 import inspect
 
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
@@ -357,6 +358,7 @@ class GraphAndXLAModeTest(tf.test.TestCase, parameterized.TestCase):
             self.assertIn(name, all_test_names, msg=f"{name} not found")
 
     @parameterized.named_parameters(*GENERAL_TESTS)
+    @pytest.mark.large
     def test_run_in_graph_mode(self, layer_cls, args, is_xla_compatible):
         images = tf.random.uniform(shape=(2, 8, 8, 3)) * 255.0
         labels = tf.random.uniform(shape=(2, 1)) * 10.0
@@ -387,6 +389,7 @@ class GraphAndXLAModeTest(tf.test.TestCase, parameterized.TestCase):
             fn({IMAGES: images, LABELS: labels})
 
     @parameterized.named_parameters(*GENERAL_TESTS)
+    @pytest.mark.large
     def test_run_in_xla_mode(self, layer_cls, args, is_xla_compatible):
         if is_xla_compatible is False:
             return
@@ -401,6 +404,7 @@ class GraphAndXLAModeTest(tf.test.TestCase, parameterized.TestCase):
         fn({IMAGES: images, LABELS: labels})
 
     @parameterized.named_parameters(*MUST_RUN_WITH_BOUNDING_BOXES)
+    @pytest.mark.large
     def test_run_in_graph_mode_bbox(self, layer_cls, args, is_xla_compatible):
         images = tf.random.uniform(shape=(2, 4, 4, 3)) * 255.0
         labels = tf.random.uniform(shape=(2, 1)) * 10.0
