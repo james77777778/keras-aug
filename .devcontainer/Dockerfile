@@ -26,4 +26,7 @@ RUN pip install \
     sphinx_rtd_theme~=1.2.0 \
     myst-parser~=1.0.0 \
     # dist
+    build \
+    setuptools \
+    wheel \
     twine

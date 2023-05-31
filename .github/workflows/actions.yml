@@ -80,7 +80,7 @@ jobs:
       shell: bash
       run: |
         source ./.venv/bin/activate
-        pytest
+        pytest keras_aug/
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
       with:

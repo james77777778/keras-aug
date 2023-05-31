@@ -1,6 +1,5 @@
 # dependencies
 tensorflow-cpu
-tensorflow-probability
 keras-cv
 # docs
 sphinx~=6.1.3

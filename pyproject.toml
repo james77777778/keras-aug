@@ -6,12 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "keras-aug"
 authors = [{ name = "Hongyu, Chiu (james77777778)" }]
 description = "A library that includes pure TF/Keras preprocessing and augmentation layers"
+keywords = ["tensorflow", "keras", "keras-cv", "preprocessing", "augmentation"]
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Operating System :: Unix",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
@@ -20,19 +27,18 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dynamic = ["version"]
-dependencies = ["packaging", "absl-py", "regex", "tensorflow", "keras-cv"]
-
-[project.optional-dependencies]
-tests = [
-    "ruff",
-    "black[jupyter]",
-    "pytest",
-    "pytest-cov",
+dependencies = [
+    "packaging",
+    "absl-py",
+    "regex",
     "pycocotools",
     "tensorflow",
     "keras-cv",
 ]
-examples = ["tensorflow-datasets", "matplotlib"]
+
+[project.optional-dependencies]
+tests = ["ruff", "black[jupyter]", "pytest", "pytest-cov"]
+examples = ["matplotlib", "opencv-python", "tensorflow-datasets"]
 
 [project.urls]
 homepage = "https://github.com/james77777778/keras-aug"
@@ -70,7 +76,7 @@ force-single-line = true
 known-first-party = ["keras_aug"]
 
 [tool.pytest.ini_options]
-addopts = "--durations=10 --cov --cov-report html --cov-report term:skip-covered"
+addopts = "--durations 10 --cov --cov-report html --cov-report term:skip-covered --cov-report xml"
 testpaths = ["keras_aug"]
 filterwarnings = [
     "error",
@@ -79,6 +85,9 @@ filterwarnings = [
     "ignore::RuntimeWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::FutureWarning",
+]
+markers = [
+    "large: mark test as being slow",
 ]
 
 [tool.coverage.run]
