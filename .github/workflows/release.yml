@@ -7,9 +7,14 @@ on:
   release:
     types: [published]
 jobs:
-  deploy:
-    name: Build and deploy release wheels
+  pypi-publish:
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/keras-aug
+    permissions:
+      id-token: write
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -35,13 +40,13 @@ jobs:
         pip install keras-cv==${{ env.KERASCV_VERSION }}
         pip install -e ".[tests]" --progress-bar off --upgrade
       if: steps.cache-venv.outputs.cache-hit != 'true'
-    - name: Build and upload wheels
+    - name: Build wheels
       shell: bash
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         source ./.venv/bin/activate
         pip install --upgrade pip setuptools wheel twine build
         python -m build
-        twine upload dist/*.whl
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: true
