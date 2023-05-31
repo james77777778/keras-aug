@@ -16,7 +16,7 @@ __pycache__/
 .devcontainer/
 
 # pytest
-.coverage
+.coverage*
 htmlcov/
 coverage.xml
 

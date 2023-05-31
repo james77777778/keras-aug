@@ -20,6 +20,7 @@ RUN pip install \
     pycocotools \
     pytest \
     pytest-cov \
+    pytest-xdist[psutil] \
     # docs
     sphinx~=6.1.3 \
     sphinx_markdown_tables~=0.0.17 \
