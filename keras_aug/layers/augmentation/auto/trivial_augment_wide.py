@@ -268,11 +268,11 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
         )
         inputs[IMAGES] = images
 
+        bounding_boxes = inputs.get(BOUNDING_BOXES, None)
         # make bounding_boxes to dense first
-        if BOUNDING_BOXES in inputs:
-            inputs[BOUNDING_BOXES] = bounding_box.to_dense(
-                inputs[BOUNDING_BOXES]
-            )
+        if bounding_boxes is not None:
+            ori_bbox_info = bounding_box.validate_format(bounding_boxes)
+            inputs[BOUNDING_BOXES] = bounding_box.to_dense(bounding_boxes)
 
         inputs_for_trivial_augment_single_input = {
             "inputs": inputs,
@@ -285,6 +285,14 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
                 inputs, self.compute_dtype
             ),
         )
+
+        bounding_boxes = result.get(BOUNDING_BOXES, None)
+        if bounding_boxes is not None:
+            if ori_bbox_info["ragged"]:
+                bounding_boxes = bounding_box.to_ragged(bounding_boxes)
+            else:
+                bounding_boxes = bounding_box.to_dense(bounding_boxes)
+            result[BOUNDING_BOXES] = bounding_boxes
 
         # recover value_range
         images = result.get(IMAGES, None)

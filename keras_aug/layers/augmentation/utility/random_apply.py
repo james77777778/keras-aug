@@ -115,17 +115,26 @@ class RandomApply(VectorizedBaseRandomLayer):
         if self.batchwise:
             result = self.layer(inputs) if probs[0] < self.rate else inputs
         else:
+            bounding_boxes = inputs.get(BOUNDING_BOXES, None)
             # make bounding_boxes to dense first
-            if BOUNDING_BOXES in inputs:
-                inputs[BOUNDING_BOXES] = bounding_box.to_dense(
-                    inputs[BOUNDING_BOXES]
-                )
+            if bounding_boxes is not None:
+                ori_bbox_info = bounding_box.validate_format(bounding_boxes)
+                inputs[BOUNDING_BOXES] = bounding_box.to_dense(bounding_boxes)
+
             inputs_for_augment = {"inputs": inputs, "probs": probs}
             result = tf.map_fn(
                 self.augment,
                 inputs_for_augment,
                 fn_output_signature=self.compute_inputs_signature(inputs),
             )
+
+            bounding_boxes = result.get(BOUNDING_BOXES, None)
+            if bounding_boxes is not None:
+                if ori_bbox_info["ragged"]:
+                    bounding_boxes = bounding_box.to_ragged(bounding_boxes)
+                else:
+                    bounding_boxes = bounding_box.to_dense(bounding_boxes)
+                result[BOUNDING_BOXES] = bounding_boxes
         return result
 
     def augment(self, inputs):

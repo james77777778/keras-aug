@@ -35,8 +35,8 @@ class MosaicTest(tf.test.TestCase):
 
         self.assertEqual(xs.shape, [2, 32, 32, 3])
         self.assertEqual(ys_labels.shape, [2, 10])
-        self.assertEqual(ys_bounding_boxes["boxes"].shape, [2, None, 4])
-        self.assertEqual(ys_bounding_boxes["classes"].shape, [2, None])
+        self.assertEqual(ys_bounding_boxes["boxes"].shape, [2, 3 * 4, 4])
+        self.assertEqual(ys_bounding_boxes["classes"].shape, [2, 3 * 4])
 
     def test_image_input_only(self):
         xs = tf.cast(

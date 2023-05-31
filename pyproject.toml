@@ -37,7 +37,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = ["ruff", "black[jupyter]", "pytest", "pytest-cov"]
+tests = [
+    "ruff",
+    "black[jupyter]",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist[psutil]",
+]
 examples = ["matplotlib", "opencv-python", "tensorflow-datasets"]
 
 [project.urls]
@@ -46,7 +52,7 @@ repository = "https://github.com/james77777778/keras-aug"
 documentation = "https://kerasaug.readthedocs.io/en/latest/"
 
 [tool.setuptools.packages]
-find = {include = ["keras_aug*"]}
+find = { include = ["keras_aug*"] }
 
 [tool.setuptools.dynamic]
 version = { attr = "keras_aug.__version__" }
@@ -76,7 +82,7 @@ force-single-line = true
 known-first-party = ["keras_aug"]
 
 [tool.pytest.ini_options]
-addopts = "--durations 10 --cov --cov-report html --cov-report term:skip-covered --cov-report xml"
+addopts = "--durations 10 --cov --cov-report html --cov-report term:skip-covered --cov-report xml -n logical"
 testpaths = ["keras_aug"]
 filterwarnings = [
     "error",
@@ -86,20 +92,11 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::FutureWarning",
 ]
-markers = [
-    "large: mark test as being slow",
-]
+markers = ["large: mark test as being slow"]
 
 [tool.coverage.run]
 source = ["keras_aug"]
-omit = [
-    "**/__init__.py",
-    "**/demo.py",
-    "**/conditional_imports.py",
-    "*test*",
-    "./docs/**/*",
-    "./examples/**/*",
-]
+omit = ["**/__init__.py", "**/demo.py", "**/conditional_imports.py", "*test*"]
 
 [tool.coverage.report]
 exclude_lines = [

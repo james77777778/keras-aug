@@ -437,6 +437,9 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
             result[LABELS] = labels
 
         if bounding_boxes is not None:
+            ori_bounding_boxes_info = bounding_box.validate_format(
+                bounding_boxes
+            )
             bounding_boxes = self.augment_bounding_boxes(
                 bounding_boxes,
                 transformations=transformations,
@@ -444,9 +447,10 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
                 images=images,
                 raw_images=raw_images,
             )
-            bounding_boxes = bounding_box.to_ragged(
-                bounding_boxes, dtype=self.compute_dtype
-            )
+            if ori_bounding_boxes_info["ragged"]:
+                bounding_boxes = bounding_box.to_ragged(
+                    bounding_boxes, dtype=self.compute_dtype
+                )
             result[BOUNDING_BOXES] = bounding_boxes
 
         if keypoints is not None:
