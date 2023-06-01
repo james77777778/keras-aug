@@ -27,14 +27,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dynamic = ["version"]
-dependencies = [
-    "packaging",
-    "absl-py",
-    "regex",
-    "pycocotools",
-    "tensorflow",
-    "keras-cv",
-]
+dependencies = ["pycocotools", "tensorflow", "keras-cv"]
 
 [project.optional-dependencies]
 tests = [
