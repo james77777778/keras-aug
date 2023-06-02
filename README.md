@@ -32,14 +32,14 @@ KerasAug is:
 - 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
 - 🔥 compatible with GPU
 
-✨ **Check out the demo website powered by Streamlit:**
+Check out the demo website powered by Streamlit:
 
 <a href="https://james77777778-keras-aug-streamlit-appapp-mxd7v1.streamlit.app/"><img width="50%" align="right" src="https://user-images.githubusercontent.com/20734616/242836830-bd0a457d-fa6f-410c-a267-af628f5bb5ec.JPG"></a>
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://james77777778-keras-aug-streamlit-appapp-mxd7v1.streamlit.app/)
 
 - Apply a transformation to the default or uploaded image
-- Modify the arguments of the specified layer
+- Adjust the arguments of the specified layer
 
 > **Note**
 > The layers required batched inputs are not available right now
