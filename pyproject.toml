@@ -63,6 +63,7 @@ exclude = [
     ".devcontainer",
     "venv",
     "__pycache__",
+    "streamlit_app",
 ]
 
 [tool.ruff.per-file-ignores]
