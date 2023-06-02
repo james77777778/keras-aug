@@ -28,16 +28,29 @@ def download_images():
 
 
 def set_control_args(control_args: typing.Dict, layer_args: typing.Dict):
-    for key, value in control_args.items():
-        min_value = value[0]
-        max_value = value[1]
-        value = layer_args[key]
-        new_value = st.slider(key, min_value, max_value, value)
-        layer_args[key] = new_value
+    """Use `st.select_slider` or `st.slider` for `control_args` depending on
+    default value.
+    """
+    with st.form(key="control"):
+        new_values = {}
+        for key, value in control_args.items():
+            if isinstance(layer_args[key], str):
+                options = value
+                default_value = layer_args[key]
+                new_value = st.select_slider(key, options, default_value)
+            else:
+                min_value = value[0]
+                max_value = value[1]
+                default_value = layer_args[key]
+                new_value = st.slider(key, min_value, max_value, default_value)
+            new_values[key] = new_value
+        submit_button = st.form_submit_button(label="Apply")
+        if submit_button:
+            layer_args.update(new_values)
     return layer_args
 
 
-def transform_image(image, layer):
+def process_image(image, layer):
     processed_image = layer(image)
     processed_image: np.ndarray = processed_image.numpy()
     processed_image = np.round(processed_image).astype(np.uint8)
@@ -66,11 +79,9 @@ def main():
         image = np.array(image)
 
         # layers
-        init_index = 1
+        # set to 1 to select RandAugment
         layer_option = st.selectbox(
-            "Select the KerasAug's layer",
-            list(LAYERS_CONFIG.keys()),
-            init_index,
+            "", list(LAYERS_CONFIG.keys()), 1, label_visibility="collapsed"
         )
         layer_cls = LAYERS_CONFIG[layer_option]["layer_cls"]
         layer_args = LAYERS_CONFIG[layer_option]["layer_args"]
@@ -78,14 +89,19 @@ def main():
         layer_args = set_control_args(control_args, layer_args)
         layer = layer_cls(**layer_args)
 
-    st.text('Press "R" to rerun')
+    st.text('Press "R" to generate new random image')
     col1, _, col3 = st.columns([0.45, 0.1, 0.45], gap="large")
     with col1:
-        st.text("Original")
+        st.text(f"Original {image.shape}")
         st.image(image, use_column_width=True)
     with col3:
-        st.text("Processed")
-        st.image(transform_image(image, layer), use_column_width=True)
+        processed_image = process_image(image, layer)
+        st.text(f"Processed {processed_image.shape}")
+        st.image(processed_image, use_column_width=True)
+
+    # show help
+    with st.expander(f"Click to display help for {layer_cls.__name__}"):
+        st.help(layer)
 
 
 if __name__ == "__main__":
