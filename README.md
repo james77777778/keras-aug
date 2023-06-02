@@ -42,7 +42,7 @@ Check out the demo website powered by Streamlit:
 - Adjust the arguments of the specified layer
 
 > **Note**
-> The layers required batched inputs are not available right now
+> The layers that require batched inputs are currently unavailable
 
 ## Why KerasAug?
 
