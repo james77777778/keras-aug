@@ -47,6 +47,11 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             Defaults to ``"bilinear"``.
         antialias (bool, optional): Whether to use antialias. Defaults to
             ``False``.
+        position (str, optional): The padding method.
+            Supported values: ``"center", "top_left", "top_right", "bottom_left", "bottom_right", "random"``.
+            Defaults to ``"center"``.
+        padding_value (int|float, optional): The padding value.
+            Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
             https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
@@ -66,6 +71,8 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         crop_width=None,
         interpolation="bilinear",
         antialias=False,
+        position="center",
+        padding_value=0,
         bounding_box_format=None,
         seed=None,
         **kwargs,
@@ -91,6 +98,8 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             interpolation
         )
         self.antialias = antialias
+        self.position = augmentation_utils.get_padding_position(position)
+        self.padding_value = padding_value
         self.bounding_box_format = bounding_box_format
         self.seed = seed
 
@@ -114,8 +123,9 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         heights, widths = augmentation_utils.get_images_shape(
             images, dtype=self.compute_dtype
         )
-        image_shapes = tf.concat((heights, widths), axis=-1)
 
+        # image_scales
+        image_shapes = tf.concat((heights, widths), axis=-1)
         scaled_sizes = tf.round(
             image_shapes
             * self.scale_factor(shape=(batch_size, 1), dtype=self.compute_dtype)
@@ -128,10 +138,10 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             scaled_sizes[..., 0:1] / image_shapes[..., 0:1],
             scaled_sizes[..., 1:] / image_shapes[..., 1:],
         )
-
         scaled_sizes = tf.round(image_shapes * scales)
         image_scales = scaled_sizes / image_shapes
 
+        # offsets
         max_offsets = scaled_sizes - self.crop_size
         max_offsets = tf.where(
             tf.less(max_offsets, 0), tf.zeros_like(max_offsets), max_offsets
@@ -140,10 +150,40 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             shape=(batch_size, 2), minval=0, maxval=1, dtype=self.compute_dtype
         )
         offsets = tf.cast(offsets, tf.int32)
+
+        # paddings
+        new_heights = tf.cast(scaled_sizes[..., 0:1], dtype=tf.int32)
+        new_widths = tf.cast(scaled_sizes[..., 1:], dtype=tf.int32)
+        tops = tf.where(
+            new_heights < self.crop_height,
+            tf.cast((self.crop_height - new_heights) / 2, tf.int32),
+            0,
+        )
+        bottoms = tf.where(
+            new_heights < self.crop_height,
+            self.crop_height - new_heights - tops,
+            0,
+        )
+        lefts = tf.where(
+            new_widths < self.crop_width,
+            tf.cast((self.crop_width - new_widths) / 2, tf.int32),
+            0,
+        )
+        rights = tf.where(
+            new_widths < self.crop_width,
+            self.crop_width - new_widths - lefts,
+            0,
+        )
+        (tops, bottoms, lefts, rights) = augmentation_utils.get_position_params(
+            tops, bottoms, lefts, rights, self.position, self._random_generator
+        )
+        paddings = tf.concat([tops, bottoms, lefts, rights], axis=-1)
+
         return {
             "image_scales": image_scales,
             "scaled_sizes": scaled_sizes,
             "offsets": offsets,
+            "paddings": paddings,
         }
 
     def augment_ragged_image(self, image, transformation, **kwargs):
@@ -158,12 +198,11 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         # tf.image.resize always output tf.float32 unless interpolation==nearest
-        scaled_sizes = transformations["scaled_sizes"]
-        offsets = transformations["offsets"]
         inputs_for_resize_and_crop_single_image = {
             "images": tf.cast(images, dtype=tf.float32),
-            "scaled_sizes": scaled_sizes,
-            "offsets": offsets,
+            "scaled_sizes": transformations["scaled_sizes"],
+            "offsets": transformations["offsets"],
+            "paddings": transformations["paddings"],
         }
         images = tf.map_fn(
             self.resize_and_crop_single_image,
@@ -206,12 +245,17 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             transformations["image_scales"], self.compute_dtype
         )
         offsets = tf.cast(transformations["offsets"], self.compute_dtype)
+        paddings = tf.cast(transformations["paddings"], self.compute_dtype)
+        padding_offsets = tf.concat(
+            [paddings[..., 0:1], paddings[..., 2:3]], axis=-1
+        )
 
         # Adjusts box coordinates based on image_scale and offset.
         bounding_boxes = bounding_boxes.copy()
         yxyx = bounding_boxes["boxes"]
         yxyx *= tf.tile(image_scales, [1, 2])[..., tf.newaxis, :]
         yxyx -= tf.tile(offsets, [1, 2])[..., tf.newaxis, :]
+        yxyx += tf.tile(padding_offsets, [1, 2])[..., tf.newaxis, :]
 
         bounding_boxes["boxes"] = yxyx
         bounding_boxes = bounding_box_utils.clip_to_image(
@@ -252,12 +296,11 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         # unpackage augmentation arguments
-        scaled_sizes = transformations["scaled_sizes"]
-        offsets = transformations["offsets"]
         inputs_for_resize_and_crop_single_segmentation_mask = {
             "segmentation_masks": segmentation_masks,
-            "scaled_sizes": scaled_sizes,
-            "offsets": offsets,
+            "scaled_sizes": transformations["scaled_sizes"],
+            "offsets": transformations["offsets"],
+            "paddings": transformations["paddings"],
         }
         segmentation_masks = tf.map_fn(
             self.resize_and_crop_single_segmentation_mask,
@@ -273,6 +316,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         image = inputs.get("images", None)
         scaled_size = inputs.get("scaled_sizes", None)
         offset = inputs.get("offsets", None)
+        padding = inputs.get("paddings", None)
 
         image = tf.image.resize(
             image,
@@ -285,28 +329,45 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             offset[1] : offset[1] + self.crop_width,
             :,
         ]
-        image = tf.image.pad_to_bounding_box(
-            image, 0, 0, self.height, self.width
+        paddings = tf.stack(
+            (
+                tf.stack((padding[0], padding[1])),
+                tf.stack((padding[2], padding[3])),
+                tf.zeros(shape=(2,), dtype=tf.int32),
+            )
+        )
+        image = tf.pad(
+            image, paddings=paddings, constant_values=self.padding_value
         )
         return image
 
     def resize_and_crop_single_segmentation_mask(self, inputs):
-        segmentation_masks = inputs.get("segmentation_masks", None)
+        segmentation_mask = inputs.get("segmentation_masks", None)
         scaled_size = inputs.get("scaled_sizes", None)
         offset = inputs.get("offsets", None)
+        padding = inputs.get("paddings", None)
 
-        segmentation_masks = tf.image.resize(
-            segmentation_masks, tf.cast(scaled_size, tf.int32), method="nearest"
+        segmentation_mask = tf.image.resize(
+            segmentation_mask, tf.cast(scaled_size, tf.int32), method="nearest"
         )
-        segmentation_masks = segmentation_masks[
+        segmentation_mask = segmentation_mask[
             offset[0] : offset[0] + self.crop_height,
             offset[1] : offset[1] + self.crop_width,
             :,
         ]
-        segmentation_masks = tf.image.pad_to_bounding_box(
-            segmentation_masks, 0, 0, self.height, self.width
+        paddings = tf.stack(
+            (
+                tf.stack((padding[0], padding[1])),
+                tf.stack((padding[2], padding[3])),
+                tf.zeros(shape=(2,), dtype=tf.int32),
+            )
         )
-        return segmentation_masks
+        segmentation_mask = tf.pad(
+            segmentation_mask,
+            paddings=paddings,
+            constant_values=self.padding_value,
+        )
+        return segmentation_mask
 
     def get_config(self):
         config = super().get_config()

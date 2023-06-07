@@ -99,7 +99,7 @@ Augmentation 2D
 .. autoclass:: RandomFlip(mode="horizontal", bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomResize(heights, widths=None, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
 .. autoclass:: RandomRotate(factor, interpolation="bilinear", fill_mode="constant", fill_value=0, bounding_box_format=None, seed=None, **kwargs)
-.. autoclass:: RandomZoomAndCrop(height, width, scale_factor, crop_height=None, crop_width=None, interpolation="bilinear", antialias=False, bounding_box_format=None, seed=None, **kwargs)
+.. autoclass:: RandomZoomAndCrop(height, width, scale_factor, crop_height=None, crop_width=None, interpolation="bilinear", antialias=False, postion="center", padding_value=0, bounding_box_format=None, seed=None, **kwargs)
 
 **Intensity**
 
