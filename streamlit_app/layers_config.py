@@ -1,5 +1,4 @@
 import keras_aug
-import streamlit as st
 
 LAYERS_CONFIG = {
     "AugMix": {
@@ -32,7 +31,7 @@ LAYERS_CONFIG = {
             "fill_mode": "reflect",
             "fill_value": 0,
             "exclude_ops": None,
-            "bounding_box_format": None,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "augmentations_per_image": [1, 3],
@@ -46,6 +45,7 @@ LAYERS_CONFIG = {
         "layer_args": {
             "value_range": (0, 255),
             "use_geometry": 1,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "use_geometry": [0, 1],
@@ -63,6 +63,7 @@ LAYERS_CONFIG = {
             "shear_height_factor": (-0.1, 0.1),
             "shear_width_factor": (-0.1, 0.1),
             "same_zoom_factor": 1,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "rotation_factor": [-90.0, 90.0],
@@ -74,17 +75,20 @@ LAYERS_CONFIG = {
             "shear_width_factor": [-0.5, 0.5],
             "same_zoom_factor": [0, 1],
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomCrop": {
         "layer_cls": keras_aug.layers.RandomCrop,
         "layer_args": {
             "height": 150,
             "width": 150,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height": [10, 512],
             "width": [10, 512],
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomCropAndResize": {
         "layer_cls": keras_aug.layers.RandomCropAndResize,
@@ -93,6 +97,7 @@ LAYERS_CONFIG = {
             "width": 200,
             "crop_area_factor": (0.8, 1.0),
             "aspect_ratio_factor": (3 / 4, 4 / 3),
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height": [10, 512],
@@ -100,25 +105,30 @@ LAYERS_CONFIG = {
             "crop_area_factor": (0.1, 1.0),
             "aspect_ratio_factor": (0.5, 2.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomFlip": {
         "layer_cls": keras_aug.layers.RandomFlip,
         "layer_args": {
             "mode": "horizontal",
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "mode": ["horizontal", "vertical", "horizontal_and_vertical"],
         },
+        "is_compatible_with_bbox": True,
     },
     # skip RandomResize
     "RandomRotate": {
         "layer_cls": keras_aug.layers.RandomRotate,
         "layer_args": {
             "factor": (-10.0, 10.0),
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "factor": (-90.0, 90.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomZoomAndCrop": {
         "layer_cls": keras_aug.layers.RandomZoomAndCrop,
@@ -126,12 +136,14 @@ LAYERS_CONFIG = {
             "height": 200,
             "width": 200,
             "scale_factor": (0.8, 1.25),
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height": [10, 512],
             "width": [10, 512],
             "scale_factor": (0.1, 10.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "ChannelShuffle": {
         "layer_cls": keras_aug.layers.ChannelShuffle,
@@ -141,6 +153,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "groups": [1, 3],
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomBlur": {
         "layer_cls": keras_aug.layers.RandomBlur,
@@ -150,6 +163,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": [1, 99],
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomChannelShift": {
         "layer_cls": keras_aug.layers.RandomChannelShift,
@@ -161,6 +175,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": [-1.0, 1.0],
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomCLAHE": {
         "layer_cls": keras_aug.layers.RandomCLAHE,
@@ -173,6 +188,7 @@ LAYERS_CONFIG = {
             "factor": (1, 10),
             "tile_grid_size": (2, 16),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomColorJitter": {
         "layer_cls": keras_aug.layers.RandomColorJitter,
@@ -189,6 +205,7 @@ LAYERS_CONFIG = {
             "saturation_factor": (0.1, 2.0),
             "hue_factor": (-0.5, 0.5),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomGamma": {
         "layer_cls": keras_aug.layers.RandomGamma,
@@ -199,6 +216,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": (0.1, 2.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomGaussianBlur": {
         "layer_cls": keras_aug.layers.RandomGaussianBlur,
@@ -210,6 +228,7 @@ LAYERS_CONFIG = {
             "kernel_size": (1, 99),
             "factor": (0.0, 2.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomHSV": {
         "layer_cls": keras_aug.layers.RandomHSV,
@@ -224,6 +243,7 @@ LAYERS_CONFIG = {
             "saturation_factor": (0.1, 2.0),
             "value_factor": (0.1, 2.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomJpegQuality": {
         "layer_cls": keras_aug.layers.RandomJpegQuality,
@@ -234,6 +254,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": (1, 100),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomPosterize": {
         "layer_cls": keras_aug.layers.RandomPosterize,
@@ -244,6 +265,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": (1, 8),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomSharpness": {
         "layer_cls": keras_aug.layers.RandomSharpness,
@@ -254,6 +276,7 @@ LAYERS_CONFIG = {
         "control_args": {
             "factor": (0.1, 2.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomSolarize": {
         "layer_cls": keras_aug.layers.RandomSolarize,
@@ -266,6 +289,7 @@ LAYERS_CONFIG = {
             "threshold_factor": (0, 255),
             "addition_factor": (0, 255),
         },
+        "is_compatible_with_bbox": True,
     },
     # skip CutMix
     # skip MixUp
@@ -276,17 +300,20 @@ LAYERS_CONFIG = {
             "factor": (0, 2),
         },
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     "RandomCutout": {
         "layer_cls": keras_aug.layers.RandomCutout,
         "layer_args": {
             "height_factor": (0.5, 0.5),
             "width_factor": (0.5, 0.5),
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height_factor": (0.1, 1.0),
             "width_factor": (0.1, 1.0),
         },
+        "is_compatible_with_bbox": True,
     },
     "RandomErase": {
         "layer_cls": keras_aug.layers.RandomErase,
@@ -298,6 +325,7 @@ LAYERS_CONFIG = {
             "area_factor": (0.01, 1.0),
             "aspect_ratio_factor": (0.1, 10.0),
         },
+        "is_compatible_with_bbox": False,
     },
     "RandomGridMask": {
         "layer_cls": keras_aug.layers.RandomGridMask,
@@ -311,6 +339,7 @@ LAYERS_CONFIG = {
             "ratio_factor": (0.1, 1.0),
             "rotation_factor": (-90.0, 90.0),
         },
+        "is_compatible_with_bbox": True,
     },
     # skip RandomApply
     # skip RandomChoice
@@ -321,11 +350,13 @@ LAYERS_CONFIG = {
         "layer_args": {
             "height": 200,
             "width": 200,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height": [10, 512],
             "width": [10, 512],
         },
+        "is_compatible_with_bbox": True,
     },
     # skip PadIfNeeded
     "Resize": {
@@ -335,12 +366,14 @@ LAYERS_CONFIG = {
             "width": 200,
             "crop_to_aspect_ratio": 0,
             "pad_to_aspect_ratio": 1,
+            "bounding_box_format": "xywh",
         },
         "control_args": {
             "height": [10, 512],
             "width": [10, 512],
             "pad_to_aspect_ratio": [0, 1],
         },
+        "is_compatible_with_bbox": True,
     },
     "AutoContrast": {
         "layer_cls": keras_aug.layers.AutoContrast,
@@ -348,6 +381,7 @@ LAYERS_CONFIG = {
             "value_range": (0, 255),
         },
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     "Equalize": {
         "layer_cls": keras_aug.layers.Equalize,
@@ -355,11 +389,13 @@ LAYERS_CONFIG = {
             "value_range": (0, 255),
         },
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     "Grayscale": {
         "layer_cls": keras_aug.layers.Grayscale,
         "layer_args": {},
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     "Invert": {
         "layer_cls": keras_aug.layers.Invert,
@@ -367,6 +403,7 @@ LAYERS_CONFIG = {
             "value_range": (0, 255),
         },
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     "Normalize": {
         "layer_cls": keras_aug.layers.Normalize,
@@ -374,6 +411,7 @@ LAYERS_CONFIG = {
             "value_range": (0, 255),
         },
         "control_args": {},
+        "is_compatible_with_bbox": True,
     },
     # skip Rescale
     # skip SanitizeBoundingBox
