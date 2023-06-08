@@ -16,9 +16,10 @@ def main():
         224, 224, crop_to_aspect_ratio=True, bounding_box_format="xyxy"
     )
     layer = RandomZoomAndCrop(
-        height=160,
-        width=160,
+        height=224,
+        width=224,
         scale_factor=(0.8, 1.25),
+        padding_value=114,
         bounding_box_format="xyxy",
     )
     dataset = dataset.map(resize, num_parallel_calls=tf.data.AUTOTUNE)
