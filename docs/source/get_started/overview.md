@@ -18,9 +18,18 @@ KerasAug is:
 
 - 🚀 faster than [KerasCV](https://github.com/keras-team/keras-cv) which is an official Keras library
 - 🧰 supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
-- ❤️ dependent only on TensorFlow, TensorFlow Probability and KerasCV
+- ❤️ dependent only on TensorFlow and KerasCV
 - 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
 - 🔥 compatible with GPU
+
+Check out the demo website powered by Streamlit:
+
+<a href="https://james77777778-keras-aug-streamlit-appapp-mxd7v1.streamlit.app/"><img width="50%" align="right" src="https://user-images.githubusercontent.com/20734616/242836830-bd0a457d-fa6f-410c-a267-af628f5bb5ec.JPG"></a>
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://james77777778-keras-aug-streamlit-appapp-mxd7v1.streamlit.app/)
+
+- Apply a transformation to the default or uploaded image
+- Adjust the arguments of the specified layer
 
 ## Why KerasAug?
 
@@ -32,12 +41,18 @@ KerasAug is:
 
     > KerasCV struggles to reproduce the YOLOV8 training pipeline, whereas KerasAug executes it flawlessly. See [Quickstart](https://github.com/james77777778/keras-aug/tree/main#quickstart) for more details.
 
-3. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
+3. KerasAug comes with built-in support for mixed precision training
+
+    > All layers in KerasAug can run with `tf.keras.mixed_precision.set_global_policy('mixed_float16')`
+
+4. KerasAug offers the functionality of sanitizing bounding boxes, ensuring the validity
 
     > The current layers in KerasAug support the sanitizing process by incorporating the `bounding_box_min_area_ratio` and `bounding_box_max_aspect_ratio` arguments.
-    > In addition, you can bring the sanitizing functionality to your custom layer by utilizing `keras_aug.utils.bounding_box.sanitize_bounding_boxes`.
 
     <div align="center"><img width="60%" src="https://user-images.githubusercontent.com/20734616/238520600-34f0b7b5-d9ee-4483-859a-51e9644ded4c.jpg"></div>
+
+    > **Note**
+    > The degenerate bounding boxes (those located at the bottom of the image) are removed.
 
 ## Data Format
 

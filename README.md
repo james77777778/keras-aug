@@ -28,7 +28,7 @@ KerasAug is:
 
 - 🚀 faster than [KerasCV](https://github.com/keras-team/keras-cv) which is an official Keras library
 - 🧰 supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
-- ❤️ dependent only on TensorFlow, TensorFlow Probability and KerasCV
+- ❤️ dependent only on TensorFlow and KerasCV
 - 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
 - 🔥 compatible with GPU
 
@@ -40,9 +40,6 @@ Check out the demo website powered by Streamlit:
 
 - Apply a transformation to the default or uploaded image
 - Adjust the arguments of the specified layer
-
-> **Note**
-> The layers that require batched inputs are currently unavailable
 
 ## Why KerasAug?
 
