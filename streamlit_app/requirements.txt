@@ -1,4 +1,4 @@
-opencv-python
+opencv-python-headless
 pycocotools
 tensorflow-cpu~=2.12.0
 keras-cv>=0.5.0
