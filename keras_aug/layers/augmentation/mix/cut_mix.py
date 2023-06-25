@@ -49,8 +49,8 @@ class CutMix(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
-        height = tf.cast(tf.shape(images)[H_AXIS], dtype=self.compute_dtype)
-        width = tf.cast(tf.shape(images)[W_AXIS], dtype=self.compute_dtype)
+        height = tf.cast(tf.shape(images)[H_AXIS], dtype=tf.float32)
+        width = tf.cast(tf.shape(images)[W_AXIS], dtype=tf.float32)
         permutation_order = self._random_generator.random_uniform(
             (batch_size,),
             minval=0,
@@ -63,20 +63,14 @@ class CutMix(VectorizedBaseRandomLayer):
             seed_beta=self._random_generator.make_seed_for_stateless_op(),
             alpha=self.alpha,
             beta=self.alpha,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         ratios = tf.math.sqrt(1.0 - lambda_samples)
-        height = tf.cast(tf.shape(images)[H_AXIS], dtype=self.compute_dtype)
-        width = tf.cast(tf.shape(images)[W_AXIS], dtype=self.compute_dtype)
         cut_heights = tf.cast(ratios * height, dtype=tf.int32)
         cut_widths = tf.cast(ratios * width, dtype=tf.int32)
-        center_xs = self._random_generator.random_uniform(
-            shape=(batch_size,), dtype=self.compute_dtype
-        )
+        center_xs = self._random_generator.random_uniform(shape=(batch_size,))
         center_xs = tf.cast(center_xs * width, dtype=tf.int32)
-        center_ys = self._random_generator.random_uniform(
-            shape=(batch_size,), dtype=self.compute_dtype
-        )
+        center_ys = self._random_generator.random_uniform(shape=(batch_size,))
         center_ys = tf.cast(center_ys * height, dtype=tf.int32)
         return {
             "permutation_order": permutation_order,

@@ -79,7 +79,7 @@ class RandomCLAHETest(tf.test.TestCase):
 
         self.assertNotAllClose(image, output)
 
-    def test_RandomCLAHE_output(self):
+    def test_random_clahe_output(self):
         image_shape = (4, 8, 8, 3)
         image = tf.random.uniform(shape=image_shape) * 255.0
         image = tf.cast(image, dtype=tf.uint8)

@@ -367,7 +367,6 @@ NO_BFLOAT16 = [
     layers.RandomCrop,
     layers.RandomCropAndResize,
     layers.RandomRotate,
-    layers.CutMix,  # tf.random.stateless_gamma
     layers.MixUp,  # tf.random.stateless_gamma
 ]
 
@@ -383,10 +382,7 @@ NO_UINT8 = [
     layers.RandomSolarize,  # stateless_random_uniform
     layers.CutMix,  # tf.convert_to_tensor
     layers.MixUp,  # tf.convert_to_tensor
-    layers.Mosaic,  # stateless_random_uniform
     layers.RandomCutout,  # tf.where with -1 (invalid bbox)
-    layers.RandomErase,  # stateless_random_uniform
-    layers.RandomGridMask,  # tf.sqrt
     layers.RandomHSV,  # stateless_random_uniform
     layers.RandomChannelShift,  # stateless_random_uniform
     layers.RandomColorJitter,  # stateless_random_uniform

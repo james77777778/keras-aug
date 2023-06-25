@@ -154,14 +154,16 @@ class RandomHSV(VectorizedBaseRandomLayer):
         return keypoints
 
     def adjust_hue(self, images, transformations):
-        images = tf.image.rgb_to_hsv(images)
-        hue_factors = transformations["hue_factors"]
+        # cast to float32 to avoid numerical issue
+        images = tf.image.rgb_to_hsv(tf.cast(images, dtype=tf.float32))
+        hue_factors = tf.cast(transformations["hue_factors"], dtype=tf.float32)
         h_channels = tf.math.floormod(images[..., 0:1] + hue_factors, 1.0)
         images = tf.concat(
             [h_channels, images[..., 1:2], images[..., 2:3]], axis=-1
         )
         images = tf.image.hsv_to_rgb(images)
-        return images
+        images = tf.clip_by_value(images, 0, 255)
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def adjust_saturation(self, images, transformations):
         saturation_factors = transformations["saturation_factors"]

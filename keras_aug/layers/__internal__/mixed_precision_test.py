@@ -363,9 +363,10 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*GENERAL_TESTS)
     def test_run_in_mixed_precision(self, layer_cls, args, is_bbox_compatible):
+        tf.debugging.enable_check_numerics()
         keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
-            tf.random.uniform(shape=(2, 32, 32, 3)) * 255.0,
+            tf.random.uniform(shape=(2, 224, 224, 3)) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
@@ -410,9 +411,10 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_run_in_mixed_precision_and_build_in_runtime(
         self, layer_cls, args, build_layer_cls, build_args
     ):
+        tf.debugging.enable_check_numerics()
         keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            tf.random.uniform(shape=(4, 224, 224, 3)) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
@@ -441,3 +443,4 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def tearDownClass(cls) -> None:
         # Do not affect other tests
         keras.mixed_precision.set_global_policy("float32")
+        tf.debugging.disable_check_numerics()
