@@ -44,6 +44,7 @@ class MixUp(VectorizedBaseRandomLayer):
         self.force_no_unwrap_ragged_image_call = True
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
+        # cast to float32 to avoid numerical issue
         permutation_order = tf.argsort(
             self._random_generator.random_uniform((batch_size,)), axis=-1
         )
@@ -53,7 +54,7 @@ class MixUp(VectorizedBaseRandomLayer):
             seed_beta=self._random_generator.make_seed_for_stateless_op(),
             alpha=self.alpha,
             beta=self.alpha,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         return {
             "permutation_order": permutation_order,
@@ -67,7 +68,9 @@ class MixUp(VectorizedBaseRandomLayer):
                 f"{type(images)}"
             )
         permutation_order = transformations["permutation_order"]
-        lambda_samples = transformations["lambda_samples"]
+        lambda_samples = tf.cast(
+            transformations["lambda_samples"], dtype=self.compute_dtype
+        )
         mixup_images = tf.gather(images, permutation_order)
         mixup_images = tf.cast(mixup_images, dtype=self.compute_dtype)
         images = lambda_samples * images + (1.0 - lambda_samples) * mixup_images
@@ -75,7 +78,9 @@ class MixUp(VectorizedBaseRandomLayer):
 
     def augment_labels(self, labels, transformations, **kwargs):
         permutation_order = transformations["permutation_order"]
-        lambda_samples = transformations["lambda_samples"]
+        lambda_samples = tf.cast(
+            transformations["lambda_samples"], dtype=self.compute_dtype
+        )
         labels = tf.cast(labels, dtype=self.compute_dtype)
         mixup_labels = tf.gather(labels, permutation_order)
         lambda_samples = tf.reshape(lambda_samples, [-1, 1])

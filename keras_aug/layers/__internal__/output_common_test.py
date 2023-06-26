@@ -358,26 +358,10 @@ NO_PRESERVED_SHAPE = [
     layers.Resize,
 ]
 
-NO_BFLOAT16 = [
-    # tf.raw_ops.ImageProjectiveTransformV3 is not supported with bfloat16
-    layers.AugMix,
-    layers.RandAugment,
-    layers.TrivialAugmentWide,
-    layers.RandomAffine,
-    layers.RandomCrop,
-    layers.RandomCropAndResize,
-    layers.RandomRotate,
-    layers.MixUp,  # tf.random.stateless_gamma
-]
-
 NO_UINT8 = [
     layers.AugMix,  # alpha
     layers.RandAugment,  # stateless_random_uniform
     layers.TrivialAugmentWide,  # stateless_random_uniform
-    layers.RandomAffine,  # stateless_random_uniform
-    layers.RandomCrop,  # stateless_random_uniform
-    layers.RandomRotate,  # stateless_random_uniform
-    layers.RandomZoomAndCrop,  # stateless_random_uniform
     layers.RandomSharpness,  # stateless_random_uniform
     layers.RandomSolarize,  # stateless_random_uniform
     layers.CutMix,  # tf.convert_to_tensor
@@ -533,14 +517,9 @@ class OutputCommonTest(tf.test.TestCase, parameterized.TestCase):
         self.assertDTypeEqual(results[IMAGES], tf.float16)
 
         # bfloat16
-        if layer_cls not in NO_BFLOAT16:
-            layer = layer_cls(**copied_args, dtype=tf.bfloat16)
-            results = layer(inputs)
-            self.assertDTypeEqual(results[IMAGES], tf.bfloat16)
-        else:
-            with self.assertRaises(tf.errors.InvalidArgumentError):
-                layer = layer_cls(**copied_args, dtype=tf.bfloat16)
-                layer(inputs)
+        layer = layer_cls(**copied_args, dtype=tf.bfloat16)
+        results = layer(inputs)
+        self.assertDTypeEqual(results[IMAGES], tf.bfloat16)
 
         # uint8
         if layer_cls not in NO_UINT8:

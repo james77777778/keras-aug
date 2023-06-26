@@ -144,6 +144,10 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         batch_size = tf.shape(images)[0]
         boxes = transformations
         indices = tf.range(batch_size)
+
+        # tf.image.crop_and_resize not support bfloat16
+        if images.dtype == tf.bfloat16:
+            images = tf.cast(images, dtype=tf.float32)
         images = tf.image.crop_and_resize(
             images,  # image shape: [B, H, W, C]
             boxes,  # boxes: (B, 4) in this case; represents area
@@ -242,6 +246,10 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         batch_size = tf.shape(segmentation_masks)[0]
         boxes = transformations
         indices = tf.range(batch_size)
+
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if segmentation_masks.dtype == tf.bfloat16:
+            segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
         segmentation_masks = tf.image.crop_and_resize(
             segmentation_masks,  # image shape: [B, H, W, C]
             boxes,  # boxes: (B, 4) in this case; represents area
