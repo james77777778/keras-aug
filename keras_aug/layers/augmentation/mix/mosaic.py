@@ -100,12 +100,8 @@ class Mosaic(VectorizedBaseRandomLayer):
             axis=-1,
         )
 
-        mosaic_centers_x = self.center_sampler(
-            shape=(batch_size,), dtype=self.compute_dtype
-        )
-        mosaic_centers_y = self.center_sampler(
-            shape=(batch_size,), dtype=self.compute_dtype
-        )
+        mosaic_centers_x = self.center_sampler(shape=(batch_size,))
+        mosaic_centers_y = self.center_sampler(shape=(batch_size,))
         mosaic_centers = tf.stack((mosaic_centers_x, mosaic_centers_y), axis=-1)
 
         return {
@@ -133,12 +129,13 @@ class Mosaic(VectorizedBaseRandomLayer):
         return images
 
     def augment_labels(self, labels, transformations, images=None, **kwargs):
+        # cast to float32 to avoid numerical issue
         is_ragged_labels = isinstance(labels, tf.RaggedTensor)
         if is_ragged_labels:
             labels = labels.to_tensor()
-        labels = tf.cast(labels, dtype=self.compute_dtype)
+        labels = tf.cast(labels, dtype=tf.float32)
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
         # updates labels for one output mosaic
         permutation_order = transformations["permutation_order"]
@@ -165,14 +162,14 @@ class Mosaic(VectorizedBaseRandomLayer):
         )
         if is_ragged_labels:
             labels = tf.RaggedTensor.from_tensor(labels)
-        return labels
+        return tf.cast(labels, dtype=self.compute_dtype)
 
     def augment_bounding_boxes(
         self, bounding_boxes, transformations, raw_images=None, **kwargs
     ):
         batch_size = tf.shape(raw_images)[0]
         heights, widths = augmentation_utils.get_images_shape(
-            raw_images, dtype=self.compute_dtype
+            raw_images, dtype=tf.float32
         )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
@@ -180,7 +177,7 @@ class Mosaic(VectorizedBaseRandomLayer):
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         boxes, classes = bounding_boxes["boxes"], bounding_boxes["classes"]
 

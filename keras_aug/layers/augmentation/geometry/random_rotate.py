@@ -73,10 +73,11 @@ class RandomRotate(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        # cast to float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
-        angles = self.factor(shape=(batch_size, 1), dtype=self.compute_dtype)
+        angles = self.factor(shape=(batch_size, 1), dtype=tf.float32)
         angles = angles / 360.0 * 2.0 * math.pi
         rotation_matrixes = augmentation_utils.get_rotation_matrix(
             angles, heights, widths, to_square=True
@@ -105,15 +106,19 @@ class RandomRotate(VectorizedBaseRandomLayer):
             rotation_matrixes, shape=(batch_size, -1)
         )
         rotation_matrixes = rotation_matrixes[:, :-1]
+
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if images.dtype == tf.bfloat16:
+            images = tf.cast(images, dtype=tf.float32)
         images = preprocessing_utils.transform(
             images,
-            tf.cast(rotation_matrixes, dtype=tf.float32),  # must be tf.float32
+            rotation_matrixes,
             fill_mode=self.fill_mode,
             fill_value=self.fill_value,
             interpolation=self.interpolation,
         )
         images = tf.ensure_shape(images, shape=original_shape)
-        return images
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -128,8 +133,9 @@ class RandomRotate(VectorizedBaseRandomLayer):
                 "Please specify a bounding box format in the constructor. i.e."
                 "`RandomAffine(bounding_box_format='xyxy')`"
             )
+        # cast to float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            raw_images, dtype=self.compute_dtype
+            raw_images, dtype=tf.float32
         )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
@@ -137,7 +143,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         boxes = bounding_boxes["boxes"]
 
@@ -214,6 +220,10 @@ class RandomRotate(VectorizedBaseRandomLayer):
             rotation_matrixes, shape=(batch_size, -1)
         )
         rotation_matrixes = rotation_matrixes[:, :-1]
+
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if segmentation_masks.dtype == tf.bfloat16:
+            segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
         segmentation_masks = preprocessing_utils.transform(
             segmentation_masks,
             rotation_matrixes,
@@ -224,7 +234,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         segmentation_masks = tf.ensure_shape(
             segmentation_masks, shape=original_shape
         )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def get_config(self):
         config = super().get_config()

@@ -103,8 +103,9 @@ class RandomGridMask(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        # all operations run in tf.float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
 
         # mask side length
@@ -113,27 +114,19 @@ class RandomGridMask(VectorizedBaseRandomLayer):
 
         # grid unit size
         smaller_side_lens = tf.where(heights < widths, heights, widths)
-        unit_ratios = self.size_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
+        unit_ratios = self.size_factor(shape=(batch_size, 1))
         unit_sizes = unit_ratios * smaller_side_lens
         unit_sizes = tf.maximum(unit_sizes, 2)  # prevent too small units
-        ratios = self.ratio_factor(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
+        ratios = self.ratio_factor(shape=(batch_size, 1))
         rectangle_side_lens = ratios * unit_sizes
 
         # sample x and y offset for grid units randomly between 0 and unit_size
-        delta_xs = self._random_generator.random_uniform(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
-        delta_ys = self._random_generator.random_uniform(
-            shape=(batch_size, 1), dtype=self.compute_dtype
-        )
+        delta_xs = self._random_generator.random_uniform(shape=(batch_size, 1))
+        delta_ys = self._random_generator.random_uniform(shape=(batch_size, 1))
         delta_xs = delta_xs * unit_sizes
         delta_ys = delta_ys * unit_sizes
 
-        # randomly rotate mask (must be tf.float32)
+        # randomly rotate mask
         angles = self.rotation_factor(shape=(batch_size, 1))
         angles = angles / 360.0 * 2.0 * math.pi
 

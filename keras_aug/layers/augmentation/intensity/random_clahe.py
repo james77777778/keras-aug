@@ -63,13 +63,14 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
         images = preprocessing_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
-        inputs_for_RandomCLAHE_single_image = {
+        inputs_for_clahe_single_image = {
             "images": images,
             "clip_limits": transformations,
         }
-        images = tf.vectorized_map(
-            self.RandomCLAHE_single_image,
-            inputs_for_RandomCLAHE_single_image,
+        images = tf.map_fn(
+            self.clahe_single_image,
+            inputs_for_clahe_single_image,
+            fn_output_signature=self.compute_dtype,
         )
         images = preprocessing_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
@@ -104,7 +105,7 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
         clipped_hists = clipped_hists + tf.math.truediv(clipped_px_count, 256)
         return clipped_hists
 
-    def RandomCLAHE_single_image(self, inputs):
+    def clahe_single_image(self, inputs):
         image = inputs.get("images", None)
         clip_limit = inputs.get("clip_limits", None)
 

@@ -85,15 +85,14 @@ class AugMix(VectorizedBaseRandomLayer):
         )
 
     def get_random_transformation_batch(self, batch_size, **kwargs):
+        # cast to float32 to avoid numerical issue
         # sample from dirichlet
-        alpha = (
-            tf.ones([self.num_chains], dtype=self.compute_dtype) * self.alpha
-        )
+        alpha = tf.ones([self.num_chains], dtype=tf.float32) * self.alpha
         chain_mixing_weights = stateless_random_dirichlet(
             (batch_size, self.num_chains),
             seed=self._random_generator.make_seed_for_stateless_op(),
             alpha=alpha,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         # sample from beta
         weight_sample = stateless_random_beta(
@@ -102,7 +101,7 @@ class AugMix(VectorizedBaseRandomLayer):
             seed_beta=self._random_generator.make_seed_for_stateless_op(),
             alpha=self.alpha,
             beta=self.alpha,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         return {
             "chain_mixing_weights": chain_mixing_weights,
@@ -146,8 +145,12 @@ class AugMix(VectorizedBaseRandomLayer):
         image = inputs.get(IMAGES, None)
         transformation = inputs.get("transformations", None)
 
-        chain_mixing_weights = transformation["chain_mixing_weights"]
-        weight_sample = transformation["weight_sample"]
+        chain_mixing_weights = tf.cast(
+            transformation["chain_mixing_weights"], dtype=self.compute_dtype
+        )
+        weight_sample = tf.cast(
+            transformation["weight_sample"], dtype=self.compute_dtype
+        )
 
         result = tf.zeros_like(image, dtype=image.dtype)
         curr_chain = tf.constant([0], dtype=tf.int32)
@@ -256,11 +259,15 @@ class AugMix(VectorizedBaseRandomLayer):
         width = tf.expand_dims(tf.shape(image)[W_AXIS : W_AXIS + 1], axis=0)
         height = tf.cast(height, dtype=tf.float32)
         width = tf.cast(width, dtype=tf.float32)
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if image.dtype == tf.bfloat16:
+            image = tf.cast(image, dtype=tf.float32)
         image = preprocessing_utils.transform(
             tf.expand_dims(image, axis=0),
             augmentation_utils.get_rotation_matrix(angle, height, width),
         )
-        return tf.squeeze(image, axis=0)
+        image = tf.squeeze(image, axis=0)
+        return tf.cast(image, dtype=self.compute_dtype)
 
     def solarize(self, image):
         threshold = tf.cast(
@@ -280,11 +287,15 @@ class AugMix(VectorizedBaseRandomLayer):
             transform = tf.convert_to_tensor(
                 [1.0, 0.0, 0.0, factor, 1.0, 0.0, 0.0, 0.0]
             )
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if image.dtype == tf.bfloat16:
+            image = tf.cast(image, dtype=tf.float32)
         image = preprocessing_utils.transform(
             tf.expand_dims(image, axis=0),
             tf.expand_dims(transform, axis=0),
         )
-        return tf.squeeze(image, axis=0)
+        image = tf.squeeze(image, axis=0)
+        return tf.cast(image, dtype=self.compute_dtype)
 
     def translate(self, image, along_x=True):
         shape = tf.cast(tf.shape(image), tf.float32)
@@ -302,11 +313,15 @@ class AugMix(VectorizedBaseRandomLayer):
             transform = tf.convert_to_tensor(
                 [1.0, 0.0, 0.0, 0.0, 1.0, factor, 0.0, 0.0]
             )
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if image.dtype == tf.bfloat16:
+            image = tf.cast(image, dtype=tf.float32)
         image = preprocessing_utils.transform(
             tf.expand_dims(image, axis=0),
             tf.expand_dims(transform, axis=0),
         )
-        return tf.squeeze(image, axis=0)
+        image = tf.squeeze(image, axis=0)
+        return tf.cast(image, dtype=self.compute_dtype)
 
     def get_config(self):
         config = super().get_config()

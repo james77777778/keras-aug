@@ -106,7 +106,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         crop_size = tf.expand_dims(
             tf.stack([self.crop_height, self.crop_width]), axis=0
         )
-        self.crop_size = tf.cast(crop_size, dtype=self.compute_dtype)
+        self.crop_size = tf.cast(crop_size, dtype=tf.float32)
         self.force_output_dense_images = True
 
     def compute_ragged_image_signature(self, images):
@@ -120,15 +120,16 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        # cast to float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
 
         # image_scales
         image_shapes = tf.concat((heights, widths), axis=-1)
         scaled_sizes = tf.round(
             image_shapes
-            * self.scale_factor(shape=(batch_size, 1), dtype=self.compute_dtype)
+            * self.scale_factor(shape=(batch_size, 1), dtype=tf.float32)
         )
         scales = tf.where(
             tf.less(
@@ -147,9 +148,9 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             tf.less(max_offsets, 0), tf.zeros_like(max_offsets), max_offsets
         )
         offsets = max_offsets * self._random_generator.random_uniform(
-            shape=(batch_size, 2), minval=0, maxval=1, dtype=self.compute_dtype
+            shape=(batch_size, 2), minval=0, maxval=1, dtype=tf.float32
         )
-        offsets = tf.cast(offsets, tf.int32)
+        offsets = tf.cast(offsets, dtype=tf.int32)
 
         # paddings
         new_heights = tf.cast(scaled_sizes[..., 0:1], dtype=tf.int32)
@@ -232,20 +233,21 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
                 "Please specify a bounding box format in the constructor. i.e."
                 "`RandomZoomAndCrop(..., bounding_box_format='xyxy')`"
             )
+        # cast to float32 to avoid numerical issue
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,
             target="yxyx",
             images=raw_images,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
 
         image_scales = tf.cast(
-            transformations["image_scales"], self.compute_dtype
+            transformations["image_scales"], dtype=tf.float32
         )
-        offsets = tf.cast(transformations["offsets"], self.compute_dtype)
-        paddings = tf.cast(transformations["paddings"], self.compute_dtype)
+        offsets = tf.cast(transformations["offsets"], dtype=tf.float32)
+        paddings = tf.cast(transformations["paddings"], dtype=tf.float32)
         padding_offsets = tf.concat(
             [paddings[..., 0:1], paddings[..., 2:3]], axis=-1
         )
@@ -268,6 +270,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             source="yxyx",
             target=self.bounding_box_format,
             images=images,
+            dtype=self.compute_dtype,
         )
         return bounding_boxes
 

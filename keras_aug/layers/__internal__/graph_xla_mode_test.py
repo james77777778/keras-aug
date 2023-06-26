@@ -114,7 +114,7 @@ GENERAL_TESTS = [
         "RandomCLAHE",
         layers.RandomCLAHE,
         {"value_range": (0, 255), "factor": (2, 10), "tile_grid_size": (4, 4)},
-        True,
+        False,
     ),
     (
         "RandomColorJitter",

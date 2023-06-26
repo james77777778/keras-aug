@@ -212,46 +212,45 @@ class RandomAffine(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        # cast to float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
         factor_shape = (batch_size, 1)
         # dummy
-        angles = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        translation_heights = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        translation_widths = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        zoom_heights = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        zoom_widths = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        shear_heights = tf.zeros(factor_shape, dtype=self.compute_dtype)
-        shear_widths = tf.zeros(factor_shape, dtype=self.compute_dtype)
+        angles = tf.zeros(factor_shape, dtype=tf.float32)
+        translation_heights = tf.zeros(factor_shape, dtype=tf.float32)
+        translation_widths = tf.zeros(factor_shape, dtype=tf.float32)
+        zoom_heights = tf.zeros(factor_shape, dtype=tf.float32)
+        zoom_widths = tf.zeros(factor_shape, dtype=tf.float32)
+        shear_heights = tf.zeros(factor_shape, dtype=tf.float32)
+        shear_widths = tf.zeros(factor_shape, dtype=tf.float32)
 
         if self._enable_rotation:
-            angles = self.rotation_factor(
-                factor_shape, dtype=self.compute_dtype
-            )
+            angles = self.rotation_factor(factor_shape, dtype=tf.float32)
         if self._enable_translation:
             translation_heights = self.translation_height_factor(
-                factor_shape, dtype=self.compute_dtype
+                factor_shape, dtype=tf.float32
             )
             translation_widths = self.translation_width_factor(
-                factor_shape, dtype=self.compute_dtype
+                factor_shape, dtype=tf.float32
             )
         if self._enable_zoom:
             zoom_heights = self.zoom_height_factor(
-                factor_shape, dtype=self.compute_dtype
+                factor_shape, dtype=tf.float32
             )
             if self.same_zoom_factor:
                 zoom_widths = zoom_heights
             else:
                 zoom_widths = self.zoom_width_factor(
-                    factor_shape, dtype=self.compute_dtype
+                    factor_shape, dtype=tf.float32
                 )
         if self._enable_shear:
             shear_heights = self.shear_height_factor(
-                factor_shape, dtype=self.compute_dtype
+                factor_shape, dtype=tf.float32
             )
             shear_widths = self.shear_width_factor(
-                factor_shape, dtype=self.compute_dtype
+                factor_shape, dtype=tf.float32
             )
 
         angles = angles / 360.0 * 2.0 * math.pi
@@ -267,11 +266,11 @@ class RandomAffine(VectorizedBaseRandomLayer):
         #      [0 0 1]]
         identity_matrixes = tf.concat(
             [
-                tf.ones((batch_size, 1), dtype=self.compute_dtype),
-                tf.zeros((batch_size, 3), dtype=self.compute_dtype),
-                tf.ones((batch_size, 1), dtype=self.compute_dtype),
-                tf.zeros((batch_size, 3), dtype=self.compute_dtype),
-                tf.ones((batch_size, 1), dtype=self.compute_dtype),
+                tf.ones((batch_size, 1), dtype=tf.float32),
+                tf.zeros((batch_size, 3), dtype=tf.float32),
+                tf.ones((batch_size, 1), dtype=tf.float32),
+                tf.zeros((batch_size, 3), dtype=tf.float32),
+                tf.ones((batch_size, 1), dtype=tf.float32),
             ],
             axis=1,
         )
@@ -319,7 +318,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        original_shape = images.shape
+        ori_shape = images.shape
         batch_size = tf.shape(images)[0]
         combined_matrixes = transformations["combined_matrixes"]
         combined_matrixes = tf.reshape(
@@ -327,15 +326,18 @@ class RandomAffine(VectorizedBaseRandomLayer):
         )
         combined_matrixes = combined_matrixes[:, :-1]
 
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if images.dtype == tf.bfloat16:
+            images = tf.cast(images, dtype=tf.float32)
         images = preprocessing_utils.transform(
             images,
-            tf.cast(combined_matrixes, dtype=tf.float32),  # must be float32
+            combined_matrixes,
             fill_mode=self.fill_mode,
             fill_value=self.fill_value,
             interpolation=self.interpolation,
         )
-        images = tf.ensure_shape(images, shape=original_shape)
-        return images
+        images = tf.ensure_shape(images, shape=ori_shape)
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -350,8 +352,9 @@ class RandomAffine(VectorizedBaseRandomLayer):
                 "Please specify a bounding box format in the constructor. i.e."
                 "`RandomAffine(bounding_box_format='xyxy')`"
             )
+        # cast to float32 to avoid numerical issue
         heights, widths = augmentation_utils.get_images_shape(
-            raw_images, dtype=self.compute_dtype
+            raw_images, dtype=tf.float32
         )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
         bounding_boxes = bounding_box.convert_format(
@@ -359,7 +362,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             source=self.bounding_box_format,
             target="xyxy",
             images=raw_images,
-            dtype=self.compute_dtype,
+            dtype=tf.float32,
         )
         boxes = bounding_boxes["boxes"]
         original_bounding_boxes = bounding_boxes.copy()
@@ -499,9 +502,12 @@ class RandomAffine(VectorizedBaseRandomLayer):
         )
         combined_matrixes = combined_matrixes[:, :-1]
 
+        # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
+        if segmentation_masks.dtype == tf.bfloat16:
+            segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
         segmentation_masks = preprocessing_utils.transform(
             segmentation_masks,
-            tf.cast(combined_matrixes, dtype=tf.float32),  # must be float32
+            combined_matrixes,
             fill_mode=self.fill_mode,
             fill_value=0,
             interpolation="nearest",
@@ -509,7 +515,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         segmentation_masks = tf.ensure_shape(
             segmentation_masks, shape=original_shape
         )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def get_config(self):
         config = super().get_config()

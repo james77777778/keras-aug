@@ -79,19 +79,17 @@ class RandomErase(VectorizedBaseRandomLayer):
         self, batch_size, images=None, **kwargs
     ):
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
         areas = heights * widths
 
         is_success = False
         for _ in range(self.max_attemp):
             if not is_success:
-                erasing_areas = self.area_factor(
-                    shape=(batch_size, 1), dtype=self.compute_dtype
-                )
+                erasing_areas = self.area_factor(shape=(batch_size, 1))
                 erasing_areas = erasing_areas * areas
                 erasing_aspect_ratios = self.aspect_ratio_factor(
-                    shape=(batch_size, 1), dtype=self.compute_dtype
+                    shape=(batch_size, 1)
                 )
                 erasing_heights = tf.round(
                     tf.sqrt(erasing_areas * erasing_aspect_ratios)
@@ -105,10 +103,10 @@ class RandomErase(VectorizedBaseRandomLayer):
                     is_success = True
 
         center_xs = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
         )
         center_ys = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
         )
         center_xs = tf.round(center_xs * (widths - erasing_widths))
         center_xs = tf.cast(center_xs + erasing_widths / 2, dtype=tf.int32)

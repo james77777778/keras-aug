@@ -68,11 +68,12 @@ class RandomCrop(VectorizedBaseRandomLayer):
     def get_random_transformation_batch(
         self, batch_size, images=None, **kwargs
     ):
+        # cast to float32 to avoid numerical issue
         tops = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
         )
         lefts = self._random_generator.random_uniform(
-            shape=(batch_size, 1), minval=0, maxval=1, dtype=self.compute_dtype
+            shape=(batch_size, 1), minval=0, maxval=1, dtype=tf.float32
         )
         return {"crop_tops": tops, "crop_lefts": lefts}
 
@@ -109,7 +110,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
         images = tf.ensure_shape(
             images, shape=(None, self.height, self.width, None)
         )
-        return images
+        return tf.cast(images, dtype=self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -219,12 +220,12 @@ class RandomCrop(VectorizedBaseRandomLayer):
         segmentation_masks = tf.ensure_shape(
             segmentation_masks, shape=(None, self.height, self.width, None)
         )
-        return segmentation_masks
+        return tf.cast(segmentation_masks, dtype=self.compute_dtype)
 
     def crop_images(self, images, transformations):
         batch_size = tf.shape(images)[0]
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
         tops = transformations["crop_tops"]
         lefts = transformations["crop_lefts"]
@@ -238,9 +239,13 @@ class RandomCrop(VectorizedBaseRandomLayer):
         x2s /= widths
         y2s /= heights
         boxes = tf.concat([y1s, x1s, y2s, x2s], axis=-1)
+
+        # tf.image.crop_and_resize not support bfloat16
+        if images.dtype == tf.bfloat16:
+            images = tf.cast(images, dtype=tf.float32)
         images = tf.image.crop_and_resize(
             images,
-            tf.cast(boxes, dtype=tf.float32),  # must be tf.float32
+            boxes,
             tf.range(batch_size),
             [self.height, self.width],
             method="nearest",
@@ -260,7 +265,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
         tops = transformation["crop_tops"]
         lefts = transformation["crop_lefts"]
         heights, widths = augmentation_utils.get_images_shape(
-            images, dtype=self.compute_dtype
+            images, dtype=tf.float32
         )
 
         # compute offsets for xyxy bounding_boxes

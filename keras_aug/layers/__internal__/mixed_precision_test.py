@@ -339,7 +339,12 @@ BUILD_IN_RUNTIME = [
 ]
 
 
-class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
+class MixedPrecisionFloat16Test(tf.test.TestCase, parameterized.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        tf.debugging.enable_check_numerics()
+        keras.mixed_precision.set_global_policy("mixed_float16")
+
     def test_all_2d_aug_layers_included(self):
         base_cls = layers.VectorizedBaseRandomLayer
         cls_spaces = [augmentation, preprocessing]
@@ -363,9 +368,8 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(*GENERAL_TESTS)
     def test_run_in_mixed_precision(self, layer_cls, args, is_bbox_compatible):
-        keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
-            tf.random.uniform(shape=(2, 32, 32, 3)) * 255.0,
+            tf.random.uniform(shape=(2, 224, 224, 3)) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
@@ -410,9 +414,8 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
     def test_run_in_mixed_precision_and_build_in_runtime(
         self, layer_cls, args, build_layer_cls, build_args
     ):
-        keras.mixed_precision.set_global_policy("mixed_float16")
         images = tf.cast(
-            tf.random.uniform(shape=(4, 32, 32, 3)) * 255.0,
+            tf.random.uniform(shape=(4, 224, 224, 3)) * 255.0,
             dtype=tf.float64,
         )
         labels = tf.cast(
@@ -436,6 +439,113 @@ class MixedPrecisionTest(tf.test.TestCase, parameterized.TestCase):
         outputs = layer({IMAGES: images, LABELS: labels})
 
         self.assertDTypeEqual(outputs[IMAGES], tf.float16)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Do not affect other tests
+        keras.mixed_precision.set_global_policy("float32")
+        tf.debugging.disable_check_numerics()
+
+
+class MixedPrecisionBFloat16Test(tf.test.TestCase, parameterized.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        keras.mixed_precision.set_global_policy("mixed_bfloat16")
+
+    def test_all_2d_aug_layers_included(self):
+        base_cls = layers.VectorizedBaseRandomLayer
+        cls_spaces = [augmentation, preprocessing]
+        all_2d_aug_layers = []
+        for cls_space in cls_spaces:
+            all_2d_aug_layers.extend(
+                inspect.getmembers(cls_space, predicate=inspect.isclass)
+            )
+        all_2d_aug_layer_names = set(
+            item[0]
+            for item in all_2d_aug_layers
+            if issubclass(item[1], base_cls)
+        )
+
+        general_names = set(item[0] for item in GENERAL_TESTS)
+        build_names = set(item[0] for item in BUILD_IN_RUNTIME)
+        all_test_names = general_names.union(build_names)
+
+        for name in all_2d_aug_layer_names:
+            self.assertIn(name, all_test_names, msg=f"{name} not found")
+
+    @parameterized.named_parameters(*GENERAL_TESTS)
+    def test_run_in_mixed_precision(self, layer_cls, args, is_bbox_compatible):
+        images = tf.cast(
+            tf.random.uniform(shape=(2, 224, 224, 3)) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(2, 1)) * 10.0, dtype=tf.float64
+        )
+        bounding_boxes = {
+            "boxes": tf.ragged.constant(
+                [
+                    [[10, 10, 20, 20], [100, 100, 150, 150]],
+                    [[200, 200, 400, 400]],
+                ],
+                dtype=tf.float32,
+            ),
+            "classes": tf.ragged.constant([[0, 1], [2]], dtype=tf.float32),
+        }
+        if is_bbox_compatible:
+            try:
+                layer = layer_cls(**args, bounding_box_format="xyxy")
+            except TypeError:
+                layer = layer_cls(**args)
+            inputs = {
+                IMAGES: images,
+                LABELS: labels,
+                BOUNDING_BOXES: bounding_boxes,
+            }
+        else:
+            layer = layer_cls(**args)
+            inputs = {IMAGES: images, LABELS: labels}
+
+        outputs = layer(inputs)
+
+        if is_bbox_compatible:
+            self.assertDTypeEqual(outputs[IMAGES], tf.bfloat16)
+            dense_bounding_boxes = bounding_box.to_dense(
+                outputs[BOUNDING_BOXES]
+            )
+            self.assertDTypeEqual(dense_bounding_boxes["boxes"], tf.bfloat16)
+        else:
+            self.assertDTypeEqual(outputs[IMAGES], tf.bfloat16)
+
+    @parameterized.named_parameters(*BUILD_IN_RUNTIME)
+    def test_run_in_mixed_precision_and_build_in_runtime(
+        self, layer_cls, args, build_layer_cls, build_args
+    ):
+        images = tf.cast(
+            tf.random.uniform(shape=(4, 224, 224, 3)) * 255.0,
+            dtype=tf.float64,
+        )
+        labels = tf.cast(
+            tf.random.uniform(shape=(4, 1)) * 10.0, dtype=tf.float64
+        )
+        name = args["name"]
+        value = args["value"]
+        other_args = args["args"]
+        if value == "single":
+            build_layers = build_layer_cls(**build_args)
+        elif value == "multiple":
+            build_layers = [
+                build_layer_cls(**build_args),
+                build_layer_cls(**build_args),
+            ]
+        else:
+            raise NotImplementedError()
+        args = {name: build_layers, **other_args}
+        layer = layer_cls(**args)
+
+        outputs = layer({IMAGES: images, LABELS: labels})
+
+        self.assertDTypeEqual(outputs[IMAGES], tf.bfloat16)
 
     @classmethod
     def tearDownClass(cls) -> None:
