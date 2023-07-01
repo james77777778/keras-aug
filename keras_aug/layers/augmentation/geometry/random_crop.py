@@ -24,7 +24,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         bounding_box_min_area_ratio (float, optional): The threshold to
             apply sanitize_bounding_boxes. Defaults to ``None``.

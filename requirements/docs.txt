@@ -1,6 +1,5 @@
 # dependencies
 tensorflow-cpu
-keras-cv
 # docs
 sphinx~=6.1.3
 sphinx_markdown_tables~=0.0.17

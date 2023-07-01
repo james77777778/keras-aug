@@ -1,9 +1,9 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
 from keras_aug.layers.__internal__.base_layer import BaseRandomLayer
+from keras_aug.utils import augmentation as augmentation_utils
 
 H_AXIS = -3
 W_AXIS = -2
@@ -515,20 +515,22 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
 
     def _ensure_inputs_are_compute_dtype(self, inputs):
         if not isinstance(inputs, dict):
-            return preprocessing.ensure_tensor(
+            return augmentation_utils.ensure_tensor(
                 inputs,
                 self.compute_dtype,
             )
-        inputs[IMAGES] = preprocessing.ensure_tensor(
+        inputs[IMAGES] = augmentation_utils.ensure_tensor(
             inputs[IMAGES],
             self.compute_dtype,
         )
         if BOUNDING_BOXES in inputs:
-            inputs[BOUNDING_BOXES]["boxes"] = preprocessing.ensure_tensor(
+            inputs[BOUNDING_BOXES]["boxes"] = augmentation_utils.ensure_tensor(
                 inputs[BOUNDING_BOXES]["boxes"],
                 self.compute_dtype,
             )
-            inputs[BOUNDING_BOXES]["classes"] = preprocessing.ensure_tensor(
+            inputs[BOUNDING_BOXES][
+                "classes"
+            ] = augmentation_utils.ensure_tensor(
                 inputs[BOUNDING_BOXES]["classes"],
                 self.compute_dtype,
             )

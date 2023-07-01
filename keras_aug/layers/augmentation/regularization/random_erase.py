@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import fill_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -137,7 +137,7 @@ class RandomErase(VectorizedBaseRandomLayer):
         erasing_heights = transformations["erasing_heights"]
         erasing_widths = transformations["erasing_widths"]
         rectangle_fills = self.compute_rectangle_fills(images)
-        images = fill_utils.fill_rectangle(
+        images = image_utils.fill_rectangle(
             images,
             center_xs[..., 0],
             center_ys[..., 0],

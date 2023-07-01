@@ -1,10 +1,13 @@
-import keras_cv
 import tensorflow as tf
 
 try:
     import tensorflow_datasets as tfds
 except ImportError:
     tfds = None
+try:
+    import keras_cv
+except ImportError:
+    keras_cv = None
 
 from keras_aug.datapoints import bounding_box
 from keras_aug.utils.conditional_imports import assert_tfds_installed

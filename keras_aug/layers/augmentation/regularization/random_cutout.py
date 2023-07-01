@@ -1,8 +1,8 @@
 import tensorflow as tf
-from keras_cv.utils import fill_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.datapoints.bounding_box.iou import _compute_area
 from keras_aug.datapoints.bounding_box.iou import _compute_intersection
 from keras_aug.layers.base.vectorized_base_random_layer import (
@@ -38,7 +38,7 @@ class RandomCutout(VectorizedBaseRandomLayer):
             Defaults to ``0.6`` which is applied by ultralytics/yolo series.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
@@ -133,7 +133,7 @@ class RandomCutout(VectorizedBaseRandomLayer):
         cutout_heights = transformations["cutout_heights"]
         cutout_widths = transformations["cutout_widths"]
         rectangle_fills = self.compute_rectangle_fills(images)
-        images = fill_utils.fill_rectangle(
+        images = image_utils.fill_rectangle(
             images,
             center_xs[..., 0],
             center_ys[..., 0],

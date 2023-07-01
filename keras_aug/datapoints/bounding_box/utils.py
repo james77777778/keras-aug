@@ -238,7 +238,7 @@ def sanitize_bounding_boxes(
             bounding boxes for sanitizing. Defaults to ``None``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         reference_bounding_boxes (dict[str, tf.Tensor], optional): The
             reference bounding boxes when apply sanitizing with

@@ -84,10 +84,10 @@ def compute_iou(
         unbatched.
       boxes2: a list of bounding boxes in 'corners' format. Can be batched or
         unbatched.
-      bounding_box_format: a case-insensitive string which is one of `"xyxy"`,
-        `"rel_xyxy"`, `"xyWH"`, `"center_xyWH"`, `"yxyx"`, `"rel_yxyx"`.
-        For detailed information on the supported format, see the
-        [KerasCV bounding box documentation](https://keras.io/api/keras_cv/bounding_box/formats/).
+      bounding_box_format: The format of bounding
+            boxes of input dataset. Refer
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
+            for more details on supported bounding box formats.
       use_masking: whether masking will be applied. This will mask all `boxes1`
         or `boxes2` that have values less than 0 in all its 4 dimensions.
         Default to `False`.

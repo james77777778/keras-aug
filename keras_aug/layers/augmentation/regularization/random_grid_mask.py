@@ -1,7 +1,6 @@
 import math
 
 import tensorflow as tf
-from keras_cv.utils import fill_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import image as image_utils
@@ -235,7 +234,7 @@ class RandomGridMask(VectorizedBaseRandomLayer):
         # corners must be tf.float32 for fill_utils.corners_to_mask
         corners = tf.cast(tf.stack([x0, y0, x1, y1], axis=-1), dtype=tf.float32)
         mask_side_len = tf.cast(mask_side_len, dtype=tf.int32)
-        rectangle_masks = fill_utils.corners_to_mask(
+        rectangle_masks = image_utils.corners_to_mask(
             corners, mask_shape=(mask_side_len, mask_side_len)
         )
         grid_mask = tf.reduce_any(rectangle_masks, axis=0)

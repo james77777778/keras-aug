@@ -15,7 +15,7 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
         min_size (int): The minimum size of the smaller side of bounding boxes.
         bounding_box_format (str): The format of bounding boxes of input
             dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
 
     References:

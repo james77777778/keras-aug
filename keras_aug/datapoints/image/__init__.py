@@ -1,3 +1,5 @@
+from keras_aug.datapoints.image.fill import corners_to_mask
+from keras_aug.datapoints.image.fill import fill_rectangle
 from keras_aug.datapoints.image.get_matrix import get_rotation_matrix
 from keras_aug.datapoints.image.get_matrix import get_shear_matrix
 from keras_aug.datapoints.image.get_matrix import get_translation_matrix
