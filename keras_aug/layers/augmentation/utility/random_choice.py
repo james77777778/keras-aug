@@ -1,9 +1,9 @@
 from functools import partial
 
 import tensorflow as tf
-from keras_cv import bounding_box
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )

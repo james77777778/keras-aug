@@ -1,8 +1,8 @@
 import tensorflow as tf
-from keras_cv import bounding_box
 from keras_cv.utils import preprocessing
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.__internal__.base_layer import BaseRandomLayer
 
 H_AXIS = -3

@@ -2,10 +2,10 @@ import inspect
 
 import tensorflow as tf
 from absl.testing import parameterized
-from keras_cv import bounding_box
 from tensorflow import keras
 
 from keras_aug import layers
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers import augmentation
 from keras_aug.layers import preprocessing
 from keras_aug.utils.augmentation import BOUNDING_BOXES

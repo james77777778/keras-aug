@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from keras_aug.utils import bounding_box as bounding_box_utils
+from keras_aug.datapoints import bounding_box as bounding_box_utils
 
 
 class BoundingBoxUtilsTest(tf.test.TestCase):

@@ -1,13 +1,12 @@
 import tensorflow as tf
-from keras_cv import bounding_box
 from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -260,7 +259,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         yxyx += tf.tile(padding_offsets, [1, 2])[..., tf.newaxis, :]
 
         bounding_boxes["boxes"] = yxyx
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="yxyx",
             images=images,

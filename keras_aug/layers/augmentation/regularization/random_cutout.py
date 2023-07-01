@@ -1,10 +1,10 @@
 import tensorflow as tf
-from keras_cv import bounding_box
-from keras_cv.bounding_box.iou import _compute_area
-from keras_cv.bounding_box.iou import _compute_intersection
 from keras_cv.utils import fill_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints.bounding_box.iou import _compute_area
+from keras_aug.datapoints.bounding_box.iou import _compute_intersection
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )

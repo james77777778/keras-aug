@@ -14,7 +14,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import W_AXIS
 
 
-@keras.utils.register_keras_serializable(package="keras_cv")
+@keras.utils.register_keras_serializable(package="keras_aug")
 class RandomGridMask(VectorizedBaseRandomLayer):
     """RandomGridMask performs the Grid Mask operation on input images.
 

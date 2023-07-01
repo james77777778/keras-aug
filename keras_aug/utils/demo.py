@@ -6,6 +6,7 @@ try:
 except ImportError:
     tfds = None
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.utils.conditional_imports import assert_tfds_installed
 
 
@@ -21,7 +22,7 @@ def load_voc_dataset(
         image = tf.cast(image, tf.float32)
         if format is not None:
             boxes = inputs["objects"]["bbox"]
-            boxes = keras_cv.bounding_box.convert_format(
+            boxes = bounding_box.convert_format(
                 boxes,
                 images=image,
                 source="rel_yxyx",

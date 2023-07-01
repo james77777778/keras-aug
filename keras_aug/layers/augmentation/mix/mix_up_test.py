@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv import bounding_box
 
 from keras_aug import layers
+from keras_aug.datapoints import bounding_box
 
 
 class MixUpTest(tf.test.TestCase):

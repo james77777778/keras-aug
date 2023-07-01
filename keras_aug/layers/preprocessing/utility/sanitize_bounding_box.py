@@ -1,10 +1,9 @@
-from keras_cv import bounding_box
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
-from keras_aug.utils import bounding_box as bounding_box_utils
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 
 
@@ -48,7 +47,7 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
                 "`SanitizeBoundingBox(..., bounding_box_format='xyxy')`"
             )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+        bounding_boxes = bounding_box.sanitize_bounding_boxes(
             bounding_boxes,
             min_size=self.min_size,
             bounding_box_format=self.bounding_box_format,
