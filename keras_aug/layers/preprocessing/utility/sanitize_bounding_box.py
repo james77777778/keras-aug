@@ -1,10 +1,9 @@
-from keras_cv import bounding_box
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
-from keras_aug.utils import bounding_box as bounding_box_utils
 from keras_aug.utils.augmentation import BOUNDING_BOXES
 
 
@@ -16,7 +15,7 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
         min_size (int): The minimum size of the smaller side of bounding boxes.
         bounding_box_format (str): The format of bounding boxes of input
             dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
 
     References:
@@ -48,7 +47,7 @@ class SanitizeBoundingBox(VectorizedBaseRandomLayer):
                 "`SanitizeBoundingBox(..., bounding_box_format='xyxy')`"
             )
         bounding_boxes = bounding_box.to_dense(bounding_boxes)
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+        bounding_boxes = bounding_box.sanitize_bounding_boxes(
             bounding_boxes,
             min_size=self.min_size,
             bounding_box_format=self.bounding_box_format,

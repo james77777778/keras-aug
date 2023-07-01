@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import fill_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -91,7 +91,7 @@ class CutMix(VectorizedBaseRandomLayer):
         center_ys = transformations["center_ys"]
         cut_heights = transformations["cut_heights"]
         cut_widths = transformations["cut_widths"]
-        images = fill_utils.fill_rectangle(
+        images = image_utils.fill_rectangle(
             images,
             center_xs,
             center_ys,
@@ -134,7 +134,7 @@ class CutMix(VectorizedBaseRandomLayer):
         center_ys = transformations["center_ys"]
         cut_heights = transformations["cut_heights"]
         cut_widths = transformations["cut_widths"]
-        segmentation_masks = fill_utils.fill_rectangle(
+        segmentation_masks = image_utils.fill_rectangle(
             segmentation_masks,
             center_xs,
             center_ys,

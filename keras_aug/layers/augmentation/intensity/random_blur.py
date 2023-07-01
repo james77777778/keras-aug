@@ -1,10 +1,10 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -35,12 +35,12 @@ class RandomBlur(VectorizedBaseRandomLayer):
     ):
         super().__init__(seed=seed, **kwargs)
         if isinstance(factor, (tuple, list)):
-            factor_range = (factor[1] - factor[0]) // 2
+            factor_range = (0, (factor[1] - factor[0]) // 2 + 1)
             factor_bias = factor[0]
         else:
-            factor_range = (factor[1] - 1) // 2
+            factor_range = (0, (factor - 1) // 2 + 1)
             factor_bias = 1
-        if factor_range < 0 or factor_bias < 1:
+        if factor_range[1] < 0 or factor_bias < 1:
             raise ValueError(
                 "RandomBlur expects `factor` to be in range `(1, inf)`. Got: "
                 f"`factor` = {factor}"
@@ -48,8 +48,12 @@ class RandomBlur(VectorizedBaseRandomLayer):
         self.factor_input = factor
 
         self.factor_bias = factor_bias
-        self.factor = preprocessing_utils.parse_factor(
-            factor_range + 1, min_value=0, max_value=None, seed=seed
+        self.factor = augmentation_utils.parse_factor(
+            factor_range,
+            min_value=0,
+            max_value=None,
+            center_value=None,
+            seed=seed,
         )
         self.seed = seed
 

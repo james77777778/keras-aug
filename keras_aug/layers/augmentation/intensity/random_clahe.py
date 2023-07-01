@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -60,7 +60,7 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs_for_clahe_single_image = {
@@ -72,7 +72,7 @@ class RandomCLAHE(VectorizedBaseRandomLayer):
             inputs_for_clahe_single_image,
             fn_output_signature=self.compute_dtype,
         )
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
         return images

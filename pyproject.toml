@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "keras-aug"
 authors = [{ name = "Hongyu, Chiu (james77777778)" }]
 description = "A library that includes pure TF/Keras preprocessing and augmentation layers"
-keywords = ["tensorflow", "keras", "keras-cv", "preprocessing", "augmentation"]
+keywords = ["tensorflow", "keras", "preprocessing", "augmentation"]
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dynamic = ["version"]
-dependencies = ["pycocotools", "tensorflow", "keras-cv"]
+dependencies = ["pycocotools", "tensorflow"]
 
 [project.optional-dependencies]
 tests = [

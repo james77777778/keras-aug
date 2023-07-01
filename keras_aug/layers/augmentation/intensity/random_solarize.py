@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -92,7 +92,7 @@ class RandomSolarize(VectorizedBaseRandomLayer):
     def augment_images(self, images, transformations, **kwargs):
         thresholds = transformations["thresholds"]
         additions = transformations["additions"]
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=self.value_range,
             target_range=(0, 255),
@@ -101,7 +101,7 @@ class RandomSolarize(VectorizedBaseRandomLayer):
         images = images + additions
         images = tf.clip_by_value(images, 0, 255)
         images = tf.where(images < thresholds, images, 255 - images)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=(0, 255),
             target_range=self.value_range,

@@ -1,3 +1,4 @@
+from keras_aug import datapoints
 from keras_aug import layers
 from keras_aug import utils
 from keras_aug.core import ConstantFactorSampler

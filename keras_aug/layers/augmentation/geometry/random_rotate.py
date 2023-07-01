@@ -1,15 +1,14 @@
 import math
 
 import tensorflow as tf
-from keras_cv import bounding_box
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -34,7 +33,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
             boundaries when ``fill_mode="constant"``. Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
@@ -61,7 +60,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
             seed=seed,
         )
 
-        preprocessing_utils.check_fill_mode_and_interpolation(
+        augmentation_utils.check_fill_mode_and_interpolation(
             fill_mode, interpolation
         )
         self.interpolation = interpolation
@@ -79,7 +78,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         )
         angles = self.factor(shape=(batch_size, 1), dtype=tf.float32)
         angles = angles / 360.0 * 2.0 * math.pi
-        rotation_matrixes = augmentation_utils.get_rotation_matrix(
+        rotation_matrixes = image_utils.get_rotation_matrix(
             angles, heights, widths, to_square=True
         )
         # (batch_size, 3, 3)
@@ -110,7 +109,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if images.dtype == tf.bfloat16:
             images = tf.cast(images, dtype=tf.float32)
-        images = preprocessing_utils.transform(
+        images = image_utils.transform(
             images,
             rotation_matrixes,
             fill_mode=self.fill_mode,
@@ -181,7 +180,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=raw_images,
@@ -224,7 +223,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if segmentation_masks.dtype == tf.bfloat16:
             segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
-        segmentation_masks = preprocessing_utils.transform(
+        segmentation_masks = image_utils.transform(
             segmentation_masks,
             rotation_matrixes,
             fill_mode=self.fill_mode,

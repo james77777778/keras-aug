@@ -30,7 +30,7 @@ def visualize_dataset(
 
 def unpackage_raw_tfds_inputs(inputs, bounding_box_format):
     image = inputs["image"]
-    boxes = keras_cv.bounding_box.convert_format(
+    boxes = keras_aug.datapoints.bounding_box.convert_format(
         inputs["objects"]["bbox"],
         images=image,
         source="rel_yxyx",

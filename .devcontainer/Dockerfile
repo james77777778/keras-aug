@@ -7,10 +7,8 @@ RUN apt update && apt install -y locales git clang-format ffmpeg libsm6 libxext6
 RUN pip install --upgrade pip
 
 ARG TF_VERSION
-ARG KERASCV_VERSION
 RUN pip install \
     tensorflow-cpu==${TF_VERSION} \
-    keras-cv==${KERASCV_VERSION} \
     # demo
     matplotlib \
     opencv-python-headless \

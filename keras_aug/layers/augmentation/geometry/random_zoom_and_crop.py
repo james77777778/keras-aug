@@ -1,13 +1,11 @@
 import tensorflow as tf
-from keras_cv import bounding_box
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -54,7 +52,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
@@ -94,9 +92,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
             center_value=1.0,
             seed=seed,
         )
-        self.interpolation = preprocessing_utils.get_interpolation(
-            interpolation
-        )
+        self.interpolation = augmentation_utils.get_interpolation(interpolation)
         self.antialias = antialias
         self.position = augmentation_utils.get_padding_position(position)
         self.padding_value = padding_value
@@ -260,7 +256,7 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         yxyx += tf.tile(padding_offsets, [1, 2])[..., tf.newaxis, :]
 
         bounding_boxes["boxes"] = yxyx
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="yxyx",
             images=images,

@@ -1,12 +1,11 @@
 import tensorflow as tf
-from keras_cv import bounding_box
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -25,7 +24,7 @@ class RandomCrop(VectorizedBaseRandomLayer):
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         bounding_box_min_area_ratio (float, optional): The threshold to
             apply sanitize_bounding_boxes. Defaults to ``None``.
@@ -157,12 +156,12 @@ class RandomCrop(VectorizedBaseRandomLayer):
             ),
         )
         bounding_boxes["boxes"] = boxes
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=images,
         )
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+        bounding_boxes = bounding_box.sanitize_bounding_boxes(
             bounding_boxes,
             min_area_ratio=self.bounding_box_min_area_ratio,
             max_aspect_ratio=self.bounding_box_max_aspect_ratio,

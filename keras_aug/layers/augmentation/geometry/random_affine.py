@@ -1,15 +1,14 @@
 import math
 
 import tensorflow as tf
-from keras_cv import bounding_box
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -68,7 +67,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
             boundaries when ``fill_mode="constant"``. Defaults to ``0``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         bounding_box_min_area_ratio (float, optional): The threshold to
             apply sanitize_bounding_boxes. Defaults to ``None``.
@@ -170,7 +169,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
 
         self.same_zoom_factor = same_zoom_factor
 
-        preprocessing_utils.check_fill_mode_and_interpolation(
+        augmentation_utils.check_fill_mode_and_interpolation(
             fill_mode, interpolation
         )
         self.interpolation = interpolation
@@ -277,25 +276,25 @@ class RandomAffine(VectorizedBaseRandomLayer):
         combined_matrixes = tf.reshape(identity_matrixes, (batch_size, 3, 3))
         # process zoom
         if self._enable_zoom:
-            zoom_matrixes = augmentation_utils.get_zoom_matrix(
+            zoom_matrixes = image_utils.get_zoom_matrix(
                 zooms, heights, widths, to_square=True
             )
             combined_matrixes = zoom_matrixes @ combined_matrixes
         # process rotations
         if self._enable_rotation:
-            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+            rotation_matrixes = image_utils.get_rotation_matrix(
                 angles, heights, widths, to_square=True
             )
             combined_matrixes = rotation_matrixes @ combined_matrixes
         # process shear
         if self._enable_shear:
-            shear_matrixes = augmentation_utils.get_shear_matrix(
+            shear_matrixes = image_utils.get_shear_matrix(
                 shears, to_square=True
             )
             combined_matrixes = shear_matrixes @ combined_matrixes
         # process translations
         if self._enable_translation:
-            translation_matrixes = augmentation_utils.get_translation_matrix(
+            translation_matrixes = image_utils.get_translation_matrix(
                 translations, heights, widths, to_square=True
             )
             combined_matrixes = translation_matrixes @ combined_matrixes
@@ -329,7 +328,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if images.dtype == tf.bfloat16:
             images = tf.cast(images, dtype=tf.float32)
-        images = preprocessing_utils.transform(
+        images = image_utils.transform(
             images,
             combined_matrixes,
             fill_mode=self.fill_mode,
@@ -454,12 +453,12 @@ class RandomAffine(VectorizedBaseRandomLayer):
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="xyxy",
             images=raw_images,
         )
-        bounding_boxes = bounding_box_utils.sanitize_bounding_boxes(
+        bounding_boxes = bounding_box.sanitize_bounding_boxes(
             bounding_boxes,
             min_area_ratio=self.bounding_box_min_area_ratio,
             max_aspect_ratio=self.bounding_box_max_aspect_ratio,
@@ -505,7 +504,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if segmentation_masks.dtype == tf.bfloat16:
             segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
-        segmentation_masks = preprocessing_utils.transform(
+        segmentation_masks = image_utils.transform(
             segmentation_masks,
             combined_matrixes,
             fill_mode=self.fill_mode,

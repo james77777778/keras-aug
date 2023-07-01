@@ -1,10 +1,10 @@
 from typing import Sequence
 
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import core
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -77,7 +77,7 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, target_range=(0, 1)
         )
         inputs_for_adjust_jpeg_qualitye = {
@@ -88,7 +88,7 @@ class RandomJpegQuality(VectorizedBaseRandomLayer):
             self.adjust_jpeg_quality,
             inputs_for_adjust_jpeg_qualitye,
         )
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 1), self.value_range, dtype=self.compute_dtype
         )
         return images

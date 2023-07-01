@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -37,7 +37,7 @@ class Equalize(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations=None, **kwargs):
         original_shape = images.shape
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         images = tf.cast(images, dtype=tf.int32)
@@ -47,7 +47,7 @@ class Equalize(VectorizedBaseRandomLayer):
         )
         images = tf.transpose(images, (0, 2, 3, 1))
         images = tf.cast(images, dtype=self.compute_dtype)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
         images.set_shape(original_shape)

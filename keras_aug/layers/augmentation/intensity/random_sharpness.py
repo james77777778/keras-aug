@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -59,7 +59,7 @@ class RandomSharpness(VectorizedBaseRandomLayer):
         return tf.squeeze(output, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=self.value_range,
             target_range=(0, 255),
@@ -99,10 +99,10 @@ class RandomSharpness(VectorizedBaseRandomLayer):
 
         images = tf.where(tf.equal(mask, 1), smoothed_image, original_images)
         # Blend the final result.
-        images = augmentation_utils.blend(
+        images = image_utils.blend(
             images, original_images, transformations, (0, 255)
         )
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=(0, 255),
             target_range=self.value_range,

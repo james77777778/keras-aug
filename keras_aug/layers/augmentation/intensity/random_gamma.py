@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -57,12 +57,12 @@ class RandomGamma(VectorizedBaseRandomLayer):
         return tf.squeeze(image, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0.0, 1.0), dtype=self.compute_dtype
         )
         factors = transformations
         images = tf.pow(images, factors[:, :, tf.newaxis, tf.newaxis])
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0.0, 1.0), self.value_range, dtype=self.compute_dtype
         )
         return images

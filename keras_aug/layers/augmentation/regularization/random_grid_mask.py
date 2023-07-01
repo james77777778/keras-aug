@@ -1,10 +1,9 @@
 import math
 
 import tensorflow as tf
-from keras_cv.utils import fill_utils
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -14,7 +13,7 @@ from keras_aug.utils.augmentation import IMAGES
 from keras_aug.utils.augmentation import W_AXIS
 
 
-@keras.utils.register_keras_serializable(package="keras_cv")
+@keras.utils.register_keras_serializable(package="keras_aug")
 class RandomGridMask(VectorizedBaseRandomLayer):
     """RandomGridMask performs the Grid Mask operation on input images.
 
@@ -163,10 +162,10 @@ class RandomGridMask(VectorizedBaseRandomLayer):
             heights, widths = augmentation_utils.get_images_shape(
                 images, dtype=tf.float32
             )
-            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+            rotation_matrixes = image_utils.get_rotation_matrix(
                 angles, heights, widths
             )
-            masks = preprocessing_utils.transform(
+            masks = image_utils.transform(
                 tf.cast(masks, dtype=tf.float32),
                 rotation_matrixes,
                 fill_mode="constant",
@@ -235,7 +234,7 @@ class RandomGridMask(VectorizedBaseRandomLayer):
         # corners must be tf.float32 for fill_utils.corners_to_mask
         corners = tf.cast(tf.stack([x0, y0, x1, y1], axis=-1), dtype=tf.float32)
         mask_side_len = tf.cast(mask_side_len, dtype=tf.int32)
-        rectangle_masks = fill_utils.corners_to_mask(
+        rectangle_masks = image_utils.corners_to_mask(
             corners, mask_shape=(mask_side_len, mask_side_len)
         )
         grid_mask = tf.reduce_any(rectangle_masks, axis=0)

@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -56,13 +56,13 @@ class RandomChannelShift(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations=None, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 1), dtype=self.compute_dtype
         )
         shifts = transformations[:, tf.newaxis, tf.newaxis, :]
         images = images + shifts
         images = tf.clip_by_value(images, 0.0, 1.0)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 1), self.value_range, dtype=self.compute_dtype
         )
         return images

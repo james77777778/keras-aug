@@ -102,7 +102,7 @@ GENERAL_TESTS = [
     (
         "RandomBlur",
         layers.RandomBlur,
-        {"factor": (3, 7)},
+        {"factor": (3, 7), "seed": 2024},
         True,
     ),
     (
@@ -212,7 +212,7 @@ GENERAL_TESTS = [
     (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
-        {},
+        {"seed": 2024},
         True,
     ),
     (
@@ -372,7 +372,7 @@ NO_UINT8 = [
     layers.RandomColorJitter,  # stateless_random_uniform
     layers.RandomGamma,  # stateless_random_uniform
     layers.RandomGaussianBlur,  # tf.nn.depthwise_conv2d
-    layers.RandomJpegQuality,  # preprocessing_utils.transform_value_range
+    layers.RandomJpegQuality,  # image_utils.transform_value_range
     layers.AutoContrast,  # tf.convert_to_tensor
     layers.Grayscale,  # tf.mul
     layers.Normalize,  # mean, std

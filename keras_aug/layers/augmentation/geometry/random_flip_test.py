@@ -3,9 +3,9 @@ import unittest
 import numpy as np
 import tensorflow as tf
 from absl.testing import parameterized
-from keras_cv import bounding_box
 
 from keras_aug import layers
+from keras_aug.datapoints import bounding_box
 
 
 class RandomFlipTest(tf.test.TestCase, parameterized.TestCase):

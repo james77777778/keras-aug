@@ -1,13 +1,12 @@
 import tensorflow as tf
-from keras_cv import bounding_box
 from tensorflow import keras
 
 from keras_aug import core
+from keras_aug.datapoints import bounding_box
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
 from keras_aug.utils import augmentation as augmentation_utils
-from keras_aug.utils import bounding_box as bounding_box_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -40,7 +39,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
             ``"nearest", "bilinear"``. Defaults to `"bilinear"`.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         seed (int|float, optional): The random seed. Defaults to ``None``.
 
@@ -207,7 +206,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = output
 
-        bounding_boxes = bounding_box_utils.clip_to_image(
+        bounding_boxes = bounding_box.clip_to_image(
             bounding_boxes,
             bounding_box_format="rel_xyxy",
             images=images,
@@ -279,7 +278,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         ):
             raise ValueError(
                 "`crop_area_factor` must be tuple of two positive floats less "
-                "than or equal to 1 or keras_cv.core.FactorSampler instance. "
+                "than or equal to 1 or keras_aug.core.FactorSampler instance. "
                 f"Received crop_area_factor={crop_area_factor}"
             )
 
@@ -292,7 +291,7 @@ class RandomCropAndResize(VectorizedBaseRandomLayer):
         ):
             raise ValueError(
                 "`aspect_ratio_factor` must be tuple of two positive floats or "
-                "keras_cv.core.FactorSampler instance. Received "
+                "keras_aug.core.FactorSampler instance. Received "
                 f"aspect_ratio_factor={aspect_ratio_factor}"
             )
 

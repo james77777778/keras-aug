@@ -3,7 +3,6 @@
 
 ![Python](https://img.shields.io/badge/python-v3.8.0+-success.svg)
 ![Tensorflow](https://img.shields.io/badge/tensorflow-v2.12.0+-success.svg)
-![KerasCV](https://img.shields.io/badge/keras_cv-v0.5.0+-success.svg)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/james77777778/keras-aug/actions.yml?label=tests)](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml?query=branch%3Amain++)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
 [![PyPI](https://img.shields.io/pypi/v/keras-aug)](https://pypi.org/project/keras-aug/)
@@ -67,11 +66,8 @@ Check out the demo website powered by Streamlit:
 ## Installation
 
 ```bash
-pip install keras-aug keras-cv tensorflow --upgrade
+pip install keras-aug tensorflow --upgrade
 ```
-
-> **Warning**
-> KerasAug is NOT compatible with `keras-cv < 0.5.0`.
 
 ## Quickstart
 
@@ -203,7 +199,7 @@ def visualize_dataset(
 
 def unpackage_raw_tfds_inputs(inputs, bounding_box_format):
     image = inputs["image"]
-    boxes = keras_cv.bounding_box.convert_format(
+    boxes = keras_aug.datapoints.bounding_box.convert_format(
         inputs["objects"]["bbox"],
         images=image,
         source="rel_yxyx",

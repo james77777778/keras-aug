@@ -1,9 +1,11 @@
+"""
+Contains functions to compute ious of bounding boxes.
+
+Most of these codes come from KerasCV.
+"""
 import tensorflow as tf
-from keras_cv import bounding_box
-from keras_cv.bounding_box.formats import XYWH
-from keras_cv.bounding_box.iou import _compute_area
-from keras_cv.bounding_box.utils import _format_inputs
-from keras_cv.bounding_box.utils import _format_outputs
+
+from keras_aug.datapoints import bounding_box
 
 
 def _relative_area(boxes, bounding_box_format):
@@ -13,12 +15,130 @@ def _relative_area(boxes, bounding_box_format):
         target="rel_xywh",
         dtype=boxes.dtype,
     )
-    widths = boxes[..., XYWH.WIDTH]
-    heights = boxes[..., XYWH.HEIGHT]
+    widths = boxes[..., 2]
+    heights = boxes[..., 3]
     # handle corner case where shear performs a full inversion.
     return tf.where(
         tf.math.logical_and(widths > 0, heights > 0), widths * heights, 0.0
     )
+
+
+def _compute_area(box):
+    """Computes area for bounding boxes
+
+    Args:
+      box: [N, 4] or [batch_size, N, 4] float Tensor, either batched
+        or unbatched boxes.
+    Returns:
+      a float Tensor of [N] or [batch_size, N]
+    """
+    y_min, x_min, y_max, x_max = tf.split(
+        box[..., :4], num_or_size_splits=4, axis=-1
+    )
+    return tf.squeeze((y_max - y_min) * (x_max - x_min), axis=-1)
+
+
+def _compute_intersection(boxes1, boxes2):
+    """Computes intersection area between two sets of boxes.
+
+    Args:
+      boxes1: [N, 4] or [batch_size, N, 4] float Tensor boxes.
+      boxes2: [M, 4] or [batch_size, M, 4] float Tensor boxes.
+    Returns:
+      a [N, M] or [batch_size, N, M] float Tensor.
+    """
+    y_min1, x_min1, y_max1, x_max1 = tf.split(
+        boxes1[..., :4], num_or_size_splits=4, axis=-1
+    )
+    y_min2, x_min2, y_max2, x_max2 = tf.split(
+        boxes2[..., :4], num_or_size_splits=4, axis=-1
+    )
+    boxes2_rank = len(boxes2.shape)
+    perm = [1, 0] if boxes2_rank == 2 else [0, 2, 1]
+    # [N, M] or [batch_size, N, M]
+    intersect_ymax = tf.minimum(y_max1, tf.transpose(y_max2, perm))
+    intersect_ymin = tf.maximum(y_min1, tf.transpose(y_min2, perm))
+    intersect_xmax = tf.minimum(x_max1, tf.transpose(x_max2, perm))
+    intersect_xmin = tf.maximum(x_min1, tf.transpose(x_min2, perm))
+
+    intersect_height = intersect_ymax - intersect_ymin
+    intersect_width = intersect_xmax - intersect_xmin
+    zeros_t = tf.cast(0, intersect_height.dtype)
+    intersect_height = tf.maximum(zeros_t, intersect_height)
+    intersect_width = tf.maximum(zeros_t, intersect_width)
+
+    return intersect_height * intersect_width
+
+
+def _format_inputs(boxes, classes, images):
+    boxes_rank = len(boxes.shape)
+    if boxes_rank > 3:
+        raise ValueError(
+            "Expected len(boxes.shape)=2, or len(boxes.shape)=3, got "
+            f"len(boxes.shape)={boxes_rank}"
+        )
+    boxes_includes_batch = boxes_rank == 3
+    # Determine if images needs an expand_dims() call
+    if images is not None:
+        images_rank = len(images.shape)
+        if images_rank > 4:
+            raise ValueError(
+                "Expected len(images.shape)=2, or len(images.shape)=3, got "
+                f"len(images.shape)={images_rank}"
+            )
+        images_include_batch = images_rank == 4
+        if boxes_includes_batch != images_include_batch:
+            raise ValueError(
+                "clip_to_image() expects both boxes and images to be batched, "
+                "or both boxes and images to be unbatched. Received "
+                f"len(boxes.shape)={boxes_rank}, "
+                f"len(images.shape)={images_rank}. Expected either "
+                "len(boxes.shape)=2 AND len(images.shape)=3, or "
+                "len(boxes.shape)=3 AND len(images.shape)=4."
+            )
+        if not images_include_batch:
+            images = tf.expand_dims(images, axis=0)
+
+    if not boxes_includes_batch:
+        return (
+            tf.expand_dims(boxes, axis=0),
+            tf.expand_dims(classes, axis=0),
+            images,
+            True,
+        )
+    return boxes, classes, images, False
+
+
+def _format_outputs(boxes, classes, squeeze):
+    if squeeze:
+        return tf.squeeze(boxes, axis=0), tf.squeeze(classes, axis=0)
+    return boxes, classes
+
+
+def is_relative(bounding_box_format):
+    """A util to check if a bounding box format uses relative coordinates"""
+    if bounding_box_format.lower() not in bounding_box.TO_XYXY_CONVERTERS:
+        raise ValueError(
+            "`is_relative()` received an unsupported format for the argument "
+            f"`bounding_box_format`. `bounding_box_format` should be one of "
+            f"{bounding_box.TO_XYXY_CONVERTERS.keys()}. "
+            f"Got bounding_box_format={bounding_box_format}"
+        )
+
+    return bounding_box_format.startswith("rel")
+
+
+def as_relative(bounding_box_format):
+    """A util to get the relative equivalent of a provided bounding box format.
+
+    If the specified format is already a relative format,
+    it will be returned unchanged.
+    """
+
+    if not is_relative(bounding_box_format):
+        return "rel_" + bounding_box_format
+
+    return bounding_box_format
 
 
 def clip_to_image(
@@ -118,7 +238,7 @@ def sanitize_bounding_boxes(
             bounding boxes for sanitizing. Defaults to ``None``.
         bounding_box_format (str, optional): The format of bounding
             boxes of input dataset. Refer
-            https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box/converters.py
+            https://github.com/james77777778/keras-aug/blob/main/keras_aug/datapoints/bounding_box/converter.py
             for more details on supported bounding box formats.
         reference_bounding_boxes (dict[str, tf.Tensor], optional): The
             reference bounding boxes when apply sanitizing with
