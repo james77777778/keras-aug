@@ -10,6 +10,8 @@ except ImportError:
     keras_cv = None
 
 from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
+from keras_aug.utils.conditional_imports import assert_kerascv_installed
 from keras_aug.utils.conditional_imports import assert_tfds_installed
 
 
@@ -115,6 +117,8 @@ def load_oxford_iiit_pet_dataset(
 def visualize_data(
     data, value_range=(0, 255), bounding_box_format=None, output_path=None
 ):
+    assert_kerascv_installed("visualize_data")
+
     data = next(iter(data))
     images = data["images"]
     if isinstance(images, tf.RaggedTensor):
@@ -145,6 +149,8 @@ def visualize_data(
 def visualize_data_single(
     data, value_range=(0, 255), bounding_box_format=None, output_path=None
 ):
+    assert_kerascv_installed("visualize_data")
+
     data = next(iter(data))
     images = data["images"]
     images = images[0:1, ...]
@@ -188,12 +194,12 @@ def visualize_segmentation_masks(
     mask_value_range=None,
     output_path=None,
 ):
+    assert_kerascv_installed("visualize_data")
+
     data = next(iter(data))
     images = data["images"]
     masks = data["segmentation_masks"]
-    masks = keras_cv.utils.transform_value_range(
-        masks, mask_value_range, (0, 255)
-    )
+    masks = image_utils.transform_value_range(masks, mask_value_range, (0, 255))
     masks = tf.concat([masks, masks, masks], axis=-1)
     display_images = tf.concat([images, masks], axis=2)  # B, H, W, C
 
