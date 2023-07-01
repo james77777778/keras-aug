@@ -5,6 +5,7 @@ from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -276,25 +277,25 @@ class RandomAffine(VectorizedBaseRandomLayer):
         combined_matrixes = tf.reshape(identity_matrixes, (batch_size, 3, 3))
         # process zoom
         if self._enable_zoom:
-            zoom_matrixes = augmentation_utils.get_zoom_matrix(
+            zoom_matrixes = image_utils.get_zoom_matrix(
                 zooms, heights, widths, to_square=True
             )
             combined_matrixes = zoom_matrixes @ combined_matrixes
         # process rotations
         if self._enable_rotation:
-            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+            rotation_matrixes = image_utils.get_rotation_matrix(
                 angles, heights, widths, to_square=True
             )
             combined_matrixes = rotation_matrixes @ combined_matrixes
         # process shear
         if self._enable_shear:
-            shear_matrixes = augmentation_utils.get_shear_matrix(
+            shear_matrixes = image_utils.get_shear_matrix(
                 shears, to_square=True
             )
             combined_matrixes = shear_matrixes @ combined_matrixes
         # process translations
         if self._enable_translation:
-            translation_matrixes = augmentation_utils.get_translation_matrix(
+            translation_matrixes = image_utils.get_translation_matrix(
                 translations, heights, widths, to_square=True
             )
             combined_matrixes = translation_matrixes @ combined_matrixes
@@ -328,7 +329,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if images.dtype == tf.bfloat16:
             images = tf.cast(images, dtype=tf.float32)
-        images = preprocessing_utils.transform(
+        images = image_utils.transform(
             images,
             combined_matrixes,
             fill_mode=self.fill_mode,
@@ -504,7 +505,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if segmentation_masks.dtype == tf.bfloat16:
             segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
-        segmentation_masks = preprocessing_utils.transform(
+        segmentation_masks = image_utils.transform(
             segmentation_masks,
             combined_matrixes,
             fill_mode=self.fill_mode,

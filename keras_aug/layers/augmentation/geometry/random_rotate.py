@@ -5,6 +5,7 @@ from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -78,7 +79,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         )
         angles = self.factor(shape=(batch_size, 1), dtype=tf.float32)
         angles = angles / 360.0 * 2.0 * math.pi
-        rotation_matrixes = augmentation_utils.get_rotation_matrix(
+        rotation_matrixes = image_utils.get_rotation_matrix(
             angles, heights, widths, to_square=True
         )
         # (batch_size, 3, 3)
@@ -109,7 +110,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if images.dtype == tf.bfloat16:
             images = tf.cast(images, dtype=tf.float32)
-        images = preprocessing_utils.transform(
+        images = image_utils.transform(
             images,
             rotation_matrixes,
             fill_mode=self.fill_mode,
@@ -223,7 +224,7 @@ class RandomRotate(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if segmentation_masks.dtype == tf.bfloat16:
             segmentation_masks = tf.cast(segmentation_masks, dtype=tf.float32)
-        segmentation_masks = preprocessing_utils.transform(
+        segmentation_masks = image_utils.transform(
             segmentation_masks,
             rotation_matrixes,
             fill_mode=self.fill_mode,

@@ -1,10 +1,10 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
+from keras_aug.utils import augmentation as augmentation_utils
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -33,7 +33,7 @@ class RandomChannelDropout(VectorizedBaseRandomLayer):
             lower = 0
             upper = factor + 1
         self.factor_input = factor
-        self.factor = preprocessing_utils.parse_factor(
+        self.factor = augmentation_utils.parse_factor(
             (lower, upper), min_value=0, max_value=None, seed=seed
         )
         self.fill_value = fill_value

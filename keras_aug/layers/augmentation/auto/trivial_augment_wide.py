@@ -1,12 +1,12 @@
 from functools import partial
 
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import layers
 from keras_aug.core import UniformFactorSampler
 from keras_aug.datapoints import bounding_box
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -263,7 +263,7 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
         transformations = self.get_random_transformation_batch(batch_size)
 
         # images value_range transform to [0, 255]
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs[IMAGES] = images
@@ -296,7 +296,7 @@ class TrivialAugmentWide(VectorizedBaseRandomLayer):
 
         # recover value_range
         images = result.get(IMAGES, None)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 255), self.value_range, self.compute_dtype
         )
         result[IMAGES] = images

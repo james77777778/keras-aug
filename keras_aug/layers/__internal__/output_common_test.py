@@ -102,7 +102,7 @@ GENERAL_TESTS = [
     (
         "RandomBlur",
         layers.RandomBlur,
-        {"factor": (3, 7)},
+        {"factor": (3, 7), "seed": 2024},
         True,
     ),
     (
@@ -212,7 +212,7 @@ GENERAL_TESTS = [
     (
         "RandomChannelDropout",
         layers.RandomChannelDropout,
-        {},
+        {"seed": 2024},
         True,
     ),
     (

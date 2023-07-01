@@ -2,9 +2,9 @@ import math
 
 import tensorflow as tf
 from keras_cv.utils import fill_utils
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -163,10 +163,10 @@ class RandomGridMask(VectorizedBaseRandomLayer):
             heights, widths = augmentation_utils.get_images_shape(
                 images, dtype=tf.float32
             )
-            rotation_matrixes = augmentation_utils.get_rotation_matrix(
+            rotation_matrixes = image_utils.get_rotation_matrix(
                 angles, heights, widths
             )
-            masks = preprocessing_utils.transform(
+            masks = image_utils.transform(
                 tf.cast(masks, dtype=tf.float32),
                 rotation_matrixes,
                 fill_mode="constant",

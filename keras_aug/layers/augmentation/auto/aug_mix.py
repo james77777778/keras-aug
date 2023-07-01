@@ -3,6 +3,7 @@ from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import layers
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -120,7 +121,7 @@ class AugMix(VectorizedBaseRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         original_shape = images.shape
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         inputs_for_aug_mix_single_image = {
@@ -132,7 +133,7 @@ class AugMix(VectorizedBaseRandomLayer):
             inputs_for_aug_mix_single_image,
             fn_output_signature=self.compute_dtype,
         )
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 255), self.value_range, self.compute_dtype
         )
         images = tf.ensure_shape(images, shape=original_shape)
@@ -262,9 +263,9 @@ class AugMix(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if image.dtype == tf.bfloat16:
             image = tf.cast(image, dtype=tf.float32)
-        image = preprocessing_utils.transform(
+        image = image_utils.transform(
             tf.expand_dims(image, axis=0),
-            augmentation_utils.get_rotation_matrix(angle, height, width),
+            image_utils.get_rotation_matrix(angle, height, width),
         )
         image = tf.squeeze(image, axis=0)
         return tf.cast(image, dtype=self.compute_dtype)
@@ -290,7 +291,7 @@ class AugMix(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if image.dtype == tf.bfloat16:
             image = tf.cast(image, dtype=tf.float32)
-        image = preprocessing_utils.transform(
+        image = image_utils.transform(
             tf.expand_dims(image, axis=0),
             tf.expand_dims(transform, axis=0),
         )
@@ -316,7 +317,7 @@ class AugMix(VectorizedBaseRandomLayer):
         # tf.raw_ops.ImageProjectiveTransformV3 not support bfloat16
         if image.dtype == tf.bfloat16:
             image = tf.cast(image, dtype=tf.float32)
-        image = preprocessing_utils.transform(
+        image = image_utils.transform(
             tf.expand_dims(image, axis=0),
             tf.expand_dims(transform, axis=0),
         )

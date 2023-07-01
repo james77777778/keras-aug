@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -141,7 +141,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, self.value_range, (0, 255), dtype=self.compute_dtype
         )
         if self._enable_brightness:
@@ -152,7 +152,7 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             images = self.adjust_saturation(images, transformations)
         if self._enable_hue:
             images = self.adjust_hue(images, transformations)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images, (0, 255), self.value_range, dtype=self.compute_dtype
         )
         return images
@@ -183,16 +183,16 @@ class RandomColorJitter(VectorizedBaseRandomLayer):
             transformations["contrast_factors"], dtype=tf.float32
         )
         images = tf.cast(images, dtype=tf.float32)
-        degenerates = augmentation_utils.rgb_to_grayscale(images)
+        degenerates = image_utils.rgb_to_grayscale(images)
         degenerates = tf.reduce_mean(degenerates, axis=(1, 2, 3), keepdims=True)
-        images = augmentation_utils.blend(degenerates, images, contrast_factors)
+        images = image_utils.blend(degenerates, images, contrast_factors)
         images = tf.clip_by_value(images, 0, 255)
         return tf.cast(images, dtype=self.compute_dtype)
 
     def adjust_saturation(self, images, transformations):
         saturation_factors = transformations["saturation_factors"]
-        degenerates = augmentation_utils.rgb_to_grayscale(images)
-        images = augmentation_utils.blend(
+        degenerates = image_utils.rgb_to_grayscale(images)
+        images = image_utils.blend(
             degenerates, images, saturation_factors, (0, 255)
         )
         images = tf.clip_by_value(images, 0, 255)

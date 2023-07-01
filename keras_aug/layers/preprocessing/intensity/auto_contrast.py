@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
+from keras_aug.datapoints import image as image_utils
 from keras_aug.layers.base.vectorized_base_random_layer import (
     VectorizedBaseRandomLayer,
 )
@@ -37,7 +37,7 @@ class AutoContrast(VectorizedBaseRandomLayer):
         return tf.squeeze(images, axis=0)
 
     def augment_images(self, images, transformations, **kwargs):
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=self.value_range,
             target_range=(0, 255),
@@ -50,7 +50,7 @@ class AutoContrast(VectorizedBaseRandomLayer):
         lows = tf.where(eq_idxs, 0.0, lows)
         scales = tf.where(eq_idxs, 1.0, scales)
         images = tf.clip_by_value((images - lows) * scales, 0, 255)
-        images = preprocessing_utils.transform_value_range(
+        images = image_utils.transform_value_range(
             images,
             original_range=(0, 255),
             target_range=self.value_range,
