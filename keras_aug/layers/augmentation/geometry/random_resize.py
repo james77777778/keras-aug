@@ -1,7 +1,6 @@
 import typing
 
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
@@ -65,9 +64,7 @@ class RandomResize(VectorizedBaseRandomLayer):
                 "RandomResize expects `heights` and `widths` to be same "
                 f"length. Received: `heights`={heights}, `widths`={widths}"
             )
-        self.interpolation = preprocessing_utils.get_interpolation(
-            interpolation
-        )
+        self.interpolation = augmentation_utils.get_interpolation(interpolation)
         self.antialias = antialias
         self.bounding_box_format = bounding_box_format
         self.seed = seed

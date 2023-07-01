@@ -279,3 +279,44 @@ def compute_signature(inputs, dtype):
     if CUSTOM_ANNOTATIONS in inputs:
         raise NotImplementedError()
     return fn_output_signature
+
+
+def random_inversion(rng):
+    negate = rng.random_uniform((), 0, 1, dtype=tf.float32) > 0.5
+    negate = tf.cond(negate, lambda: -1.0, lambda: 1.0)
+    return negate
+
+
+_TF_INTERPOLATION_METHODS = {
+    "bilinear": tf.image.ResizeMethod.BILINEAR,
+    "nearest": tf.image.ResizeMethod.NEAREST_NEIGHBOR,
+    "bicubic": tf.image.ResizeMethod.BICUBIC,
+    "area": tf.image.ResizeMethod.AREA,
+    "lanczos3": tf.image.ResizeMethod.LANCZOS3,
+    "lanczos5": tf.image.ResizeMethod.LANCZOS5,
+    "gaussian": tf.image.ResizeMethod.GAUSSIAN,
+    "mitchellcubic": tf.image.ResizeMethod.MITCHELLCUBIC,
+}
+
+
+def get_interpolation(interpolation):
+    interpolation = interpolation.lower()
+    if interpolation not in _TF_INTERPOLATION_METHODS:
+        raise NotImplementedError(
+            "Value not recognized for `interpolation`: {}. Supported values "
+            "are: {}".format(interpolation, _TF_INTERPOLATION_METHODS.keys())
+        )
+    return _TF_INTERPOLATION_METHODS[interpolation]
+
+
+def check_fill_mode_and_interpolation(fill_mode, interpolation):
+    if fill_mode not in {"reflect", "wrap", "constant", "nearest"}:
+        raise NotImplementedError(
+            " Want fillmode  to be one of `reflect`, `wrap`, "
+            "`constant` or `nearest`. Got `fill_mode` {}. ".format(fill_mode)
+        )
+    if interpolation not in {"nearest", "bilinear"}:
+        raise NotImplementedError(
+            "Unknown `interpolation` {}. Only `nearest` and "
+            "`bilinear` are supported.".format(interpolation)
+        )

@@ -1,5 +1,4 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
@@ -72,9 +71,7 @@ class Resize(VectorizedBaseRandomLayer):
             )
         self.height = height
         self.width = width
-        self.interpolation = preprocessing_utils.get_interpolation(
-            interpolation
-        )
+        self.interpolation = augmentation_utils.get_interpolation(interpolation)
         self.antialias = antialias
         self.position = augmentation_utils.get_padding_position(position)
         self.padding_value = padding_value

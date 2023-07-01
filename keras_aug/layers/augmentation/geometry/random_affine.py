@@ -1,7 +1,6 @@
 import math
 
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug.datapoints import bounding_box
@@ -170,7 +169,7 @@ class RandomAffine(VectorizedBaseRandomLayer):
 
         self.same_zoom_factor = same_zoom_factor
 
-        preprocessing_utils.check_fill_mode_and_interpolation(
+        augmentation_utils.check_fill_mode_and_interpolation(
             fill_mode, interpolation
         )
         self.interpolation = interpolation

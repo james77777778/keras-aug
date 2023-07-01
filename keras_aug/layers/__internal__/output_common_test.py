@@ -372,7 +372,7 @@ NO_UINT8 = [
     layers.RandomColorJitter,  # stateless_random_uniform
     layers.RandomGamma,  # stateless_random_uniform
     layers.RandomGaussianBlur,  # tf.nn.depthwise_conv2d
-    layers.RandomJpegQuality,  # preprocessing_utils.transform_value_range
+    layers.RandomJpegQuality,  # image_utils.transform_value_range
     layers.AutoContrast,  # tf.convert_to_tensor
     layers.Grayscale,  # tf.mul
     layers.Normalize,  # mean, std

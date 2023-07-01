@@ -1,5 +1,4 @@
 import tensorflow as tf
-from keras_cv.utils import preprocessing as preprocessing_utils
 from tensorflow import keras
 
 from keras_aug import layers
@@ -279,7 +278,7 @@ class AugMix(VectorizedBaseRandomLayer):
 
     def shear(self, image, along_x=True):
         factor = tf.cast(self.severity() * 0.3, tf.float32)
-        factor *= preprocessing_utils.random_inversion(self._random_generator)
+        factor *= augmentation_utils.random_inversion(self._random_generator)
         if along_x:
             transform = tf.convert_to_tensor(
                 [1.0, factor, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
@@ -305,7 +304,7 @@ class AugMix(VectorizedBaseRandomLayer):
         else:
             size = shape[0]
         factor = tf.cast(self.severity() * size / 3, tf.float32)
-        factor *= preprocessing_utils.random_inversion(self._random_generator)
+        factor *= augmentation_utils.random_inversion(self._random_generator)
         if along_x:
             transform = tf.convert_to_tensor(
                 [1.0, 0.0, factor, 0.0, 1.0, 0.0, 0.0, 0.0]
