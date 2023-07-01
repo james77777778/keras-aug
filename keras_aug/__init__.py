@@ -8,4 +8,4 @@ from keras_aug.core import SignedConstantFactorSampler
 from keras_aug.core import SignedNormalFactorSampler
 from keras_aug.core import UniformFactorSampler
 
-__version__ = "0.5.5"
+__version__ = "0.5.6"
