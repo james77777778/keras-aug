@@ -18,9 +18,9 @@ KerasAug is:
 
 - 🚀 faster than [KerasCV](https://github.com/keras-team/keras-cv) which is an official Keras library
 - 🧰 supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
-- ❤️ dependent only on TensorFlow and KerasCV
+- ❤️ dependent only on TensorFlow
 - 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
-- 🔥 compatible with GPU
+- 🔥 compatible with GPU and mixed precision (`mixed_float16` and `mixed_bfloat16`)
 
 Check out the demo website powered by Streamlit:
 
@@ -35,7 +35,7 @@ Check out the demo website powered by Streamlit:
 
 1. KerasAug is generally faster than KerasCV
 
-    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1342%** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
+    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1150%** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
 
 2. The APIs of KerasAug are highly stable compared to KerasCV
 

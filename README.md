@@ -27,9 +27,9 @@ KerasAug is:
 
 - 🚀 faster than [KerasCV](https://github.com/keras-team/keras-cv) which is an official Keras library
 - 🧰 supporting various data types, including **images, labels, bounding boxes, segmentation masks**, and more.
-- ❤️ dependent only on TensorFlow and KerasCV
+- ❤️ dependent only on TensorFlow
 - 🌟 seamlessly integrating with the `tf.data` and `tf.keras.Model` APIs
-- 🔥 compatible with GPU
+- 🔥 compatible with GPU and mixed precision (`mixed_float16` and `mixed_bfloat16`)
 
 Check out the demo website powered by Streamlit:
 
@@ -44,7 +44,7 @@ Check out the demo website powered by Streamlit:
 
 1. KerasAug is generally faster than KerasCV
 
-    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1342%** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
+    > RandomCropAndResize in KerasAug exhibits a remarkable speed-up of **+1150%** compared to KerasAug. See [keras-aug/benchmarks](https://github.com/james77777778/keras-aug/tree/main/benchmarks) for more details.
 
 2. The APIs of KerasAug are highly stable compared to KerasCV
 
@@ -294,31 +294,32 @@ visualize_dataset(
 
 KerasAug is generally faster than KerasCV.
 
-| Type           | Layer                    | KerasAug | KerasCV   |        |
-|----------------|--------------------------|----------|-----------|--------|
-| Geometry       | RandomHFlip              | 2148     | 1859      | +15%   |
-|                | RandomVFlip              | 2182     | 2075      | +5%    |
-|                | RandomRotate             | 2451     | 1829      | +34%   |
-|                | RandomAffine             | 2141     | 1240      | +73%   |
-|                | RandomCropAndResize      | 3014     | 209       | +1342% |
-|                | Resize (224, 224)        | 2853     | 213       | +1239% |
-| Intensity      | RandomBrightness         | 3028     | 3097      | close  |
-|                | RandomContrast           | 2806     | 2645      | +6%    |
-|                | RandomBrightnessContrast | 3068     | 612       | +401%  |
-|                | RandomColorJitter        | 1932     | 1221      | +58%   |
-|                | RandomGaussianBlur       | 2758     | 207       | +1232% |
-|                | Grayscale                | 2841     | 2872      | close  |
-|                | Equalize                 | 206      | 139       | +48%   |
-|                | AutoContrast             | 3116     | 2991      | +4%    |
-|                | Posterize                | 2917     | 2445      | +19%   |
-|                | Solarize                 | 3025     | 2882      | +5%    |
-|                | Sharpness                | 2969     | 2915      | close  |
-| Regularization | RandomCutout             | 3222     | 3268      | close  |
-|                | RandomGridMask           | 947      | 197       | +381%  |
-| Mix            | CutMix                   | 2671     | 2445      | +9%    |
-|                | MixUp                    | 2593     | 1996      | +29%   |
-| Auto           | AugMix                   | 83       | X (Error) | X      |
-|                | RandAugment              | 282      | 249       | +13%   |
+| Type           | Layer                      | KerasAug | KerasCV   |        |
+|----------------|----------------------------|----------|-----------|--------|
+| Geometry       | RandomHFlip                | 2123     | 1956      | fair   |
+|                | RandomVFlip                | 1871     | 1767      | fair   |
+|                | RandomRotate               | 1703     | 1723      | fair   |
+|                | RandomAffine               | 2578     | 2355      | fair   |
+|                | RandomCropAndResize        | 2664     | 213       | +1150% |
+|                | Resize (224, 224)          | 2480     | 222       | +1017% |
+| Intensity      | RandomBrightness           | 3052     | 2768      | fair   |
+|                | RandomContrast\*           | 3099     | 2976      | fair   |
+|                | RandomBrightnessContrast\* | 2881     | 609       | +373%  |
+|                | RandomColorJitter\*        | 2013     | 597       | +237%  |
+|                | RandomGaussianBlur         | 2345     | 203       | +1055% |
+|                | Invert                     | 2691     | X         |        |
+|                | Grayscale                  | 2917     | 3116      | fair   |
+|                | Equalize                   | 196      | 139       | +41%   |
+|                | AutoContrast               | 3095     | 3025      | fair   |
+|                | Posterize                  | 3033     | 2144      | fair   |
+|                | Solarize                   | 3133     | 2972      | fair   |
+|                | Sharpness                  | 2982     | 2833      | fair   |
+| Regularization | RandomCutout               | 2994     | 2795      | fair   |
+|                | RandomGridMask             | 918      | 196       | +368%  |
+| Mix            | CutMix                     | 2967     | 2957      | fair   |
+|                | MixUp                      | 1897     | 1861      | fair   |
+| Auto           | AugMix                     | 79       | X (Error) |        |
+|                | RandAugment                | 301      | 246       | +22%   |
 
 > **Note**
 > FPS (frames per second)

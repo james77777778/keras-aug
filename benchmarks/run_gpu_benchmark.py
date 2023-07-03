@@ -1,14 +1,13 @@
 import math
 import time
 
+import keras_aug
 import keras_cv
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from keras_cv import bounding_box
 from tqdm import tqdm
-
-import keras_aug
 
 
 def load_voc_dataset(
@@ -52,11 +51,7 @@ def load_voc_dataset(
         lambda x: preprocess_voc(x, bounding_box_format=bounding_box_format),
         num_parallel_calls=tf.data.AUTOTUNE,
     )
-    dataset = dataset.apply(
-        tf.data.experimental.dense_to_ragged_batch(
-            batch_size, drop_remainder=True
-        )
-    )
+    dataset = dataset.ragged_batch(batch_size, drop_remainder=True)
     dataset = dataset.map(resize, num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.prefetch(1)
     return dataset
@@ -142,8 +137,6 @@ def benchmark(
 
 
 if __name__ == "__main__":
-    physical_devices = tf.config.experimental.list_physical_devices("GPU")
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
     # init args
     warmup_iterations = 5
     benchmark_iterations = 20
@@ -151,7 +144,7 @@ if __name__ == "__main__":
     width = 640
     batch_size = 128
     bounding_box_format = "xyxy"
-    skip_number = (0, 24)  # max: 24
+    skip_number = (21, 22)  # max: 24
 
     # candidates
     keras_aug_layers = [
