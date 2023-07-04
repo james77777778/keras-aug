@@ -3,6 +3,4 @@ opencv-python-headless
 pycocotools
 tensorflow-cpu~=2.12.0
 keras-cv>=0.5.0
-# install the latest version
-git+https://github.com/james77777778/keras-aug.git
 streamlit~=1.23.1
