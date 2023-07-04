@@ -1,3 +1,4 @@
+# BE CAREFUL THAT THIS IS FOR STREAMLIT APP ONLY
 opencv-python-headless
 pycocotools
 tensorflow-cpu~=2.12.0

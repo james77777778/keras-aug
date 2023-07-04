@@ -1,15 +1,16 @@
 import numpy as np
 import streamlit as st
 import tensorflow as tf
-from layers_config import LAYERS_CONFIG
-from control import control_bounding_boxes
-from control import control_images
-from control import control_segmentation_masks
-from control import set_control_args
-from utils import construct_inputs
-from utils import download_images
-from utils import draw_bounding_boxes_app
-from utils import draw_segmentation_masks_app
+
+from streamlit_app.control import control_bounding_boxes
+from streamlit_app.control import control_images
+from streamlit_app.control import control_segmentation_masks
+from streamlit_app.control import set_control_args
+from streamlit_app.layers_config import LAYERS_CONFIG
+from streamlit_app.utils import construct_inputs
+from streamlit_app.utils import download_images
+from streamlit_app.utils import draw_bounding_boxes_app
+from streamlit_app.utils import draw_segmentation_masks_app
 
 
 def main():
