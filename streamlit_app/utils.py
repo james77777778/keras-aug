@@ -18,9 +18,9 @@ def download_images():
     astronaut = "https://raw.githubusercontent.com/pytorch/vision/main/gallery/assets/astronaut.jpg"
     dog2 = "https://raw.githubusercontent.com/pytorch/vision/main/gallery/assets/dog2.jpg"
     person1 = "https://raw.githubusercontent.com/pytorch/vision/main/gallery/assets/person1.jpg"
-    astronaut_mask = "./assets/astronaut.png"
-    dog2_mask = "./assets/dog2.png"
-    person1_mask = "./assets/person1.png"
+    astronaut_mask = "./streamlit_app/assets/astronaut.png"
+    dog2_mask = "./streamlit_app/assets/dog2.png"
+    person1_mask = "./streamlit_app/assets/person1.png"
     default_images = {
         "astronaut": {
             "image": requests.get(astronaut).content,
