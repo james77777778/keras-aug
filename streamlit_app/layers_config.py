@@ -17,6 +17,7 @@ LAYERS_CONFIG = {
             "alpha": [0.01, 2.0],
         },
         "is_compatible_with_bbox": False,
+        "is_compatible_with_masks": False,
     },
     "RandAugment": {
         "layer_cls": keras_aug.layers.RandAugment,
@@ -39,6 +40,7 @@ LAYERS_CONFIG = {
             "use_geometry": [0, 1],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": False,
     },
     "TrivialAugmentWide": {
         "layer_cls": keras_aug.layers.TrivialAugmentWide,
@@ -51,6 +53,7 @@ LAYERS_CONFIG = {
             "use_geometry": [0, 1],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": False,
     },
     "RandomAffine": {
         "layer_cls": keras_aug.layers.RandomAffine,
@@ -76,6 +79,7 @@ LAYERS_CONFIG = {
             "same_zoom_factor": [0, 1],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomCrop": {
         "layer_cls": keras_aug.layers.RandomCrop,
@@ -89,6 +93,7 @@ LAYERS_CONFIG = {
             "width": [10, 512],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomCropAndResize": {
         "layer_cls": keras_aug.layers.RandomCropAndResize,
@@ -106,6 +111,7 @@ LAYERS_CONFIG = {
             "aspect_ratio_factor": (0.5, 2.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomFlip": {
         "layer_cls": keras_aug.layers.RandomFlip,
@@ -117,6 +123,7 @@ LAYERS_CONFIG = {
             "mode": ["horizontal", "vertical", "horizontal_and_vertical"],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     # skip RandomResize
     "RandomRotate": {
@@ -129,6 +136,7 @@ LAYERS_CONFIG = {
             "factor": (-90.0, 90.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomZoomAndCrop": {
         "layer_cls": keras_aug.layers.RandomZoomAndCrop,
@@ -144,6 +152,7 @@ LAYERS_CONFIG = {
             "scale_factor": (0.1, 10.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "ChannelShuffle": {
         "layer_cls": keras_aug.layers.ChannelShuffle,
@@ -154,6 +163,7 @@ LAYERS_CONFIG = {
             "groups": [1, 3],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomBlur": {
         "layer_cls": keras_aug.layers.RandomBlur,
@@ -164,6 +174,7 @@ LAYERS_CONFIG = {
             "factor": [1, 99],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomChannelShift": {
         "layer_cls": keras_aug.layers.RandomChannelShift,
@@ -176,6 +187,7 @@ LAYERS_CONFIG = {
             "factor": [-1.0, 1.0],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomCLAHE": {
         "layer_cls": keras_aug.layers.RandomCLAHE,
@@ -189,6 +201,7 @@ LAYERS_CONFIG = {
             "tile_grid_size": (2, 16),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomColorJitter": {
         "layer_cls": keras_aug.layers.RandomColorJitter,
@@ -206,6 +219,7 @@ LAYERS_CONFIG = {
             "hue_factor": (-0.5, 0.5),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomGamma": {
         "layer_cls": keras_aug.layers.RandomGamma,
@@ -217,6 +231,7 @@ LAYERS_CONFIG = {
             "factor": (0.1, 2.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomGaussianBlur": {
         "layer_cls": keras_aug.layers.RandomGaussianBlur,
@@ -229,6 +244,7 @@ LAYERS_CONFIG = {
             "factor": (0.0, 2.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomHSV": {
         "layer_cls": keras_aug.layers.RandomHSV,
@@ -244,6 +260,7 @@ LAYERS_CONFIG = {
             "value_factor": (0.1, 2.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomJpegQuality": {
         "layer_cls": keras_aug.layers.RandomJpegQuality,
@@ -255,6 +272,7 @@ LAYERS_CONFIG = {
             "factor": (1, 100),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomPosterize": {
         "layer_cls": keras_aug.layers.RandomPosterize,
@@ -266,6 +284,7 @@ LAYERS_CONFIG = {
             "factor": (1, 8),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomSharpness": {
         "layer_cls": keras_aug.layers.RandomSharpness,
@@ -277,6 +296,7 @@ LAYERS_CONFIG = {
             "factor": (0.1, 2.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomSolarize": {
         "layer_cls": keras_aug.layers.RandomSolarize,
@@ -290,6 +310,7 @@ LAYERS_CONFIG = {
             "addition_factor": (0, 255),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     # skip CutMix
     # skip MixUp
@@ -301,6 +322,7 @@ LAYERS_CONFIG = {
         },
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomCutout": {
         "layer_cls": keras_aug.layers.RandomCutout,
@@ -314,6 +336,7 @@ LAYERS_CONFIG = {
             "width_factor": (0.1, 1.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "RandomErase": {
         "layer_cls": keras_aug.layers.RandomErase,
@@ -326,6 +349,7 @@ LAYERS_CONFIG = {
             "aspect_ratio_factor": (0.1, 10.0),
         },
         "is_compatible_with_bbox": False,
+        "is_compatible_with_masks": False,
     },
     "RandomGridMask": {
         "layer_cls": keras_aug.layers.RandomGridMask,
@@ -340,6 +364,7 @@ LAYERS_CONFIG = {
             "rotation_factor": (-90.0, 90.0),
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": False,
     },
     # skip RandomApply
     # skip RandomChoice
@@ -357,6 +382,7 @@ LAYERS_CONFIG = {
             "width": [10, 512],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     # skip PadIfNeeded
     "Resize": {
@@ -374,6 +400,7 @@ LAYERS_CONFIG = {
             "pad_to_aspect_ratio": [0, 1],
         },
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "AutoContrast": {
         "layer_cls": keras_aug.layers.AutoContrast,
@@ -382,6 +409,7 @@ LAYERS_CONFIG = {
         },
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "Equalize": {
         "layer_cls": keras_aug.layers.Equalize,
@@ -390,12 +418,14 @@ LAYERS_CONFIG = {
         },
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "Grayscale": {
         "layer_cls": keras_aug.layers.Grayscale,
         "layer_args": {},
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "Invert": {
         "layer_cls": keras_aug.layers.Invert,
@@ -404,6 +434,7 @@ LAYERS_CONFIG = {
         },
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     "Normalize": {
         "layer_cls": keras_aug.layers.Normalize,
@@ -412,6 +443,7 @@ LAYERS_CONFIG = {
         },
         "control_args": {},
         "is_compatible_with_bbox": True,
+        "is_compatible_with_masks": True,
     },
     # skip Rescale
     # skip SanitizeBoundingBox
