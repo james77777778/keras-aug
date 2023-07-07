@@ -4,7 +4,7 @@
         "dockerfile": "Dockerfile",
         "args": {
             "PYTHON_VERSION": "3.8",
-            "TF_VERSION": "2.12.0"
+            "TF_VERSION": "2.13.0"
         }
     },
     "customizations": {

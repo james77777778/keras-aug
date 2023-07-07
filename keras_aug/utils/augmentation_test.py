@@ -1,8 +1,8 @@
 import tensorflow as tf
 from absl.testing import parameterized
-from keras.backend import RandomGenerator
 
 from keras_aug import core
+from keras_aug.core.keras_random_generator import KerasRandomGenerator
 from keras_aug.utils import augmentation as augmentation_utils
 
 
@@ -55,7 +55,7 @@ class AugmentationUtilsTest(tf.test.TestCase, parameterized.TestCase):
         ]
     )
     def test_get_position_params(self, values, expected_values, position_name):
-        rng = RandomGenerator(2023)
+        rng = KerasRandomGenerator(2023)
         tops, bottoms, lefts, rights = values
         position = augmentation_utils.get_padding_position(position_name)
 

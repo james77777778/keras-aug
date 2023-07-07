@@ -1,8 +1,8 @@
 import keras
-import keras.backend
 import tensorflow as tf
 
 from keras_aug.core.factor_sampler.factor_sampler import FactorSampler
+from keras_aug.core.keras_random_generator import KerasRandomGenerator
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -34,9 +34,7 @@ class SignedNormalFactorSampler(FactorSampler):
         self.max_value = max_value
         self.rate = rate
         self.seed = seed
-        self.rng = keras.backend.RandomGenerator(
-            seed=seed, rng_type="stateless"
-        )
+        self.rng = KerasRandomGenerator(seed=seed, rng_type="stateless")
 
     def __call__(self, shape=(), dtype="float32"):
         if self.stddev != 0:

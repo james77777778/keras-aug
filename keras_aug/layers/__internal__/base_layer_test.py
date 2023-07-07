@@ -1,8 +1,8 @@
 import tempfile
 
 import tensorflow as tf
-from keras import backend
 
+from keras_aug.core.keras_random_generator import KerasRandomGenerator
 from keras_aug.layers.__internal__.base_layer import BaseRandomLayer
 
 
@@ -36,4 +36,4 @@ class BaseRandomLayerTest(tf.test.TestCase):
 
         rng = base_random_layer._lookup_dependency("_random_generator")
 
-        self.assertTrue(isinstance(rng, backend.RandomGenerator))
+        self.assertTrue(isinstance(rng, KerasRandomGenerator))
