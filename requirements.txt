@@ -1,6 +1,6 @@
 # BE CAREFUL THAT THIS IS FOR STREAMLIT APP ONLY
 opencv-python-headless
 pycocotools
-tensorflow-cpu~=2.13.0
+tensorflow-cpu~=2.12.0  # stick to 2.12 until keras-cv is updated
 keras-cv>=0.5.0
 streamlit~=1.23.1
