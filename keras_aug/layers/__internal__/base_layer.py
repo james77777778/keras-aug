@@ -1,13 +1,14 @@
 """
 Copied from:
-https://github.com/keras-team/keras/blob/f9336cc5114b4a9429a242deb264b707379646b7/keras/engine/base_layer.py
+https://github.com/keras-team/keras/blob/4829ddfc5fdcb84efe19b5e571f4be8dda89a3e1/keras/engine/base_layer.py
 
 Remove __init__ docstring to prevent docstring population
 """  # noqa: E501
 
 import tensorflow as tf
-from keras import backend
 from tensorflow import keras
+
+from keras_aug.core.keras_random_generator import KerasRandomGenerator
 
 
 class BaseRandomLayer(keras.layers.Layer):
@@ -30,7 +31,7 @@ class BaseRandomLayer(keras.layers.Layer):
         self, seed=None, force_generator=False, rng_type=None, **kwargs
     ):
         super().__init__(**kwargs)
-        self._random_generator = backend.RandomGenerator(
+        self._random_generator = KerasRandomGenerator(
             seed, force_generator=force_generator, rng_type=rng_type
         )
 

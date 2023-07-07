@@ -1,7 +1,7 @@
 import keras
-import keras.backend
 
 from keras_aug.core.factor_sampler.factor_sampler import FactorSampler
+from keras_aug.core.keras_random_generator import KerasRandomGenerator
 
 
 @keras.utils.register_keras_serializable(package="keras_aug")
@@ -21,9 +21,7 @@ class UniformFactorSampler(FactorSampler):
         self.lower = lower
         self.upper = upper
         self.seed = seed
-        self.rng = keras.backend.RandomGenerator(
-            seed=seed, rng_type="stateless"
-        )
+        self.rng = KerasRandomGenerator(seed=seed, rng_type="stateless")
 
     def __call__(self, shape=(), dtype="float32"):
         return self.rng.random_uniform(
