@@ -2,5 +2,5 @@
 opencv-python-headless
 pycocotools
 tensorflow-cpu~=2.12.0  # stick to 2.12 until keras-cv is updated
-keras-cv>=0.5.0
+keras-cv==0.5.1  # not support new KerasCV
 streamlit~=1.23.1
