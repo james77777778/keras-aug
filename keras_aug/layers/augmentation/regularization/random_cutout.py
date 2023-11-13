@@ -195,7 +195,7 @@ class RandomCutout(VectorizedBaseRandomLayer):
         # bounding_box.to_ragged() after self.augment_bounding_boxes()
         bounding_boxes["classes"] = tf.where(
             intersection_ratios >= self.bbox_removal_threshold,
-            -1.0,
+            tf.constant(-1.0, dtype=bounding_boxes["classes"].dtype),
             bounding_boxes["classes"],
         )
         return bounding_boxes

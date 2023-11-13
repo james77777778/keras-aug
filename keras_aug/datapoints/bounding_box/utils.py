@@ -19,7 +19,9 @@ def _relative_area(boxes, bounding_box_format):
     heights = boxes[..., 3]
     # handle corner case where shear performs a full inversion.
     return tf.where(
-        tf.math.logical_and(widths > 0, heights > 0), widths * heights, 0.0
+        tf.math.logical_and(widths > 0, heights > 0),
+        widths * heights,
+        tf.constant(0.0, dtype=widths.dtype),
     )
 
 

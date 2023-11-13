@@ -111,36 +111,44 @@ class Resize(VectorizedBaseRandomLayer):
             tops = tf.where(
                 new_heights > self.height,
                 tf.cast((new_heights - self.height) / 2, tf.int32),
-                0,
+                tf.constant(0, tf.int32),
             )
             bottoms = tf.where(
-                new_heights > self.height, new_heights - self.height - tops, 0
+                new_heights > self.height,
+                new_heights - self.height - tops,
+                tf.constant(0, tf.int32),
             )
             lefts = tf.where(
                 new_widths > self.width,
                 tf.cast((new_widths - self.width) / 2, tf.int32),
-                0,
+                tf.constant(0, tf.int32),
             )
             rights = tf.where(
-                new_widths > self.width, new_widths - self.width - lefts, 0
+                new_widths > self.width,
+                new_widths - self.width - lefts,
+                tf.constant(0, tf.int32),
             )
         else:
             assert self.pad_to_aspect_ratio
             tops = tf.where(
                 new_heights < self.height,
                 tf.cast((self.height - new_heights) / 2, tf.int32),
-                0,
+                tf.constant(0, tf.int32),
             )
             bottoms = tf.where(
-                new_heights < self.height, self.height - new_heights - tops, 0
+                new_heights < self.height,
+                self.height - new_heights - tops,
+                tf.constant(0, tf.int32),
             )
             lefts = tf.where(
                 new_widths < self.width,
                 tf.cast((self.width - new_widths) / 2, tf.int32),
-                0,
+                tf.constant(0, tf.int32),
             )
             rights = tf.where(
-                new_widths < self.width, self.width - new_widths - lefts, 0
+                new_widths < self.width,
+                self.width - new_widths - lefts,
+                tf.constant(0, tf.int32),
             )
         (tops, bottoms, lefts, rights) = augmentation_utils.get_position_params(
             tops, bottoms, lefts, rights, self.position, self._random_generator

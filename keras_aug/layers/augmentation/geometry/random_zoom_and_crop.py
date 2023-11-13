@@ -154,22 +154,22 @@ class RandomZoomAndCrop(VectorizedBaseRandomLayer):
         tops = tf.where(
             new_heights < self.crop_height,
             tf.cast((self.crop_height - new_heights) / 2, tf.int32),
-            0,
+            tf.constant(0, dtype=tf.int32),
         )
         bottoms = tf.where(
             new_heights < self.crop_height,
             self.crop_height - new_heights - tops,
-            0,
+            tf.constant(0, dtype=tf.int32),
         )
         lefts = tf.where(
             new_widths < self.crop_width,
             tf.cast((self.crop_width - new_widths) / 2, tf.int32),
-            0,
+            tf.constant(0, dtype=tf.int32),
         )
         rights = tf.where(
             new_widths < self.crop_width,
             self.crop_width - new_widths - lefts,
-            0,
+            tf.constant(0, dtype=tf.int32),
         )
         (tops, bottoms, lefts, rights) = augmentation_utils.get_position_params(
             tops, bottoms, lefts, rights, self.position, self._random_generator

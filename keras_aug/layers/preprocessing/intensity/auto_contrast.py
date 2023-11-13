@@ -47,8 +47,8 @@ class AutoContrast(VectorizedBaseRandomLayer):
         highs = tf.reduce_max(images, axis=(1, 2), keepdims=True)
         scales = 255.0 / (highs - lows)
         eq_idxs = tf.math.is_inf(scales)
-        lows = tf.where(eq_idxs, 0.0, lows)
-        scales = tf.where(eq_idxs, 1.0, scales)
+        lows = tf.where(eq_idxs, tf.constant(0.0, dtype=lows.dtype), lows)
+        scales = tf.where(eq_idxs, tf.constant(1.0, dtype=scales.dtype), scales)
         images = tf.clip_by_value((images - lows) * scales, 0, 255)
         images = image_utils.transform_value_range(
             images,
