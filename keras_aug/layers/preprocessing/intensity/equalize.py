@@ -86,7 +86,7 @@ class Equalize(VectorizedBaseRandomLayer):
         big_number = 1410065408
         histogram_without_zeroes = tf.where(
             tf.equal(histogram, 0),
-            big_number,
+            tf.constant(big_number, dtype=histogram.dtype),
             histogram,
         )
         step = (
