@@ -1,27 +1,14 @@
 import keras
 import numpy as np
-import pytest
 from absl.testing import parameterized
 from keras import backend
 from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
-from keras_aug._src.layers.vision.random_crop import RandomCrop
+from keras_aug._src.layers.vision.random_flip import RandomFlip
 
 
-class FixedRandomCrop(RandomCrop):
-    def get_params(self, batch_size, images=None, **kwargs):
-        return dict(
-            pad_top=0,
-            pad_bottom=0,
-            pad_left=0,
-            pad_right=0,
-            crop_top=8,
-            crop_left=10,
-        )
-
-
-class RandomCropTest(testing.TestCase, parameterized.TestCase):
+class RandomFlipTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -32,85 +19,87 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(
+        named_product(
+            mode=["horizontal", "vertical", "horizontal_and_vertical"],
+        )
+    )
+    def test_correctness(self, mode):
         import torch
         import torchvision.transforms.functional as TF
 
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomCrop(16)
+        np.random.seed(42)
+        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
+        layer = RandomFlip(mode, p=1.0)
         y = layer(x)
 
-        ref_y = TF.crop(
-            torch.tensor(np.transpose(x, [0, 3, 1, 2])), 8, 10, 16, 16
-        )
+        if mode == "horizontal":
+            ref_y = TF.hflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+        elif mode == "vertical":
+            ref_y = TF.vflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+        else:
+            ref_y = TF.hflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+            ref_y = TF.vflip(ref_y)
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=0.1)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = FixedRandomCrop(16)
-        y = layer(x)
-
-        ref_y = TF.crop(torch.tensor(x), 8, 10, 16, 16)
-        ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y)
-
-    @parameterized.named_parameters(
-        named_product(mode=["constant", "reflect", "symmetric"])
-    )
-    @pytest.mark.skip("TODO: Investigate `mode`")
-    def test_mode(self, mode):
-        if backend.backend() == "torch" and mode == "symmetric":
-            self.skipTest("TODO: Need to investigate")
         np.random.seed(42)
-        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
-        layer = RandomCrop(48, padding_mode=mode)
+        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
+        layer = RandomFlip(mode, p=1.0)
         y = layer(x)
 
-        pad_width = [[0, 0], [8, 8], [8, 8], [0, 0]]
-        ref_y = np.pad(x, pad_width, mode=mode)
-        self.assertAllClose(y, ref_y)
+        if mode == "horizontal":
+            ref_y = TF.hflip(torch.tensor(x))
+        elif mode == "vertical":
+            ref_y = TF.vflip(torch.tensor(x))
+        else:
+            ref_y = TF.hflip(torch.tensor(x))
+            ref_y = TF.vflip(ref_y)
+        ref_y = ref_y.cpu().numpy()
+        self.assertAllClose(y, ref_y, atol=0.1)
 
     def test_shape(self):
-        # Test channels_last
+        # Test dynamic shape
         x = keras.KerasTensor((None, None, None, 3))
-        y = RandomCrop(16)(x)
-        self.assertEqual(y.shape, (None, 16, 16, 3))
-
-        # Test channels_first
-        backend.set_image_data_format("channels_first")
-        x = keras.KerasTensor((None, 3, None, None))
-        y = RandomCrop(16)(x)
-        self.assertEqual(y.shape, (None, 3, 16, 16))
+        y = RandomFlip()(x)
+        self.assertEqual(y.shape, (None, None, None, 3))
 
         # Test static shape
-        backend.set_image_data_format("channels_last")
         x = keras.KerasTensor((None, 32, 32, 3))
-        y = RandomCrop(16)(x)
-        self.assertEqual(y.shape, (None, 16, 16, 3))
+        y = RandomFlip()(x)
+        self.assertEqual(y.shape, (None, 32, 32, 3))
 
     def test_model(self):
-        layer = RandomCrop(16)
+        # Test dynamic shape
+        layer = RandomFlip()
         inputs = keras.layers.Input(shape=[None, None, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
-        self.assertEqual(model.output_shape, (None, 16, 16, 3))
+        self.assertEqual(model.output_shape, (None, None, None, 3))
+
+        # Test static shape
+        layer = RandomFlip()
+        inputs = keras.layers.Input(shape=[32, 32, 3])
+        outputs = layer(inputs)
+        model = keras.models.Model(inputs, outputs)
+        self.assertEqual(model.output_shape, (None, 32, 32, 3))
 
     def test_config(self):
         x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomCrop(16)
+        layer = RandomFlip(p=1.0)
         y = layer(x)
 
-        layer = FixedRandomCrop.from_config(layer.get_config())
+        layer = RandomFlip.from_config(layer.get_config())
         y2 = layer(x)
         self.assertAllClose(y, y2)
 
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = RandomCrop(16)
+        layer = RandomFlip()
         x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
         ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
         for output in ds.take(1):
@@ -130,7 +119,7 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomCrop((18, 18), bounding_box_format="rel_xyxy")
+        layer = RandomFlip(p=1.0, bounding_box_format="rel_xyxy")
 
         output = layer(input)
         self.assertAllClose(output["bounding_boxes"]["boxes"], boxes["boxes"])
@@ -151,18 +140,18 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomCrop((18, 18), bounding_box_format="xyxy")
+        layer = RandomFlip(p=1.0, bounding_box_format="xyxy")
 
         output = layer(input)
         expected_boxes = {
             "boxes": np.array(
                 [
-                    [[0, 0, 7, 10], [0, 4, 6, 11]],
-                    [[0, 0, 0, 0], [5, 4, 7, 12]],
+                    [[15, 4, 29, 18], [16, 12, 22, 19]],
+                    [[31, 0, 32, 1], [15, 12, 17, 20]],
                 ],
                 "float32",
             ),
-            "classes": np.array([[0, 1], [-1, 3]], "float32"),
+            "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
         self.assertAllClose(
             output["bounding_boxes"]["boxes"], expected_boxes["boxes"]
@@ -180,7 +169,7 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         inputs = {"images": images, "segmentation_masks": masks}
 
         # Crop to exactly 1/2 of the size
-        ref_masks = masks[:, 8 : 8 + 16, 10 : 10 + 16, :]
-        layer = FixedRandomCrop(16)
+        ref_masks = masks[:, :, ::-1, :]
+        layer = RandomFlip(p=1.0)
         output = layer(inputs)
         self.assertAllClose(output["segmentation_masks"], ref_masks)

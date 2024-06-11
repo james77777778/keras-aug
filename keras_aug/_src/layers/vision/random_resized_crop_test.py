@@ -13,7 +13,7 @@ class FixedRandomResizedCrop(RandomResizedCrop):
         return dict(top=10, left=5, height=8, width=16)
 
 
-class ResizeTest(testing.TestCase, parameterized.TestCase):
+class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
     pil_modes_mapping = {"nearest": 0, "bilinear": 2, "bicubic": 3}
 
     def setUp(self):
