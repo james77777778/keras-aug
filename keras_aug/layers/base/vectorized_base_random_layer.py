@@ -528,11 +528,11 @@ class VectorizedBaseRandomLayer(BaseRandomLayer):
                 inputs[BOUNDING_BOXES]["boxes"],
                 self.compute_dtype,
             )
-            inputs[BOUNDING_BOXES][
-                "classes"
-            ] = augmentation_utils.ensure_tensor(
-                inputs[BOUNDING_BOXES]["classes"],
-                self.compute_dtype,
+            inputs[BOUNDING_BOXES]["classes"] = (
+                augmentation_utils.ensure_tensor(
+                    inputs[BOUNDING_BOXES]["classes"],
+                    self.compute_dtype,
+                )
             )
         return inputs
 
