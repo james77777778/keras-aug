@@ -27,3 +27,21 @@ def standardize_size(size):
             f"numbers. Received: size={size}"
         )
     return int(size[0]), int(size[1])
+
+
+def standardize_interpolation(interpolation):
+    if isinstance(interpolation, str):
+        interpolation = interpolation.lower()
+        if interpolation not in ("nearest", "bilinear", "bicubic"):
+            raise ValueError(
+                "Invalid `interpolation`. Available values are 'nearest', "
+                "'bilinear' and 'bicubic'. "
+                f"Received: interpolation={interpolation}"
+            )
+        return interpolation
+    else:
+        raise ValueError(
+            "`interpolation` must be `str`. "
+            f"Received: interpolation={interpolation} of type "
+            f"{type(interpolation)}"
+        )

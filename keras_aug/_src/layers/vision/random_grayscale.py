@@ -24,9 +24,7 @@ class RandomGrayscale(VisionRandomLayer):
         self.p = float(p)
         self.data_format = data_format or keras.config.image_data_format()
 
-    def get_random_transformation_batch(
-        self, batch_size, images=None, **kwargs
-    ):
+    def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         random_generator = self.random_generator
         p = ops.random.uniform([batch_size], seed=random_generator)

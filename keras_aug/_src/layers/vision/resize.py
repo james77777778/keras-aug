@@ -125,9 +125,7 @@ class Resize(VisionRandomLayer):
             input_shape, images_shape, segmentation_masks_shape
         )
 
-    def get_random_transformation_batch(
-        self, batch_size, images=None, **kwargs
-    ):
+    def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         images_shape = ops.shape(images)
         h, w = images_shape[self.h_axis], images_shape[self.w_axis]

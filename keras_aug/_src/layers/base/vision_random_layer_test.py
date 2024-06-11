@@ -14,7 +14,7 @@ class RandomAddLayer(VisionRandomLayer):
         self.add_range = add_range
         self.fixed_value = fixed_value
 
-    def get_random_transformation_batch(self, batch_size, **kwargs):
+    def get_params(self, batch_size, **kwargs):
         ops = self.backend
         if self.fixed_value:
             return ops.numpy.ones((batch_size,)) * self.fixed_value
@@ -50,7 +50,7 @@ class AssertionLayer(VisionRandomLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_random_transformation_batch(
+    def get_params(
         self,
         batch_size,
         images=None,

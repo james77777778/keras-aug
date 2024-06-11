@@ -45,7 +45,7 @@ class BoundingBoxBackendTest(testing.TestCase, parameterized.TestCase):
             ],
         )
     )
-    def test_correctness(self, source, target):
+    def test_convert_format(self, source, target):
         bbox_backend = BoundingBoxBackend()
         boxes = self.get_box(source)
         ref_boxes = self.get_box(target)

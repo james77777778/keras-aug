@@ -14,47 +14,20 @@ class BoundingBoxBackend(DynamicBackend):
         width=None,
         dtype="float32",
     ):
-        """Converts bounding_boxes from one format to another.
+        """Converts `boxes` from one format to another.
 
         Supported formats are:
-        - `"xyxy"`, also known as `corners` format. In this format the first
-            four axes represent `[left, top, right, bottom]` in that order.
-        - `"rel_xyxy"`. In this format, the axes are the same as `"xyxy"` but
-            the x coordinates are normalized using the image width, and the y
-            axes the image height. All values in `rel_xyxy` are in the range
-            `(0, 1)`.
-        - `"xywh"`. In this format the first four axes represent
-            `[left, top, width, height]`.
-        - `"rel_xywh". In this format the first four axes represent
-            [left, top, width, height], just like `"xywh"`. Unlike `"xywh"`, the
-            values are in the range (0, 1) instead of absolute pixel values.
-        - `"center_xywh"`. In this format the first two coordinates represent
-            the x and y coordinates of the center of the bounding box, while the
-            last two represent the width and height of the bounding box.
-        - `"center_yxhw"`. In this format the first two coordinates represent
-            the y and x coordinates of the center of the bounding box, while the
-            last two represent the height and width of the bounding box.
-        - `"yxyx"`. In this format the first four axes represent
-            [top, left, bottom, right] in that order.
-        - `"rel_yxyx"`. In this format, the axes are the same as `"yxyx"` but
-            the x coordinates are normalized using the image width, and the y
-            axes the image height. All values in `rel_yxyx` are in the range
-            (0, 1).
-
-        Relative formats, abbreviated `rel`, make use of the shapes of the
-        `images` passed. In these formats, the coordinates, widths, and heights
-        are all specified as percentages of the host image.
-
-        Usage:
-
-        ```python
-        boxes = load_coco_dataset()
-        boxes_in_xywh = keras_aug.bounding_box.convert_format(
-            boxes,
-            source='xyxy',
-            target='xyWH'
-        )
-        ```
+        - `"xyxy"` representing `[left, top, right, bottom]`.
+        - `"xywh"` representing `[left, top, width, height]`.
+        - `"center_xywh"`. representing
+            `[center of x, center of y, width, height]`.
+        - `"rel_xyxy"`. representing `[left, top, right, bottom]`. All values
+            in `rel_xyxy` are in the range `(0, 1)`.
+        - `"rel_xywh". representing `[left, top, width, height]`. All values
+            in `rel_xywh` are in the range `(0, 1)`.
+        - `"rel_center_xywh"`. representing
+            `[center of x, center of y, width, height]`. All values
+            in `rel_center_xywh` are in the range `(0, 1)`.
 
         Args:
             boxes: Tensor representing bounding boxes in the format specified in
@@ -68,12 +41,6 @@ class BoundingBoxBackend(DynamicBackend):
                 Used to specify the original format of the `boxes` parameter.
             target: One of {TODO}.
                 Used to specify the destination format of the `boxes` parameter.
-            images: (Optional) a batch of images aligned with `boxes` on the
-                first axis. Should be at least 3 dimensions, with the first 3
-                dimensions representing: `[batch_size, height, width]`. Used in
-                some converters to compute relative pixel values of the bounding
-                box dimensions. Required when transforming from a rel format to
-                a non-rel format.
             dtype: the data type to use when transforming the boxes, defaults to
                 `"float32"`.
         """
@@ -137,22 +104,41 @@ class BoundingBoxBackend(DynamicBackend):
         in_xyxy_boxes = to_xyxy_converter(boxes, height, width)
         return from_xyxy_converter(in_xyxy_boxes, height, width)
 
-    def clip_to_images(self, bounding_boxes, height, width, format="xyxy"):
-        if format != "xyxy":
+    def clip_to_images(
+        self, bounding_boxes, height=None, width=None, format="xyxy"
+    ):
+        if format not in ("xyxy", "rel_xyxy"):
             raise NotImplementedError
+        if format == "xyxy" and (height is None or width is None):
+            raise ValueError(
+                "`height` and `width` must be set if `format='xyxy'`."
+            )
 
         ops = self.backend
         boxes, classes = bounding_boxes["boxes"], bounding_boxes["classes"]
-        x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
-        x1 = ops.numpy.clip(x1, 0, width)
-        y1 = ops.numpy.clip(y1, 0, height)
-        x2 = ops.numpy.clip(x2, 0, width)
-        y2 = ops.numpy.clip(y2, 0, height)
-        boxes = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
 
-        areas = self._compute_area(boxes)
-        areas = ops.numpy.squeeze(areas, axis=-1)
-        classes = ops.numpy.where(areas > 0, classes, -1)
+        if format == "xyxy":
+            x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
+            x1 = ops.numpy.clip(x1, 0, width)
+            y1 = ops.numpy.clip(y1, 0, height)
+            x2 = ops.numpy.clip(x2, 0, width)
+            y2 = ops.numpy.clip(y2, 0, height)
+            boxes = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+
+            areas = self._compute_area(boxes)
+            areas = ops.numpy.squeeze(areas, axis=-1)
+            classes = ops.numpy.where(areas > 0, classes, -1)
+        elif format == "rel_xyxy":
+            x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
+            x1 = ops.numpy.clip(x1, 0.0, 1.0)
+            y1 = ops.numpy.clip(y1, 0.0, 1.0)
+            x2 = ops.numpy.clip(x2, 0.0, 1.0)
+            y2 = ops.numpy.clip(y2, 0.0, 1.0)
+            boxes = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+
+            areas = self._compute_area(boxes)
+            areas = ops.numpy.squeeze(areas, axis=-1)
+            classes = ops.numpy.where(areas > 0, classes, -1)
 
         result = bounding_boxes.copy()
         result["boxes"] = boxes
@@ -257,7 +243,7 @@ class BoundingBoxBackend(DynamicBackend):
     # Clip
 
     def _compute_area(self, boxes, format="xyxy"):
-        if format != "xyxy":
+        if format not in ("xyxy", "rel_xyxy"):
             raise NotImplementedError
 
         ops = self.backend

@@ -10,11 +10,11 @@ from keras_aug._src.utils.argument_validation import standardize_size
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
-class CenterCrop(VisionRandomLayer):
-    """Crop the inputs at the center.
+class RandomCrop(VisionRandomLayer):
+    """Crop the images at a random location.
 
     If image size is smaller than output size along any edge, image is padded
-    with `padding_value` and then center cropped.
+    with `padding_value` and then cropped.
 
     Args:
         size: Desired output size of the crop. If `size` is an int instead of
@@ -42,7 +42,7 @@ class CenterCrop(VisionRandomLayer):
         data_format: typing.Optional[str] = None,
         **kwargs,
     ):
-        super().__init__(has_generator=False, **kwargs)
+        super().__init__(**kwargs)
         # Check
         available_padding_mode = ("constant", "reflect", "symmetric")
         if padding_mode not in available_padding_mode:
@@ -79,56 +79,79 @@ class CenterCrop(VisionRandomLayer):
 
     def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
+        random_generator = self.random_generator
         images_shape = ops.shape(images)
         height, width = images_shape[self.h_axis], images_shape[self.w_axis]
 
-        top = ops.numpy.where(
-            height < self.size[0], (self.size[0] - height) / 2, 0
+        padded_height = height
+        padded_width = width
+        cropped_height, cropped_width = self.size
+
+        # Pad parameters
+        # self.pad_if_needed always True
+        pad_top = 0
+        pad_bottom = 0
+        pad_left = 0
+        pad_right = 0
+        height_diff = ops.numpy.maximum(
+            ops.numpy.subtract(cropped_height, padded_height), 0
         )
-        top = ops.cast(ops.numpy.round(top), "int32")
-        bottom = ops.numpy.where(
-            height < self.size[0], self.size[0] - height - top, 0
+        width_diff = ops.numpy.maximum(
+            ops.numpy.subtract(cropped_width, padded_width), 0
         )
-        left = ops.numpy.where(
-            width < self.size[1], (self.size[1] - width) / 2, 0
+        padded_height = ops.numpy.add(padded_height, 2 * height_diff)
+        padded_width = ops.numpy.add(padded_width, 2 * width_diff)
+        pad_top = ops.numpy.add(pad_top, height_diff)
+        pad_bottom = ops.numpy.add(pad_bottom, height_diff)
+        pad_left = ops.numpy.add(pad_left, width_diff)
+        pad_right = ops.numpy.add(pad_right, width_diff)
+
+        # Crop parameters
+        crop_top = ops.random.randint(
+            (),
+            minval=0,
+            maxval=padded_height - cropped_height + 1,
+            seed=random_generator,
         )
-        left = ops.cast(ops.numpy.round(left), "int32")
-        right = ops.numpy.where(
-            width < self.size[1], self.size[1] - width - left, 0
+        crop_left = ops.random.randint(
+            (),
+            minval=0,
+            maxval=padded_width - cropped_width + 1,
+            seed=random_generator,
         )
-        return dict(top=top, bottom=bottom, left=left, right=right)
+        return dict(
+            pad_top=pad_top,
+            pad_bottom=pad_bottom,
+            pad_left=pad_left,
+            pad_right=pad_right,
+            crop_top=crop_top,
+            crop_left=crop_left,
+        )
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
-        images_shape = ops.shape(images)
-        ori_height = images_shape[self.h_axis]
-        ori_width = images_shape[self.w_axis]
 
         # Pad
-        top = transformations["top"]
-        bottom = transformations["bottom"]
-        left = transformations["left"]
-        right = transformations["right"]
+        pad_top = transformations["pad_top"]
+        pad_bottom = transformations["pad_bottom"]
+        pad_left = transformations["pad_left"]
+        pad_right = transformations["pad_right"]
         images = self.image_backend.pad(
             images,
             self.padding_mode,
-            top,
-            bottom,
-            left,
-            right,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
             self.padding_value,
             self.data_format,
         )
 
-        # Center crop
-        offset_height = ops.numpy.floor_divide(
-            (ori_height + top + bottom - self.size[0]), 2
-        )
-        offset_width = ops.numpy.floor_divide(
-            (ori_width + left + right - self.size[1]), 2
-        )
+        # Crop
+        crop_top = transformations["crop_top"]
+        crop_left = transformations["crop_left"]
         images = self.image_backend.crop(
-            images, offset_height, offset_width, self.size[0], self.size[1]
+            images, crop_top, crop_left, self.size[0], self.size[1]
         )
         return ops.cast(images, self.compute_dtype)
 
@@ -163,18 +186,12 @@ class CenterCrop(VisionRandomLayer):
         x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
 
         # Get pad and offset
-        pad_top = ops.cast(transformations["top"], dtype="float32")
-        pad_left = ops.cast(transformations["left"], dtype="float32")
-        pad_bottom = ops.cast(transformations["bottom"], dtype="float32")
-        pad_right = ops.cast(transformations["right"], dtype="float32")
-        offset_height = ops.numpy.floor_divide(
-            (height + pad_top + pad_bottom - self.size[0]), 2
-        )
-        offset_width = ops.numpy.floor_divide(
-            (width + pad_left + pad_right - self.size[1]), 2
-        )
-        value_height = pad_top - offset_height
-        value_width = pad_left - offset_width
+        pad_top = ops.cast(transformations["pad_top"], dtype="float32")
+        pad_left = ops.cast(transformations["pad_left"], dtype="float32")
+        crop_top = ops.cast(transformations["crop_top"], dtype="float32")
+        crop_left = ops.cast(transformations["crop_left"], dtype="float32")
+        value_height = pad_top - crop_top
+        value_width = pad_left - crop_left
         x1 = x1 + value_width
         y1 = y1 + value_height
         x2 = x2 + value_width
@@ -203,37 +220,30 @@ class CenterCrop(VisionRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         ops = self.backend
-        images_shape = ops.shape(segmentation_masks)
-        ori_height = images_shape[self.h_axis]
-        ori_width = images_shape[self.w_axis]
 
         # Pad
-        top = transformations["top"]
-        bottom = transformations["bottom"]
-        left = transformations["left"]
-        right = transformations["right"]
+        pad_top = transformations["pad_top"]
+        pad_bottom = transformations["pad_bottom"]
+        pad_left = transformations["pad_left"]
+        pad_right = transformations["pad_right"]
         segmentation_masks = self.image_backend.pad(
             segmentation_masks,
             "constant",
-            top,
-            bottom,
-            left,
-            right,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
             -1,
             self.data_format,
         )
 
         # Center crop
-        offset_height = ops.numpy.floor_divide(
-            (ori_height + top + bottom - self.size[0]), 2
-        )
-        offset_width = ops.numpy.floor_divide(
-            (ori_width + left + right - self.size[1]), 2
-        )
+        crop_top = transformations["crop_top"]
+        crop_left = transformations["crop_left"]
         segmentation_masks = self.image_backend.crop(
             segmentation_masks,
-            offset_height,
-            offset_width,
+            crop_top,
+            crop_left,
             self.size[0],
             self.size[1],
         )

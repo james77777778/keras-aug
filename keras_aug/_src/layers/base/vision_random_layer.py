@@ -6,6 +6,7 @@ from keras.src.utils.backend_utils import in_tf_graph
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
 from keras_aug._src.backend.dynamic_backend import DynamicBackend
 from keras_aug._src.backend.dynamic_backend import DynamicRandomGenerator
+from keras_aug._src.backend.image import ImageBackend
 from keras_aug._src.keras_aug_export import keras_aug_export
 
 
@@ -84,6 +85,7 @@ class VisionRandomLayer(keras.Layer):
         self.seed = seed
 
         # Other vision backends
+        self.image_backend = ImageBackend(backend.backend())
         self.bbox_backend = BoundingBoxBackend(backend.backend())
 
         self._allow_non_tensor_positional_args = True
@@ -96,7 +98,7 @@ class VisionRandomLayer(keras.Layer):
     def random_generator(self):
         return self._random_generator.random_generator
 
-    def get_random_transformation_batch(
+    def get_params(
         self,
         batch_size,
         images=None,
@@ -106,23 +108,10 @@ class VisionRandomLayer(keras.Layer):
         segmentation_masks=None,
         custom_annotations=None,
     ):
-        """Produce random transformations config for a batch of inputs.
-
-        This is used to produce same randomness between image / label /
-        bounding_box.
-
-        Args:
-            batch_size: the batch size of transformations configuration to
-                sample.
-            images: 3D image tensor from inputs.
-            labels: optional 1D label tensor from inputs.
-            bounding_boxes: optional 2D bounding boxes tensor from inputs.
-            segmentation_masks: optional 3D segmentation mask tensor from
-                inputs.
+        """Produce transformations parameters.
 
         Returns:
-            Any type of object, which will be forwarded to `augment_images`,
-            `augment_labels` and `augment_bounding_boxes` as the
+            Any type of object, which will be forwarded as the
             `transformations` parameter.
         """
         return self.backend.numpy.zeros([batch_size])
@@ -241,7 +230,7 @@ class VisionRandomLayer(keras.Layer):
         custom_annotations = inputs.get(self.CUSTOM_ANNOTATIONS, None)
         batch_size = self.backend.shape(images)[0]
 
-        transformations = self.get_random_transformation_batch(
+        transformations = self.get_params(
             batch_size,
             images=images,
             labels=labels,
@@ -401,6 +390,7 @@ class VisionRandomLayer(keras.Layer):
     def __call__(self, inputs, **kwargs):
         if in_tf_graph():
             self._backend.set_backend("tensorflow")
+            self.image_backend.set_backend("tensorflow")
             self.bbox_backend.set_backend("tensorflow")
             if self.has_generator:
                 self._random_generator.set_generator("tensorflow")
@@ -419,6 +409,7 @@ class VisionRandomLayer(keras.Layer):
                 outputs = super().__call__(inputs, **kwargs)
             finally:
                 self._backend.reset()
+                self.image_backend.reset()
                 self.bbox_backend.reset()
                 if self.has_generator:
                     self._random_generator.reset()

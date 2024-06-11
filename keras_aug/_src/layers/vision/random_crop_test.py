@@ -4,18 +4,23 @@ from absl.testing import parameterized
 from keras import backend
 from keras.src import testing
 from keras.src.testing.test_utils import named_product
+import pytest
+from keras_aug._src.layers.vision.random_crop import RandomCrop
 
-from keras_aug._src.layers.vision.random_resized_crop import RandomResizedCrop
 
-
-class FixedRandomResizedCrop(RandomResizedCrop):
+class FixedRandomCrop(RandomCrop):
     def get_params(self, batch_size, images=None, **kwargs):
-        return dict(top=10, left=5, height=8, width=16)
+        return dict(
+            pad_top=0,
+            pad_bottom=0,
+            pad_left=0,
+            pad_right=0,
+            crop_top=8,
+            crop_left=10,
+        )
 
 
-class ResizeTest(testing.TestCase, parameterized.TestCase):
-    pil_modes_mapping = {"nearest": 0, "bilinear": 2, "bicubic": 3}
-
+class RandomCropTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -26,105 +31,85 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    @parameterized.named_parameters(
-        named_product(
-            size=[(32, 32), (40, 50), (64, 64)],
-            interpolation=["nearest", "bilinear", "bicubic"],
-            antialias=[True, False],
-        )
-    )
-    def test_correctness(self, size, interpolation, antialias):
+    def test_correctness(self):
         import torch
         import torchvision.transforms.functional as TF
 
-        if size == (40, 50) and interpolation == "nearest":
-            self.skipTest("TODO: Need to investigate")
-        if interpolation == "nearest" and antialias is True:
-            self.skipTest("Doesn't support nearest and antialias=True")
-        torch_interpolation = self.pil_modes_mapping[interpolation]
-
         # Test channels_last
-        np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
-        )
+        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        layer = FixedRandomCrop(16)
         y = layer(x)
 
-        ref_y = TF.resized_crop(
-            torch.tensor(np.transpose(x.copy(), [0, 3, 1, 2])),
-            10,
-            5,
-            8,
-            16,
-            size,
-            torch_interpolation,
-            antialias,
+        ref_y = TF.crop(
+            torch.tensor(np.transpose(x, [0, 3, 1, 2])), 8, 10, 16, 16
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
-        )
+        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
+        layer = FixedRandomCrop(16)
         y = layer(x)
 
-        ref_y = TF.resized_crop(
-            torch.tensor(x.copy()),
-            10,
-            5,
-            8,
-            16,
-            size,
-            torch_interpolation,
-            antialias,
-        )
+        ref_y = TF.crop(torch.tensor(x), 8, 10, 16, 16)
         ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y)
+
+    @parameterized.named_parameters(
+        named_product(mode=["constant", "reflect", "symmetric"])
+    )
+    @pytest.mark.skip("TODO: Investigate `mode`")
+    def test_mode(self, mode):
+        if backend.backend() == "torch" and mode == "symmetric":
+            self.skipTest("TODO: Need to investigate")
+        np.random.seed(42)
+        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
+        layer = RandomCrop(48, padding_mode=mode)
+        y = layer(x)
+
+        pad_width = [[0, 0], [8, 8], [8, 8], [0, 0]]
+        ref_y = np.pad(x, pad_width, mode=mode)
+        self.assertAllClose(y, ref_y)
 
     def test_shape(self):
-        # Test dynamic shape
+        # Test channels_last
         x = keras.KerasTensor((None, None, None, 3))
-        y = RandomResizedCrop(16)(x)
+        y = RandomCrop(16)(x)
         self.assertEqual(y.shape, (None, 16, 16, 3))
 
+        # Test channels_first
+        backend.set_image_data_format("channels_first")
+        x = keras.KerasTensor((None, 3, None, None))
+        y = RandomCrop(16)(x)
+        self.assertEqual(y.shape, (None, 3, 16, 16))
+
         # Test static shape
+        backend.set_image_data_format("channels_last")
         x = keras.KerasTensor((None, 32, 32, 3))
-        y = RandomResizedCrop(16)(x)
+        y = RandomCrop(16)(x)
         self.assertEqual(y.shape, (None, 16, 16, 3))
 
     def test_model(self):
-        # Test dynamic shape
-        layer = RandomResizedCrop(16)
+        layer = RandomCrop(16)
         inputs = keras.layers.Input(shape=[None, None, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
         self.assertEqual(model.output_shape, (None, 16, 16, 3))
 
-        # Test static shape
-        layer = RandomResizedCrop((16, 32))
-        inputs = keras.layers.Input(shape=[32, 32, 3])
-        outputs = layer(inputs)
-        model = keras.models.Model(inputs, outputs)
-        self.assertEqual(model.output_shape, (None, 16, 32, 3))
-
     def test_config(self):
         x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomResizedCrop(16)
+        layer = FixedRandomCrop(16)
         y = layer(x)
 
-        layer = FixedRandomResizedCrop.from_config(layer.get_config())
+        layer = FixedRandomCrop.from_config(layer.get_config())
         y2 = layer(x)
         self.assertAllClose(y, y2)
 
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = RandomResizedCrop(16)
+        layer = RandomCrop(16)
         x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
         ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
         for output in ds.take(1):
@@ -144,7 +129,7 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomResizedCrop((18, 18), bounding_box_format="rel_xyxy")
+        layer = FixedRandomCrop((18, 18), bounding_box_format="rel_xyxy")
 
         output = layer(input)
         self.assertAllClose(output["bounding_boxes"]["boxes"], boxes["boxes"])
@@ -165,14 +150,14 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomResizedCrop((16, 32), bounding_box_format="xyxy")
+        layer = FixedRandomCrop((18, 18), bounding_box_format="xyxy")
 
         output = layer(input)
         expected_boxes = {
             "boxes": np.array(
                 [
-                    [[0, 0, 24, 16], [10, 4, 22, 16]],
-                    [[0, 0, 0, 0], [20, 4, 24, 16]],
+                    [[0, 0, 7, 10], [0, 4, 6, 11]],
+                    [[0, 0, 0, 0], [5, 4, 7, 12]],
                 ],
                 "float32",
             ),
@@ -194,7 +179,7 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
         inputs = {"images": images, "segmentation_masks": masks}
 
         # Crop to exactly 1/2 of the size
-        ref_masks = masks[:, 10 : 10 + 8, 5 : 5 + 16, :]
-        layer = FixedRandomResizedCrop((8, 16))
+        ref_masks = masks[:, 8 : 8 + 16, 10 : 10 + 16, :]
+        layer = FixedRandomCrop(16)
         output = layer(inputs)
         self.assertAllClose(output["segmentation_masks"], ref_masks)

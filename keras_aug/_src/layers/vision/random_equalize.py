@@ -46,9 +46,7 @@ class RandomEqualize(VisionRandomLayer):
     def compute_output_shape(self, input_shape):
         return input_shape
 
-    def get_random_transformation_batch(
-        self, batch_size, images=None, **kwargs
-    ):
+    def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         random_generator = self.random_generator
         p = ops.random.uniform([batch_size], seed=random_generator)

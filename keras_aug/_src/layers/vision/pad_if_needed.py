@@ -105,9 +105,7 @@ class PadIfNeeded(VisionRandomLayer):
             output_shape[self.IMAGES][self.w_axis] = new_w
         return output_shape
 
-    def get_random_transformation_batch(
-        self, batch_size, images=None, **kwargs
-    ):
+    def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         images_shape = ops.shape(images)
         height, width = images_shape[self.h_axis], images_shape[self.w_axis]
