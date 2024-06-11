@@ -11,7 +11,7 @@ from keras_aug._src.utils.argument_validation import standardize_size
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomCrop(VisionRandomLayer):
-    """Crop the images at a random location.
+    """Crop the inputs at a random location.
 
     If image size is smaller than output size along any edge, image is padded
     with `padding_value` and then cropped.

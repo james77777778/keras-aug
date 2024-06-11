@@ -10,7 +10,7 @@ from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomFlip(VisionRandomLayer):
-    """Flip the images with a given probability.
+    """Flip the inputs with a given probability.
 
     Args:
         mode: Can be `"horizontal"`, `"vertical"` and

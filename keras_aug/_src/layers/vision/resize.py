@@ -11,7 +11,7 @@ from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class Resize(VisionRandomLayer):
-    """Resize the images to the given size.
+    """Resize the inputs to the given size.
 
     Args:
         size: Desired output size. If `size` is a sequence like `(h, w)`,

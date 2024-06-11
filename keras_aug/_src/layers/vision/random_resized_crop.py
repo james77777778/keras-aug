@@ -14,7 +14,7 @@ from keras_aug._src.utils.argument_validation import standardize_value_range
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomResizedCrop(VisionRandomLayer):
-    """Crop a random portion of the images and resize it to a given size.
+    """Crop a random portion of the inputs and resize it to a given size.
 
     Args:
         size: Desired output size. If `size` is a sequence like `(h, w)`,

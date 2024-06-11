@@ -11,7 +11,7 @@ from keras_aug._src.utils.argument_validation import standardize_size
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class PadIfNeeded(VisionRandomLayer):
-    """Pad the images to the given size.
+    """Pad the inputs to the given size.
 
     Args:
         size: Desired output size. If `size` is a sequence like `(h, w)`,
