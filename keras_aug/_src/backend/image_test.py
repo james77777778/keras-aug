@@ -119,3 +119,20 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         ref_y = tf.image.hsv_to_rgb(tf.transpose(x, [0, 2, 3, 1]))
         ref_y = tf.transpose(ref_y, [0, 3, 1, 2])
         self.assertAllClose(y, ref_y, atol=1e-3)
+
+    def test_rgb_to_hsv_roundtrip(self):
+        image_backend = ImageBackend()
+
+        # RGB -> HSV -> RGB
+        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        y = image_backend.rgb_to_hsv(x)
+        y = image_backend.hsv_to_rgb(y)
+
+        self.assertAllClose(y, x, atol=1e-3)
+
+        # HSV -> RGB -> HSV
+        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        y = image_backend.hsv_to_rgb(x)
+        y = image_backend.rgb_to_hsv(y)
+
+        self.assertAllClose(y, x, atol=1e-3)
