@@ -11,33 +11,16 @@ from keras_aug._src.utils.argument_validation import standardize_parameter
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
-class RandomAffine(VisionRandomLayer):
-    """Random affine transformation the inputs keeping center invariant.
+class RandomRotation(VisionRandomLayer):
+    """Randomly rotate the inputs by angle.
 
-    Note that `degree` and `shear` are in angle units, while `translate`,
-    `scale` and `center` are in percentage units.
+    Note that `degree` is in angle units.
 
     Args:
         degree: Range of degrees to select from. If `degree` is a number instead
             of sequence like `(min, max)`, the range of degrees will be
             `(-degree, +degree)`. Set to `None` to deactivate rotations.
             Defaults to `None`.
-        translate: Sequence of maximum absolute fraction for horizontal and
-            vertical translations. For example `(0.1, 0.2)`, then horizontal
-            shift is randomly sampled in the range of
-            `(-width * 0.1, width * 0.1)` and vertical shift is randomly
-            sampled in the range of `(-height * 0.2, height * 0.2)`. Set to
-            `None` to deactivate translations. Defaults to `None`.
-        scale: Range of scales to select from. Set to `None` to deactivate
-            scalings. Defaults to `None`.
-        shear: Range of degrees to select from. If `shear` is a number a shear
-            parallel to the x-axis in the range of `(-shear, shear)` will be
-            applied. Else if `shear` is a sequence of 2, a shear parallel to the
-            x-axis in the range of `(shear[0], shear[1])` will be applied. Else
-            if `shear` is a sequence of 4, a shear parallel to the x-axis in the
-            range of `(shear[0], shear[1])`and y-axis shear in the range of
-            `(shear[2], shear[3])` will be applied. Set to `None` to deactivate
-            shear. Defaults to `None`.
         center: Optional center of rotation in the format of `(rel_x, rel_y)`.
             Default is the center of the images.
         interpolation: The interpolation mode. Available values are:
@@ -59,9 +42,6 @@ class RandomAffine(VisionRandomLayer):
     def __init__(
         self,
         degree: typing.Union[None, float, typing.Sequence[float]] = None,
-        translate: typing.Union[None, float, typing.Sequence[float]] = None,
-        scale: typing.Union[None, float, typing.Sequence[float]] = None,
-        shear: typing.Union[None, float, typing.Sequence[float]] = None,
         center: typing.Optional[typing.Sequence[float]] = None,
         interpolation: str = "bilinear",
         padding_mode: str = "constant",
@@ -71,13 +51,8 @@ class RandomAffine(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        translate, shear, center, padding_mode = self._check_arguments(
-            translate, shear, center, padding_mode
-        )
+        center, padding_mode = self._check_arguments(center, padding_mode)
         self.degree = standardize_parameter(degree)
-        self.translate = translate
-        self.scale = standardize_parameter(scale)
-        self.shear = shear
         self.center = center
         self.interpolation = standardize_interpolation(interpolation)
         self.padding_mode = padding_mode
@@ -90,33 +65,7 @@ class RandomAffine(VisionRandomLayer):
         else:
             self.h_axis, self.w_axis = -2, -1
 
-    def _check_arguments(self, translate, shear, center, padding_mode):
-        if translate is not None:
-            if isinstance(translate, float):
-                translate = (translate, translate)
-            translate = tuple(translate)
-            if len(translate) != 2:
-                raise ValueError(
-                    "If `translate` is specified, it must be a sequence of 2 "
-                    f"values. Received: translate={translate}"
-                )
-            if (
-                translate[0] < 0
-                or translate[0] > 1
-                or translate[1] < 0
-                or translate[1] > 1
-            ):
-                raise ValueError(
-                    "If `translate` is specified, the value range must be in "
-                    f"`[0, 1]`. Received: translate={translate}"
-                )
-        if shear is not None:
-            shear = tuple(shear)
-            if len(shear) not in (2, 4):
-                raise ValueError(
-                    "If `shear` is specified, it must be a sequence of 2 or 4 "
-                    f"values. Received: shear={shear}"
-                )
+    def _check_arguments(self, center, padding_mode):
         if center is not None:
             center = tuple(float(c) for c in center)
             if len(center) != 2:
@@ -132,7 +81,7 @@ class RandomAffine(VisionRandomLayer):
                 f"{list(available_padding_mode)}. "
                 f"Received: padding_mode={padding_mode}"
             )
-        return translate, shear, center, padding_mode
+        return center, padding_mode
 
     def compute_output_shape(self, input_shape):
         return input_shape
@@ -141,15 +90,6 @@ class RandomAffine(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
-        if self.scale is not None:
-            scale = ops.random.uniform(
-                [batch_size],
-                self.scale[0],
-                self.scale[1],
-                seed=random_generator,
-            )
-        else:
-            scale = ops.numpy.ones([batch_size])
         if self.degree is not None:
             angle = ops.random.uniform(
                 [batch_size],
@@ -159,53 +99,12 @@ class RandomAffine(VisionRandomLayer):
             )
         else:
             angle = ops.numpy.zeros([batch_size])
-        if self.shear is not None:
-            shear_x = ops.random.uniform(
-                [batch_size],
-                self.shear[0],
-                self.shear[1],
-                seed=random_generator,
-            )
-            if len(self.shear) == 4:
-                shear_y = ops.random.uniform(
-                    [batch_size],
-                    self.shear[2],
-                    self.shear[3],
-                    seed=random_generator,
-                )
-            else:
-                shear_y = ops.numpy.zeros([batch_size])
-        else:
-            shear_x = ops.numpy.zeros([batch_size])
-            shear_y = ops.numpy.zeros([batch_size])
-        if self.translate is not None:
-            translate_x = ops.random.uniform(
-                [batch_size],
-                -self.translate[0],
-                self.translate[0],
-                seed=random_generator,
-            )
-            translate_y = ops.random.uniform(
-                [batch_size],
-                -self.translate[1],
-                self.translate[1],
-                seed=random_generator,
-            )
-        else:
-            translate_x = ops.numpy.zeros([batch_size])
-            translate_y = ops.numpy.zeros([batch_size])
-        return dict(
-            angle=angle,
-            translate_x=translate_x,
-            translate_y=translate_y,
-            scale=scale,
-            shear_x=shear_x,
-            shear_y=shear_y,
-        )
+        return dict(angle=angle)
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
         images_shape = ops.shape(images)
+        batch_size = images_shape[0]
         height = images_shape[self.h_axis]
         width = images_shape[self.w_axis]
         if self.center is None:
@@ -216,11 +115,11 @@ class RandomAffine(VisionRandomLayer):
             center_x,
             center_y,
             transformations["angle"],
-            transformations["translate_x"],
-            transformations["translate_y"],
-            transformations["scale"],
-            transformations["shear_x"],
-            transformations["shear_y"],
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.ones([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
             height,
             width,
         )
@@ -275,11 +174,11 @@ class RandomAffine(VisionRandomLayer):
             center_x,
             center_y,
             -transformations["angle"],  # TODO: Why minus?
-            transformations["translate_x"],
-            transformations["translate_y"],
-            transformations["scale"],
-            -transformations["shear_x"],  # TODO: Why minus?
-            -transformations["shear_y"],  # TODO: Why minus?
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.ones([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
             height,
             width,
         )
@@ -334,6 +233,7 @@ class RandomAffine(VisionRandomLayer):
     ):
         ops = self.backend
         segmentation_masks_shape = ops.shape(segmentation_masks)
+        batch_size = segmentation_masks_shape[0]
         height = segmentation_masks_shape[self.h_axis]
         width = segmentation_masks_shape[self.w_axis]
         if self.center is None:
@@ -344,11 +244,11 @@ class RandomAffine(VisionRandomLayer):
             center_x,
             center_y,
             transformations["angle"],
-            transformations["translate_x"],
-            transformations["translate_y"],
-            transformations["scale"],
-            transformations["shear_x"],
-            transformations["shear_y"],
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.ones([batch_size]),
+            ops.numpy.zeros([batch_size]),
+            ops.numpy.zeros([batch_size]),
             height,
             width,
         )
@@ -370,9 +270,6 @@ class RandomAffine(VisionRandomLayer):
         config.update(
             {
                 "degree": self.degree,
-                "translate": self.translate,
-                "scale": self.scale,
-                "shear": self.shear,
                 "center": self.center,
                 "interpolation": self.interpolation,
                 "padding_mode": self.padding_mode,
