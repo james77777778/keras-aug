@@ -389,12 +389,7 @@ class VisionRandomLayer(keras.Layer):
 
     def __call__(self, inputs, **kwargs):
         if in_tf_graph():
-            self._backend.set_backend("tensorflow")
-            self.image_backend.set_backend("tensorflow")
-            self.bbox_backend.set_backend("tensorflow")
-            if self.has_generator:
-                self._random_generator.set_generator("tensorflow")
-
+            self._set_backend("tensorflow")
             inputs = tree.map_structure(
                 lambda x: self.backend.convert_to_tensor(
                     x, dtype=self.compute_dtype
@@ -408,11 +403,7 @@ class VisionRandomLayer(keras.Layer):
             try:
                 outputs = super().__call__(inputs, **kwargs)
             finally:
-                self._backend.reset()
-                self.image_backend.reset()
-                self.bbox_backend.reset()
-                if self.has_generator:
-                    self._random_generator.reset()
+                self._reset_backend()
                 if switch_convert_input_args:
                     self._convert_input_args = True
             return outputs
@@ -462,6 +453,20 @@ class VisionRandomLayer(keras.Layer):
             ops.numpy.multiply(images, scale_factor), target_range[0]
         )
         return images
+
+    def _set_backend(self, name):
+        self._backend.set_backend(name)
+        self.image_backend.set_backend(name)
+        self.bbox_backend.set_backend(name)
+        if self.has_generator:
+            self._random_generator.set_generator(name)
+
+    def _reset_backend(self):
+        self._backend.reset()
+        self.image_backend.reset()
+        self.bbox_backend.reset()
+        if self.has_generator:
+            self._random_generator.reset()
 
     def _get_shape_or_spec(self, input_shape_or_inputs):
         """Get the shape or spec of `images` and `segmentation_masks`."""

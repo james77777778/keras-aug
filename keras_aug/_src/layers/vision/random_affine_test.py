@@ -5,16 +5,41 @@ from keras import backend
 from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
-from keras_aug._src.layers.vision.random_resized_crop import RandomResizedCrop
+from keras_aug._src.layers.vision.random_affine import RandomAffine
 
 
-class FixedRandomResizedCrop(RandomResizedCrop):
+class FixedRandomAffine(RandomAffine):
     def get_params(self, batch_size, images=None, **kwargs):
-        return dict(top=10, left=5, height=8, width=16)
+        return dict(
+            angle=keras.ops.array([10.0]),
+            translate_x=keras.ops.array([0.1]),
+            translate_y=keras.ops.array([-0.1]),
+            scale=keras.ops.array([1.1]),
+            shear_x=keras.ops.array([10.0]),
+            shear_y=keras.ops.array([10.0]),
+        )
 
 
-class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
+class FixedNoRotRandomAffine(RandomAffine):
+    def get_params(self, batch_size, images=None, **kwargs):
+        return dict(
+            angle=keras.ops.array([0.0]),
+            translate_x=keras.ops.array([0.1]),
+            translate_y=keras.ops.array([-0.1]),
+            scale=keras.ops.array([1.1]),
+            shear_x=keras.ops.array([0.0]),
+            shear_y=keras.ops.array([0.0]),
+        )
+
+
+class RandomAffineTest(testing.TestCase, parameterized.TestCase):
     pil_modes_mapping = {"nearest": 0, "bilinear": 2, "bicubic": 3}
+    regular_args = dict(
+        degree=[-10, 10],
+        translate=0.1,
+        scale=[0.9, 1.1],
+        shear=[-10, 10, -10, 10],
+    )
 
     def setUp(self):
         # Defaults to channels_last
@@ -28,108 +53,75 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(
         named_product(
-            size=[(32, 32), (40, 50), (64, 64)],
-            interpolation=["nearest", "bilinear", "bicubic"],
-            antialias=[True, False],
+            interpolation=["nearest", "bilinear"],
         )
     )
-    def test_correctness(self, size, interpolation, antialias):
-        import torch
-        import torchvision.transforms.functional as TF
-
-        if size == (40, 50) and interpolation == "nearest":
-            self.skipTest("TODO: Need to investigate")
-        if interpolation == "nearest" and antialias is True:
-            self.skipTest("Doesn't support nearest and antialias=True")
-        torch_interpolation = self.pil_modes_mapping[interpolation]
-
+    def test_correctness(self, interpolation):
         # Test channels_last
         np.random.seed(42)
         x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
-        )
+        layer = FixedRandomAffine(interpolation=interpolation)
         y = layer(x)
 
-        ref_y = TF.resized_crop(
-            torch.tensor(np.transpose(x.copy(), [0, 3, 1, 2])),
-            10,
-            5,
-            8,
-            16,
-            size,
-            torch_interpolation,
-            antialias,
-        )
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y, atol=0.1)
+        # TODO: It is difficult to be consistent with `TF.affine`
+        self.assertEqual(y.shape, (1, 32, 32, 3))
+        self.assertNotAllClose(y, x)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
         x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
-        )
+        layer = FixedRandomAffine(interpolation=interpolation)
         y = layer(x)
 
-        ref_y = TF.resized_crop(
-            torch.tensor(x.copy()),
-            10,
-            5,
-            8,
-            16,
-            size,
-            torch_interpolation,
-            antialias,
-        )
-        ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y, atol=0.1)
+        # TODO: It is difficult to be consistent with `TF.affine`
+        self.assertEqual(y.shape, (1, 3, 32, 32))
+        self.assertNotAllClose(y, x)
 
     def test_shape(self):
         # Test dynamic shape
         x = keras.KerasTensor((None, None, None, 3))
-        y = RandomResizedCrop(16)(x)
-        self.assertEqual(y.shape, (None, 16, 16, 3))
+        y = RandomAffine(**self.regular_args)(x)
+        self.assertEqual(y.shape, (None, None, None, 3))
 
         # Test static shape
         x = keras.KerasTensor((None, 32, 32, 3))
-        y = RandomResizedCrop(16)(x)
-        self.assertEqual(y.shape, (None, 16, 16, 3))
+        y = RandomAffine(**self.regular_args)(x)
+        self.assertEqual(y.shape, (None, 32, 32, 3))
 
     def test_model(self):
         # Test dynamic shape
-        layer = RandomResizedCrop(16)
+        layer = RandomAffine(**self.regular_args)
         inputs = keras.layers.Input(shape=[None, None, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
-        self.assertEqual(model.output_shape, (None, 16, 16, 3))
+        self.assertEqual(model.output_shape, (None, None, None, 3))
 
         # Test static shape
-        layer = RandomResizedCrop((16, 32))
+        layer = RandomAffine(**self.regular_args)
         inputs = keras.layers.Input(shape=[32, 32, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
-        self.assertEqual(model.output_shape, (None, 16, 32, 3))
+        self.assertEqual(model.output_shape, (None, 32, 32, 3))
 
     def test_config(self):
         x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomResizedCrop(16)
+        layer = RandomAffine(degree=[10, 10])
         y = layer(x)
 
-        layer = FixedRandomResizedCrop.from_config(layer.get_config())
+        layer = RandomAffine.from_config(layer.get_config())
         y2 = layer(x)
         self.assertAllClose(y, y2)
 
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = RandomResizedCrop(16)
+        layer = RandomAffine(**self.regular_args)
         x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
         ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 16, 16, 3))
+            self.assertEqual(output.shape, (3, 32, 32, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -137,18 +129,26 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         boxes = {
             "boxes": np.array(
                 [
-                    [[0, 0, 1, 1], [0, 0, 1, 1]],
-                    [[0, 0, 1, 1], [0, 0, 1, 1]],
+                    [[0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]],
                 ],
                 "float32",
             ),
-            "classes": np.array([[0, 0], [0, 0]], "float32"),
+            "classes": np.array([[0, 0, 0, 0]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomResizedCrop((18, 18), bounding_box_format="rel_xyxy")
+        layer = FixedNoRotRandomAffine(bounding_box_format="rel_xyxy")
 
         output = layer(input)
-        self.assertAllClose(output["bounding_boxes"]["boxes"], boxes["boxes"])
+        # x2, y1 are same
+        self.assertAllClose(
+            output["bounding_boxes"]["boxes"][..., 1:2],
+            boxes["boxes"][..., 1:2],
+        )
+        # y1, x2 are different
+        self.assertNotAllClose(
+            output["bounding_boxes"]["boxes"][..., 0::3],
+            boxes["boxes"][..., 0::3],
+        )
         self.assertAllClose(
             output["bounding_boxes"]["classes"], boxes["classes"]
         )
@@ -158,26 +158,34 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         boxes = {
             "boxes": np.array(
                 [
-                    [[3, 4, 17, 18], [10, 12, 16, 19]],
-                    [[0, 0, 1, 1], [15, 12, 17, 20]],
+                    [
+                        [3, 4, 17, 18],
+                        [10, 12, 16, 19],
+                        [0, 0, 1, 1],
+                        [15, 12, 17, 20],
+                    ],
                 ],
                 "float32",
             ),
-            "classes": np.array([[0, 1], [2, 3]], "float32"),
+            "classes": np.array([[0, 1, 2, 3]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = FixedRandomResizedCrop((16, 32), bounding_box_format="xyxy")
+        layer = FixedNoRotRandomAffine(bounding_box_format="xyxy")
 
         output = layer(input)
         expected_boxes = {
             "boxes": np.array(
                 [
-                    [[0, 0, 24, 16], [10, 4, 22, 16]],
-                    [[0, 0, 0, 0], [20, 4, 24, 16]],
+                    [
+                        [5.219999, 0.0, 20.619999, 14.68],
+                        [12.919999, 8.08, 19.52, 15.779999],
+                        [1.919999, 0.0, 3.019999, 0.0],
+                        [18.419998, 8.08, 20.619999, 16.88],
+                    ],
                 ],
                 "float32",
             ),
-            "classes": np.array([[0, 1], [-1, 3]], "float32"),
+            "classes": np.array([[0, 1, -1, 3]], "float32"),
         }
         self.assertAllClose(
             output["bounding_boxes"]["boxes"], expected_boxes["boxes"]
@@ -194,8 +202,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         masks = np.random.randint(2, size=masks_shape) * (num_classes - 1)
         inputs = {"images": images, "segmentation_masks": masks}
 
-        # Crop to exactly 1/2 of the size
-        ref_masks = masks[:, 10 : 10 + 8, 5 : 5 + 16, :]
-        layer = FixedRandomResizedCrop((8, 16))
+        layer = FixedNoRotRandomAffine()
         output = layer(inputs)
-        self.assertAllClose(output["segmentation_masks"], ref_masks)
+        self.assertEqual(output["segmentation_masks"].shape, masks_shape)
+        # TODO: Verify the correctness

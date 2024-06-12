@@ -102,7 +102,8 @@ class RandomGrayscaleTest(testing.TestCase):
         import tensorflow as tf
 
         layer = RandomGrayscale()
-        x = np.random.uniform(size=(2, 32, 32, 3)).astype("float32") * 255
+        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
         ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
         for output in ds.take(1):
-            output.numpy()
+            self.assertIsInstance(output, tf.Tensor)
+            self.assertEqual(output.shape, (3, 32, 32, 3))

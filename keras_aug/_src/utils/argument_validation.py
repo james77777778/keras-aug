@@ -45,3 +45,31 @@ def standardize_interpolation(interpolation):
             f"Received: interpolation={interpolation} of type "
             f"{type(interpolation)}"
         )
+
+
+def standardize_parameter(
+    parameter, name="parameter", allow_none=True, allow_single_number=True
+):
+    if parameter is None and not allow_none:
+        raise ValueError(f"`{name}` cannot be `None`")
+    if parameter is None and allow_none:
+        return parameter
+
+    if not isinstance(parameter, Sequence) and not allow_single_number:
+        raise ValueError(
+            f"`{name}` cannot be a single number."
+            f"Received: {name}={parameter}"
+        )
+    if not isinstance(parameter, Sequence):
+        parameter = (-parameter, parameter)
+    elif len(parameter) > 2:
+        raise ValueError(
+            f"`{name}` must be a sequence of 2 values. "
+            f"Received: {name}={parameter}"
+        )
+    if parameter[0] > parameter[1]:
+        raise ValueError(
+            f"`{name}` must be in the order that first element is bigger "
+            f"that second element. Received: {name}={parameter}"
+        )
+    return tuple(parameter)
