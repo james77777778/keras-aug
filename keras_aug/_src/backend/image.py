@@ -10,7 +10,7 @@ class ImageBackend(DynamicBackend):
         super().__init__(name=name)
 
     def crop(self, images, top, left, height, width, data_format=None):
-        data_format = backend.image_data_format()
+        data_format = data_format or backend.image_data_format()
 
         ops = self.backend
         images_shape = ops.shape(images)
@@ -40,7 +40,7 @@ class ImageBackend(DynamicBackend):
         constant_value=0,
         data_format=None,
     ):
-        data_format = backend.image_data_format()
+        data_format = data_format or backend.image_data_format()
 
         ops = self.backend
         if self.name == "torch":  # Workaround for torch
@@ -181,3 +181,67 @@ class ImageBackend(DynamicBackend):
         )
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix
+
+    def rgb_to_hsv(self, images, data_format=None):
+        # Ref: dm-pix
+        data_format = data_format or backend.image_data_format()
+        channel_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        images = ops.numpy.where(ops.numpy.abs(images) < 1e-7, 0.0, images)
+        r, g, b = ops.numpy.split(images, 3, channel_axis)
+        r = ops.numpy.squeeze(r, channel_axis)
+        g = ops.numpy.squeeze(g, channel_axis)
+        b = ops.numpy.squeeze(b, channel_axis)
+
+        def rgb_planes_to_hsv_planes(r, g, b):
+            value = ops.numpy.maximum(ops.numpy.maximum(r, g), b)
+            minimum = ops.numpy.minimum(ops.numpy.minimum(r, g), b)
+            range_ = value - minimum
+
+            safe_value = ops.numpy.where(value > 0, value, 1.0)
+            safe_range = ops.numpy.where(range_ > 0, range_, 1.0)
+
+            saturation = ops.numpy.where(value > 0, range_ / safe_value, 0.0)
+            norm = 1.0 / (6.0 * safe_range)
+
+            hue = ops.numpy.where(
+                value == g,
+                norm * (b - r) + 2.0 / 6.0,
+                norm * (r - g) + 4.0 / 6.0,
+            )
+            hue = ops.numpy.where(value == r, norm * (g - b), hue)
+            hue = ops.numpy.where(range_ > 0, hue, 0.0) + ops.cast(
+                (hue < 0.0), hue.dtype
+            )
+            return hue, saturation, value
+
+        return ops.numpy.stack(
+            rgb_planes_to_hsv_planes(r, g, b), axis=channel_axis
+        )
+
+    def hsv_to_rgb(self, images, data_format=None):
+        data_format = data_format or backend.image_data_format()
+        channel_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        h, s, v = ops.numpy.split(images, 3, channel_axis)
+        h = ops.numpy.squeeze(h, channel_axis)
+        s = ops.numpy.squeeze(s, channel_axis)
+        v = ops.numpy.squeeze(v, channel_axis)
+
+        def hsv_planes_to_rgb_planes(h, s, v):
+            dh = ops.numpy.mod(h, 1.0) * 6.0
+            dr = ops.numpy.clip(ops.numpy.abs(dh - 3.0) - 1.0, 0.0, 1.0)
+            dg = ops.numpy.clip(2.0 - ops.numpy.abs(dh - 2.0), 0.0, 1.0)
+            db = ops.numpy.clip(2.0 - ops.numpy.abs(dh - 4.0), 0.0, 1.0)
+            one_minus_s = 1.0 - s
+
+            red = v * (one_minus_s + s * dr)
+            green = v * (one_minus_s + s * dg)
+            blue = v * (one_minus_s + s * db)
+            return red, green, blue
+
+        return ops.numpy.stack(
+            hsv_planes_to_rgb_planes(h, s, v), axis=channel_axis
+        )
