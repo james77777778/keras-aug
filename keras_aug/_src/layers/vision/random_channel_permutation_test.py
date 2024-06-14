@@ -30,14 +30,16 @@ class RandomChannelPermutationTest(testing.TestCase):
 
     def test_correctness(self):
         import torch
+        import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
         x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
         layer = FixedRandomChannelPermutation(3)
         y = layer(x)
 
-        ref_y = torch.tensor(np.transpose(x, [0, 3, 1, 2]))
-        ref_y = ref_y[:, [1, 2, 0], :, :]
+        ref_y = TF.permute_channels(
+            torch.tensor(np.transpose(x, [0, 3, 1, 2])), [1, 2, 0]
+        )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
         self.assertAllClose(y, ref_y)
 
@@ -47,8 +49,7 @@ class RandomChannelPermutationTest(testing.TestCase):
         layer = FixedRandomChannelPermutation(3)
         y = layer(x)
 
-        ref_y = torch.tensor(x)
-        ref_y = ref_y[:, [1, 2, 0], :, :]
+        ref_y = TF.permute_channels(torch.tensor(x), [1, 2, 0])
         ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
 

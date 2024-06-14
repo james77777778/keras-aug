@@ -22,7 +22,7 @@ class NormalizeTest(testing.TestCase):
 
     def test_correctness(self):
         import torch
-        import torchvision.transforms.functional as TF
+        import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
         x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")

@@ -26,7 +26,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
     )
     def test_correctness(self, mode):
         import torch
-        import torchvision.transforms.functional as TF
+        import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
         np.random.seed(42)

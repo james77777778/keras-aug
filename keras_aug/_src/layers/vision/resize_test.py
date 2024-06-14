@@ -30,7 +30,7 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
     )
     def test_correctness(self, size, interpolation, antialias):
         import torch
-        import torchvision.transforms.functional as TF
+        import torchvision.transforms.v2.functional as TF
 
         if size == (40, 50) and interpolation == "nearest":
             self.skipTest("TODO: Need to investigate")

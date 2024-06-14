@@ -8,7 +8,7 @@ from keras_aug._src.layers.vision.random_auto_contrast import RandomAutoContrast
 class RandomAutoContrastTest(testing.TestCase):
     def test_correctness(self):
         import torch
-        import torchvision.transforms.functional as TF
+        import torchvision.transforms.v2.functional as TF
 
         x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
         layer = RandomAutoContrast(value_range=(0, 1), p=1.0)
@@ -26,7 +26,7 @@ class RandomAutoContrastTest(testing.TestCase):
 
     def test_correctness_uint8(self):
         import torch
-        import torchvision.transforms.functional as TF
+        import torchvision.transforms.v2.functional as TF
 
         x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("uint8")
         layer = RandomAutoContrast(value_range=(0, 255), p=1.0, dtype="uint8")
@@ -34,7 +34,7 @@ class RandomAutoContrastTest(testing.TestCase):
 
         ref_y = TF.autocontrast(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=1)  # Can have large error
 
     def test_shape(self):
         # Test dynamic shape

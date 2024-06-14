@@ -20,9 +20,9 @@ class RandomEqualize(VisionRandomLayer):
     Args:
         value_range: The range of values the incoming images will have. This is
             typically either `[0, 1]` or `[0, 255]`.
-        p: A float specifying the probability. Defaults to `0.5`.
         bins: The number of bins to use in histogram equalization. The value
             must be in the range of `[0, 256]`. Defaults to `256`.
+        p: A float specifying the probability. Defaults to `0.5`.
         data_format: A string specifying the data format of the input images.
             It can be either `"channels_last"` or `"channels_first"`.
             If not specified, the value will be interpreted by
@@ -32,15 +32,15 @@ class RandomEqualize(VisionRandomLayer):
     def __init__(
         self,
         value_range: typing.Sequence[float],
-        p: float = 0.5,
         bins=256,
+        p: float = 0.5,
         data_format=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.value_range = standardize_value_range(value_range)
-        self.p = float(p)
         self.bins = bins
+        self.p = float(p)
         self.data_format = data_format or backend.image_data_format()
 
     def compute_output_shape(self, input_shape):
