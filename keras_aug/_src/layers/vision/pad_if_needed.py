@@ -158,22 +158,15 @@ class PadIfNeeded(VisionRandomLayer):
         pad_bottom = transformations["pad_bottom"]
         pad_left = transformations["pad_left"]
         pad_right = transformations["pad_right"]
-        if self._backend.name == "torch":  # Workaround for torch
-            pad_top = int(pad_top)
-            pad_bottom = int(pad_bottom)
-            pad_left = int(pad_left)
-            pad_right = int(pad_right)
-        pad_width = [[pad_top, pad_bottom], [pad_left, pad_right]]
-        if self.data_format == "channels_last":
-            pad_width = pad_width + [[0, 0]]
-        else:
-            pad_width = [[0, 0]] + pad_width
-        pad_width = [[0, 0]] + pad_width
-        images = ops.numpy.pad(
+        images = self.image_backend.pad(
             images,
-            pad_width,
             self.padding_mode,
-            self.padding_value if self.padding_mode == "constant" else None,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
+            self.padding_value,
+            self.data_format,
         )
         return ops.cast(images, self.compute_dtype)
 

@@ -141,56 +141,31 @@ class RandomAffine(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
-        if self.scale is not None:
-            scale = ops.random.uniform(
-                [batch_size],
-                self.scale[0],
-                self.scale[1],
-                seed=random_generator,
+        def generate_params(low, high):
+            return ops.random.uniform(
+                [batch_size], low, high, seed=random_generator
             )
+
+        if self.scale is not None:
+            scale = generate_params(self.scale[0], self.scale[1])
         else:
             scale = ops.numpy.ones([batch_size])
         if self.degree is not None:
-            angle = ops.random.uniform(
-                [batch_size],
-                self.degree[0],
-                self.degree[1],
-                seed=random_generator,
-            )
+            angle = generate_params(self.degree[0], self.degree[1])
         else:
             angle = ops.numpy.zeros([batch_size])
         if self.shear is not None:
-            shear_x = ops.random.uniform(
-                [batch_size],
-                self.shear[0],
-                self.shear[1],
-                seed=random_generator,
-            )
+            shear_x = generate_params(self.shear[0], self.shear[1])
             if len(self.shear) == 4:
-                shear_y = ops.random.uniform(
-                    [batch_size],
-                    self.shear[2],
-                    self.shear[3],
-                    seed=random_generator,
-                )
+                shear_y = generate_params(self.shear[2], self.shear[3])
             else:
                 shear_y = ops.numpy.zeros([batch_size])
         else:
             shear_x = ops.numpy.zeros([batch_size])
             shear_y = ops.numpy.zeros([batch_size])
         if self.translate is not None:
-            translate_x = ops.random.uniform(
-                [batch_size],
-                -self.translate[0],
-                self.translate[0],
-                seed=random_generator,
-            )
-            translate_y = ops.random.uniform(
-                [batch_size],
-                -self.translate[1],
-                self.translate[1],
-                seed=random_generator,
-            )
+            translate_x = generate_params(-self.translate[0], self.translate[0])
+            translate_y = generate_params(-self.translate[1], self.translate[1])
         else:
             translate_x = ops.numpy.zeros([batch_size])
             translate_y = ops.numpy.zeros([batch_size])

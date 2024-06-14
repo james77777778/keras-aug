@@ -48,21 +48,12 @@ class Normalize(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
-        images_shape = ops.shape(images)
-        if len(images_shape) == 3:
-            if self.data_format == "channels_last":
-                mean = ops.numpy.expand_dims(self.mean, axis=[0, 1])
-                std = ops.numpy.expand_dims(self.std, axis=[0, 1])
-            else:
-                mean = ops.numpy.expand_dims(self.mean, axis=[1, 2])
-                std = ops.numpy.expand_dims(self.std, axis=[1, 2])
+        if self.data_format == "channels_last":
+            mean = ops.numpy.expand_dims(self.mean, axis=[0, 1, 2])
+            std = ops.numpy.expand_dims(self.std, axis=[0, 1, 2])
         else:
-            if self.data_format == "channels_last":
-                mean = ops.numpy.expand_dims(self.mean, axis=[0, 1, 2])
-                std = ops.numpy.expand_dims(self.std, axis=[0, 1, 2])
-            else:
-                mean = ops.numpy.expand_dims(self.mean, axis=[0, 2, 3])
-                std = ops.numpy.expand_dims(self.std, axis=[0, 2, 3])
+            mean = ops.numpy.expand_dims(self.mean, axis=[0, 2, 3])
+            std = ops.numpy.expand_dims(self.std, axis=[0, 2, 3])
         images = ops.numpy.divide(
             ops.numpy.subtract(
                 images, ops.numpy.multiply(mean, self.value_range[1])

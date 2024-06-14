@@ -182,17 +182,38 @@ class ImageBackend(DynamicBackend):
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix
 
+    def rgb_to_grayscale(self, images, data_format=None):
+        data_format = data_format or backend.image_data_format()
+        channels_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        # Convert to floats
+        images = ops.core.convert_to_tensor(images)
+        original_dtype = images.dtype
+        compute_dtype = backend.result_type(original_dtype, float)
+        images = ops.core.cast(images, compute_dtype)
+        rgb_weights = ops.core.convert_to_tensor(
+            [0.2989, 0.5870, 0.1140], dtype=compute_dtype
+        )
+        images = ops.numpy.tensordot(
+            images, rgb_weights, axes=(channels_axis, -1)
+        )
+        images = ops.core.cast(images, original_dtype)
+        images = ops.numpy.expand_dims(images, axis=channels_axis)
+        images = ops.numpy.repeat(images, 3, axis=channels_axis)
+        return images
+
     def rgb_to_hsv(self, images, data_format=None):
         # Ref: dm-pix
         data_format = data_format or backend.image_data_format()
-        channel_axis = -1 if data_format == "channels_last" else -3
+        channels_axis = -1 if data_format == "channels_last" else -3
 
         ops = self.backend
         images = ops.numpy.where(ops.numpy.abs(images) < 1e-7, 0.0, images)
-        r, g, b = ops.numpy.split(images, 3, channel_axis)
-        r = ops.numpy.squeeze(r, channel_axis)
-        g = ops.numpy.squeeze(g, channel_axis)
-        b = ops.numpy.squeeze(b, channel_axis)
+        r, g, b = ops.numpy.split(images, 3, channels_axis)
+        r = ops.numpy.squeeze(r, channels_axis)
+        g = ops.numpy.squeeze(g, channels_axis)
+        b = ops.numpy.squeeze(b, channels_axis)
 
         def rgb_planes_to_hsv_planes(r, g, b):
             value = ops.numpy.maximum(ops.numpy.maximum(r, g), b)
@@ -217,18 +238,18 @@ class ImageBackend(DynamicBackend):
             return hue, saturation, value
 
         return ops.numpy.stack(
-            rgb_planes_to_hsv_planes(r, g, b), axis=channel_axis
+            rgb_planes_to_hsv_planes(r, g, b), axis=channels_axis
         )
 
     def hsv_to_rgb(self, images, data_format=None):
         data_format = data_format or backend.image_data_format()
-        channel_axis = -1 if data_format == "channels_last" else -3
+        channels_axis = -1 if data_format == "channels_last" else -3
 
         ops = self.backend
-        h, s, v = ops.numpy.split(images, 3, channel_axis)
-        h = ops.numpy.squeeze(h, channel_axis)
-        s = ops.numpy.squeeze(s, channel_axis)
-        v = ops.numpy.squeeze(v, channel_axis)
+        h, s, v = ops.numpy.split(images, 3, channels_axis)
+        h = ops.numpy.squeeze(h, channels_axis)
+        s = ops.numpy.squeeze(s, channels_axis)
+        v = ops.numpy.squeeze(v, channels_axis)
 
         def hsv_planes_to_rgb_planes(h, s, v):
             dh = ops.numpy.mod(h, 1.0) * 6.0
@@ -243,5 +264,58 @@ class ImageBackend(DynamicBackend):
             return red, green, blue
 
         return ops.numpy.stack(
-            hsv_planes_to_rgb_planes(h, s, v), axis=channel_axis
+            hsv_planes_to_rgb_planes(h, s, v), axis=channels_axis
         )
+
+    def blend(self, images1, images2, factor, value_range=(0.0, 1.0)):
+        ops = self.backend
+
+        images1 = ops.numpy.multiply(images1, factor)
+        images2 = ops.numpy.multiply(images2, (1.0 - factor))
+        images = ops.numpy.add(images1, images2)
+        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        return images
+
+    def adjust_brightness(self, images, factor, value_range=(0.0, 1.0)):
+        ops = self.backend
+
+        images = ops.numpy.multiply(images, factor)
+        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        return images
+
+    def adjust_contrast(
+        self, images, factor, value_range=(0.0, 1.0), data_format=None
+    ):
+        data_format = data_format or backend.image_data_format()
+
+        ops = self.backend
+        grayscales = self.rgb_to_grayscale(images, data_format)
+        means = ops.numpy.mean(grayscales, axis=[-3, -2, -1], keepdims=True)
+        images = self.blend(images, means, factor, value_range)
+        return images
+
+    def adjust_saturation(
+        self, images, factor, value_range=(0.0, 1.0), data_format=None
+    ):
+        data_format = data_format or backend.image_data_format()
+
+        grayscales = self.rgb_to_grayscale(images, data_format)
+        images = self.blend(images, grayscales, factor, value_range)
+        return images
+
+    def adjust_hue(
+        self, images, factor, value_range=(0.0, 1.0), data_format=None
+    ):
+        if value_range[0] != 0.0 or value_range[1] != 1.0:
+            raise ValueError("`value_range` must be `(0.0, 1.0)`")
+        data_format = data_format or backend.image_data_format()
+        channels_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        images = self.rgb_to_hsv(images, data_format)
+        h, s, v = ops.numpy.split(images, 3, channels_axis)
+        h = ops.numpy.add(h, factor)
+        h = ops.numpy.mod(h, 1.0)
+        images = ops.numpy.concatenate([h, s, v], channels_axis)
+        images = self.hsv_to_rgb(images, data_format)
+        return images

@@ -48,7 +48,12 @@ def standardize_interpolation(interpolation):
 
 
 def standardize_parameter(
-    parameter, name="parameter", allow_none=True, allow_single_number=True
+    parameter,
+    name="parameter",
+    center=0.0,
+    bound=None,
+    allow_none=True,
+    allow_single_number=True,
 ):
     if parameter is None and not allow_none:
         raise ValueError(f"`{name}` cannot be `None`")
@@ -61,7 +66,8 @@ def standardize_parameter(
             f"Received: {name}={parameter}"
         )
     if not isinstance(parameter, Sequence):
-        parameter = (-parameter, parameter)
+        parameter = abs(parameter)
+        parameter = (center - parameter, center + parameter)
     elif len(parameter) > 2:
         raise ValueError(
             f"`{name}` must be a sequence of 2 values. "
@@ -72,4 +78,10 @@ def standardize_parameter(
             f"`{name}` must be in the order that first element is bigger "
             f"that second element. Received: {name}={parameter}"
         )
+    if bound is not None:
+        if parameter[0] < bound[0] or parameter[1] > bound[1]:
+            raise ValueError(
+                f"{name} is out of bounds `[{bound[0]}, {bound[1]}]`. "
+                f"Received: {name}={parameter}"
+            )
     return tuple(parameter)

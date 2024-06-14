@@ -36,16 +36,12 @@ class RandomGrayscale(VisionRandomLayer):
     def augment_images(self, images, transformations=None, **kwargs):
         ops = self.backend
         p = transformations
-
-        def rgb_to_grayscale(images):
-            images = ops.image.rgb_to_grayscale(
-                images, data_format=self.data_format
-            )
-            axis = -1 if self.data_format == "channels_last" else -3
-            return ops.numpy.repeat(images, 3, axis=axis)
-
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
-        images = ops.numpy.where(prob, rgb_to_grayscale(images), images)
+        images = ops.numpy.where(
+            prob,
+            self.image_backend.rgb_to_grayscale(images, self.data_format),
+            images,
+        )
         return ops.cast(images, self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
