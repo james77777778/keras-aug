@@ -79,8 +79,7 @@ class ColorJitter(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
-        fn_idx = ops.random.uniform([4], seed=random_generator)
-        fn_idx = ops.numpy.argsort(fn_idx)
+        fn_idx = ops.random.shuffle(ops.numpy.arange(4), seed=random_generator)
         b, c, s, h = None, None, None, None
 
         def generate_params(low, high):
