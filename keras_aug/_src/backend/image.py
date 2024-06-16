@@ -320,3 +320,66 @@ class ImageBackend(DynamicBackend):
             images,
         )
         return images
+
+    def sharpen(self, images, factor, value_range=(0.0, 1.0), data_format=None):
+        data_format = data_format or backend.image_data_format()
+        if data_format == "channels_last":
+            channels_axis = -1
+            h_axis = -3
+            w_axis = -2
+        else:
+            channels_axis = -3
+            h_axis = -2
+            w_axis = -1
+
+        ops = self.backend
+        images = ops.convert_to_tensor(images)
+        channels = ops.shape(images)[channels_axis]
+        original_dtype = images.dtype
+        compute_dtype = backend.result_type(original_dtype, float)
+        images = ops.cast(images, compute_dtype)
+        # [1 1 1]
+        # [1 5 1]
+        # [1 1 1]
+        kernel = (
+            ops.convert_to_tensor(
+                [[1, 1, 1], [1, 5, 1], [1, 1, 1]],
+                images.dtype,
+            )
+            / 13.0
+        )
+        kernel = ops.numpy.expand_dims(kernel, axis=[-1, -2])
+        kernel = ops.numpy.repeat(kernel, channels, 2)
+        blurred_degenerate = ops.nn.depthwise_conv(
+            images, kernel, 1, data_format=data_format
+        )
+        if backend.is_int_dtype(original_dtype):
+            blurred_degenerate = ops.numpy.round(blurred_degenerate)
+
+        if data_format == "channels_last":
+            view = images[:, 1:-1, 1:-1, :]
+            top, bottom = images[:, 0:1, 1:-1, :], images[:, -1:, 1:-1, :]
+            left, right = images[:, :, 0:1, :], images[:, :, -1:, :]
+        else:
+            view = images[:, :, 1:-1, 1:-1]
+            top, bottom = images[:, :, 0:1, 1:-1], images[:, :, -1:, 1:-1]
+            left, right = images[:, :, :, 0:1], images[:, :, :, -1:]
+
+        # We speed up blending by minimizing flops and doing in-place.
+        # The 2 blend options are mathematically equivalent:
+        # x + (1-r) * (y-x) = x + (1-r) * y - (1-r) * x = x * r + y * (1-r)
+        view = ops.numpy.add(
+            view,
+            ops.numpy.multiply(
+                1.0 - factor, ops.numpy.subtract(blurred_degenerate, view)
+            ),
+        )
+
+        # Fix the borders of the resulting images by filling in the values of
+        # the original images
+        images = ops.numpy.concatenate([top, view, bottom], axis=h_axis)
+        images = ops.numpy.concatenate([left, images, right], axis=w_axis)
+
+        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        images = ops.cast(images, original_dtype)
+        return images
