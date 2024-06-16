@@ -1,7 +1,6 @@
 import typing
 
 import keras
-from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
@@ -10,38 +9,40 @@ from keras_aug._src.utils.argument_validation import standardize_value_range
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
-class RandomSolarize(VisionRandomLayer):
-    """Solarize the input images with a given probability
-
-    Solarization inverts all pixel values above a threshold.
+class RandomSharpen(VisionRandomLayer):
+    """Adjust the sharpness of the input images with a given probability.
 
     Args:
         value_range: The range of values the incoming images will have. This is
             typically either `[0, 1]` or `[0, 255]`.
-        threshold: All pixels equal or above this value are inverted.
+        sharpness_factor: How much to adjust the sharpness. Can be any
+            non-negative number. 0 gives a blurred image, 1 gives the
+            original image while 2 increases the sharpness by a factor of 2.
         p: A float specifying the probability. Defaults to `0.5`.
+        data_format: A string specifying the data format of the input images.
+            It can be either `"channels_last"` or `"channels_first"`.
+            If not specified, the value will be interpreted by
+            `keras.config.image_data_format`. Defaults to `None`.
     """
 
     def __init__(
         self,
         value_range: typing.Sequence[float],
-        threshold: float,
+        sharpness_factor: float,
         p: float = 0.5,
+        data_format=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.value_range = standardize_value_range(value_range)
-        self.threshold = float(threshold)
+        self.sharpness_factor = float(sharpness_factor)
         self.p = float(p)
+        self.data_format = data_format or keras.config.image_data_format()
 
-        if (
-            self.threshold < self.value_range[0]
-            or self.threshold > self.value_range[1]
-        ):
+        if self.sharpness_factor < 0:
             raise ValueError(
-                "`threshold` must be in the range of `self.value_range`. "
-                f"Received: threshold={self.threshold}, "
-                f"value_range={self.value_range}"
+                "`sharpness_factor` should be a non-negative number. "
+                f"Received: sharpness_factor={sharpness_factor}"
             )
 
     def compute_output_shape(self, input_shape):
@@ -57,37 +58,20 @@ class RandomSolarize(VisionRandomLayer):
         ops = self.backend
         p = transformations
 
-        images = ops.cast(images, self.compute_dtype)
+        images = ops.convert_to_tensor(images)
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
+        images = ops.cast(images, self.compute_dtype)
         images = ops.numpy.where(
             prob,
-            self.image_backend.solarize(
-                images, self.threshold, self.value_range
+            self.image_backend.sharpen(
+                images,
+                self.sharpness_factor,
+                self.value_range,
+                self.data_format,
             ),
             images,
         )
         return images
-
-    def _get_dtype_bits(self, dtype):
-        dtype = backend.standardize_dtype(dtype)
-        if dtype == "uint8":
-            return 8
-        elif dtype == "uint16":
-            return 15
-        elif dtype == "uint32":
-            return 32
-        elif dtype == "uint64":
-            return 64
-        elif dtype == "int8":
-            return 7
-        elif dtype == "int16":
-            return 15
-        elif dtype == "int32":
-            return 31
-        elif dtype == "int64":
-            return 63
-        else:
-            raise NotImplementedError
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -108,7 +92,7 @@ class RandomSolarize(VisionRandomLayer):
         config.update(
             {
                 "value_range": self.value_range,
-                "threshold": self.threshold,
+                "sharpness_factor": self.sharpness_factor,
                 "p": self.p,
             }
         )
