@@ -10,35 +10,29 @@ from keras_aug._src.utils.argument_validation import standardize_value_range
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
-class RandomPosterize(VisionRandomLayer):
-    """Posterize the input images with a given probability.
+class RandomSolarize(VisionRandomLayer):
+    """Solarize the input images with a given probability
 
-    Posterization reduces the number of bits for each color channel.
+    Solarization inverts all pixel values above a threshold.
 
     Args:
         value_range: The range of values the incoming images will have. This is
             typically either `[0, 1]` or `[0, 255]`.
-        bits: The number of bits to keep for each channel (0-8).
+        threshold: All pixels equal or above this value are inverted.
         p: A float specifying the probability. Defaults to `0.5`.
-        data_format: A string specifying the data format of the input images.
-            It can be either `"channels_last"` or `"channels_first"`.
-            If not specified, the value will be interpreted by
-            `keras.config.image_data_format`. Defaults to `None`.
     """
 
     def __init__(
         self,
         value_range: typing.Sequence[float],
-        bits: int,
+        threshold: float,
         p: float = 0.5,
-        data_format=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.value_range = standardize_value_range(value_range)
-        self.bits = int(bits)
+        self.threshold = float(threshold)
         self.p = float(p)
-        self.data_format = data_format or keras.config.image_data_format()
 
     def compute_output_shape(self, input_shape):
         return input_shape
@@ -53,22 +47,37 @@ class RandomPosterize(VisionRandomLayer):
         ops = self.backend
         p = transformations
 
-        images = ops.convert_to_tensor(images)
-        prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
-        if backend.is_float_dtype(images.dtype):
-            images = self.transform_value_range(
-                images, self.value_range, (0, 1), self.compute_dtype
-            )
-
         images = ops.cast(images, self.compute_dtype)
+        prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
         images = ops.numpy.where(
-            prob, self.image_backend.posterize(images, self.bits), images
+            prob,
+            self.image_backend.solarize(
+                images, self.threshold, self.value_range
+            ),
+            images,
         )
-        if backend.is_float_dtype(images.dtype):
-            images = self.transform_value_range(
-                images, (0, 1), self.value_range, self.compute_dtype
-            )
         return images
+
+    def _get_dtype_bits(self, dtype):
+        dtype = backend.standardize_dtype(dtype)
+        if dtype == "uint8":
+            return 8
+        elif dtype == "uint16":
+            return 15
+        elif dtype == "uint32":
+            return 32
+        elif dtype == "uint64":
+            return 64
+        elif dtype == "int8":
+            return 7
+        elif dtype == "int16":
+            return 15
+        elif dtype == "int32":
+            return 31
+        elif dtype == "int64":
+            return 63
+        else:
+            raise NotImplementedError
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -87,6 +96,10 @@ class RandomPosterize(VisionRandomLayer):
     def get_config(self):
         config = super().get_config()
         config.update(
-            {"value_range": self.value_range, "bits": self.bits, "p": self.p}
+            {
+                "value_range": self.value_range,
+                "threshold": self.threshold,
+                "p": self.p,
+            }
         )
         return config

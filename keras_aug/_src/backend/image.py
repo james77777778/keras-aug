@@ -182,90 +182,23 @@ class ImageBackend(DynamicBackend):
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix
 
-    def rgb_to_grayscale(self, images, data_format=None):
+    def rgb_to_grayscale(self, images, num_channels=3, data_format=None):
+        if num_channels not in (1, 3):
+            raise ValueError(
+                "`num_channels` must be 1 or 3. "
+                f"Received: num_channels={num_channels}"
+            )
         data_format = data_format or backend.image_data_format()
         channels_axis = -1 if data_format == "channels_last" else -3
 
         ops = self.backend
-        # Convert to floats
         images = ops.core.convert_to_tensor(images)
         original_dtype = images.dtype
-        compute_dtype = backend.result_type(original_dtype, float)
-        images = ops.core.cast(images, compute_dtype)
-        rgb_weights = ops.core.convert_to_tensor(
-            [0.2989, 0.5870, 0.1140], dtype=compute_dtype
-        )
-        images = ops.numpy.tensordot(
-            images, rgb_weights, axes=(channels_axis, -1)
-        )
+        images = ops.image.rgb_to_grayscale(images, data_format)
         images = ops.core.cast(images, original_dtype)
-        images = ops.numpy.expand_dims(images, axis=channels_axis)
-        images = ops.numpy.repeat(images, 3, axis=channels_axis)
+        if num_channels == 3:
+            images = ops.numpy.repeat(images, 3, axis=channels_axis)
         return images
-
-    def rgb_to_hsv(self, images, data_format=None):
-        # Ref: dm-pix
-        data_format = data_format or backend.image_data_format()
-        channels_axis = -1 if data_format == "channels_last" else -3
-
-        ops = self.backend
-        images = ops.numpy.where(ops.numpy.abs(images) < 1e-7, 0.0, images)
-        r, g, b = ops.numpy.split(images, 3, channels_axis)
-        r = ops.numpy.squeeze(r, channels_axis)
-        g = ops.numpy.squeeze(g, channels_axis)
-        b = ops.numpy.squeeze(b, channels_axis)
-
-        def rgb_planes_to_hsv_planes(r, g, b):
-            value = ops.numpy.maximum(ops.numpy.maximum(r, g), b)
-            minimum = ops.numpy.minimum(ops.numpy.minimum(r, g), b)
-            range_ = value - minimum
-
-            safe_value = ops.numpy.where(value > 0, value, 1.0)
-            safe_range = ops.numpy.where(range_ > 0, range_, 1.0)
-
-            saturation = ops.numpy.where(value > 0, range_ / safe_value, 0.0)
-            norm = 1.0 / (6.0 * safe_range)
-
-            hue = ops.numpy.where(
-                value == g,
-                norm * (b - r) + 2.0 / 6.0,
-                norm * (r - g) + 4.0 / 6.0,
-            )
-            hue = ops.numpy.where(value == r, norm * (g - b), hue)
-            hue = ops.numpy.where(range_ > 0, hue, 0.0) + ops.cast(
-                (hue < 0.0), hue.dtype
-            )
-            return hue, saturation, value
-
-        return ops.numpy.stack(
-            rgb_planes_to_hsv_planes(r, g, b), axis=channels_axis
-        )
-
-    def hsv_to_rgb(self, images, data_format=None):
-        data_format = data_format or backend.image_data_format()
-        channels_axis = -1 if data_format == "channels_last" else -3
-
-        ops = self.backend
-        h, s, v = ops.numpy.split(images, 3, channels_axis)
-        h = ops.numpy.squeeze(h, channels_axis)
-        s = ops.numpy.squeeze(s, channels_axis)
-        v = ops.numpy.squeeze(v, channels_axis)
-
-        def hsv_planes_to_rgb_planes(h, s, v):
-            dh = ops.numpy.mod(h, 1.0) * 6.0
-            dr = ops.numpy.clip(ops.numpy.abs(dh - 3.0) - 1.0, 0.0, 1.0)
-            dg = ops.numpy.clip(2.0 - ops.numpy.abs(dh - 2.0), 0.0, 1.0)
-            db = ops.numpy.clip(2.0 - ops.numpy.abs(dh - 4.0), 0.0, 1.0)
-            one_minus_s = 1.0 - s
-
-            red = v * (one_minus_s + s * dr)
-            green = v * (one_minus_s + s * dg)
-            blue = v * (one_minus_s + s * db)
-            return red, green, blue
-
-        return ops.numpy.stack(
-            hsv_planes_to_rgb_planes(h, s, v), axis=channels_axis
-        )
 
     def blend(self, images1, images2, factor, value_range=(0.0, 1.0)):
         ops = self.backend
@@ -289,7 +222,7 @@ class ImageBackend(DynamicBackend):
         data_format = data_format or backend.image_data_format()
 
         ops = self.backend
-        grayscales = self.rgb_to_grayscale(images, data_format)
+        grayscales = ops.image.rgb_to_grayscale(images, data_format)
         means = ops.numpy.mean(grayscales, axis=[-3, -2, -1], keepdims=True)
         images = self.blend(images, means, factor, value_range)
         return images
@@ -299,7 +232,8 @@ class ImageBackend(DynamicBackend):
     ):
         data_format = data_format or backend.image_data_format()
 
-        grayscales = self.rgb_to_grayscale(images, data_format)
+        ops = self.backend
+        grayscales = ops.image.rgb_to_grayscale(images, data_format)
         images = self.blend(images, grayscales, factor, value_range)
         return images
 
@@ -312,10 +246,77 @@ class ImageBackend(DynamicBackend):
         channels_axis = -1 if data_format == "channels_last" else -3
 
         ops = self.backend
-        images = self.rgb_to_hsv(images, data_format)
+        images = ops.image.rgb_to_hsv(images, data_format)
         h, s, v = ops.numpy.split(images, 3, channels_axis)
         h = ops.numpy.add(h, factor)
         h = ops.numpy.mod(h, 1.0)
         images = ops.numpy.concatenate([h, s, v], channels_axis)
-        images = self.hsv_to_rgb(images, data_format)
+        images = ops.image.hsv_to_rgb(images, data_format)
+        return images
+
+    def invert(self, images, value_range=(0.0, 1.0)):
+        ops = self.backend
+        images = ops.numpy.subtract(value_range[1], images)
+        return images
+
+    def posterize(self, images, bits):
+        if not isinstance(bits, int):
+            raise TypeError(
+                "`bits` must be an integer. "
+                f"Received: bits={bits} of type {type(bits)}"
+            )
+
+        ops = self.backend
+        images = ops.convert_to_tensor(images)
+        dtype = backend.standardize_dtype(images.dtype)
+
+        def _get_dtype_bits(dtype):
+            dtype = backend.standardize_dtype(dtype)
+            if dtype == "uint8":
+                return 8
+            elif dtype == "uint16":
+                return 15
+            elif dtype == "uint32":
+                return 32
+            elif dtype == "uint64":
+                return 64
+            elif dtype == "int8":
+                return 7
+            elif dtype == "int16":
+                return 15
+            elif dtype == "int32":
+                return 31
+            elif dtype == "int64":
+                return 63
+            else:
+                raise NotImplementedError
+
+        def posterize_float(images):
+            levels = 1 << bits
+            images = ops.numpy.floor(ops.numpy.multiply(images, levels))
+            images = ops.numpy.clip(images, 0, levels - 1)
+            images = ops.numpy.multiply(images, 1.0 / levels)
+            return images
+
+        def posterize_int(images):
+            dtype_bits = _get_dtype_bits(dtype)
+            if bits >= dtype_bits:
+                return images
+            mask = ((1 << bits) - 1) << (dtype_bits - bits)
+            return images & mask
+
+        if backend.is_float_dtype(dtype):
+            images = posterize_float(images)
+        else:
+            images = posterize_int(images)
+        return images
+
+    def solarize(self, images, threshold, value_range=(0.0, 1.0)):
+        ops = self.backend
+        images = ops.convert_to_tensor(images)
+        images = ops.numpy.where(
+            images >= ops.cast(threshold, images.dtype),
+            self.invert(images, value_range),
+            images,
+        )
         return images

@@ -40,14 +40,10 @@ class RandomInvert(VisionRandomLayer):
         ops = self.backend
         p = transformations
 
-        def invert(images):
-            images = ops.cast(images, self.compute_dtype)
-            images = ops.numpy.subtract(self.value_range[1], images)
-            return images
-
+        images = ops.cast(images, self.compute_dtype)
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
         images = ops.numpy.where(
-            prob, invert(images), ops.cast(images, self.compute_dtype)
+            prob, self.image_backend.invert(images, self.value_range), images
         )
         return images
 

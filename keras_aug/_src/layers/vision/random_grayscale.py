@@ -39,7 +39,9 @@ class RandomGrayscale(VisionRandomLayer):
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
         images = ops.numpy.where(
             prob,
-            self.image_backend.rgb_to_grayscale(images, self.data_format),
+            self.image_backend.rgb_to_grayscale(
+                images, data_format=self.data_format
+            ),
             images,
         )
         return ops.cast(images, self.compute_dtype)
