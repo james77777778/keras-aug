@@ -1,10 +1,13 @@
 import keras
 import numpy as np
+from absl.testing import parameterized
 from keras import backend
 from keras import ops
 from keras.src import testing
+from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.color_jitter import ColorJitter
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedColorJitter(ColorJitter):
@@ -33,9 +36,8 @@ class FixedFnIndexColorJitter(ColorJitter):
         return transformations
 
 
-class ColorJitterTest(testing.TestCase):
+class ColorJitterTest(testing.TestCase, parameterized.TestCase):
     regular_args = dict(
-        value_range=(0, 255),
         brightness=0.5,
         contrast=0.5,
         saturation=0.5,
@@ -52,13 +54,17 @@ class ColorJitterTest(testing.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
+        atol = 1e-6 if dtype == "float32" else 2
+        rtol = 1e-6 if dtype == "float32" else 2
+
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = FixedColorJitter((0, 1))
+        x = get_images(dtype, "channels_last")
+        layer = FixedColorJitter(dtype=dtype)
         y = layer(x)
 
         ref_y = torch.tensor(np.transpose(x, [0, 3, 1, 2]))
@@ -67,12 +73,12 @@ class ColorJitterTest(testing.TestCase):
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = FixedColorJitter((0, 1))
+        x = get_images(dtype, "channels_first")
+        layer = FixedColorJitter(dtype=dtype)
         y = layer(x)
 
         ref_y = torch.tensor(x)
@@ -81,7 +87,7 @@ class ColorJitterTest(testing.TestCase):
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
         ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_shape(self):
         # Test channels_last
@@ -110,22 +116,21 @@ class ColorJitterTest(testing.TestCase):
 
     def test_data_format(self):
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = ColorJitter(**self.regular_args)
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 32, 32, 3))
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
+        x = get_images("float32", "channels_first")
         layer = ColorJitter(**self.regular_args)
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 3, 32, 32))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = FixedFnIndexColorJitter(
-            (0, 255),
             brightness=(1.1, 1.1),
             contrast=(0.9, 0.9),
             saturation=(1.2, 1.2),
@@ -141,8 +146,8 @@ class ColorJitterTest(testing.TestCase):
         import tensorflow as tf
 
         layer = ColorJitter(**self.regular_args)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))

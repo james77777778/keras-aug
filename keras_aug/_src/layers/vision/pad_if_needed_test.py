@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.pad_if_needed import PadIfNeeded
+from keras_aug._src.utils.test_utils import get_images
 
 
 class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
@@ -29,16 +30,23 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
                 "bottom_left",
                 "bottom_right",
             ],
-            padding_value=[0, -10],
+            padding_value=[0, 10],
+            dtype=["float32", "uint8"],
         )
     )
-    def test_correctness(self, size, padding_position, padding_value):
+    def test_correctness(self, size, padding_position, padding_value, dtype):
         np.random.seed(42)
-        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
-        layer = PadIfNeeded(size, "constant", padding_position, padding_value)
+        x = get_images(dtype, "channels_last")
+        if dtype == "float32":
+            x = np.clip(x, 0.5, 1.0)
+        elif dtype == "uint8":
+            x = np.clip(x, 127, 255)
+        layer = PadIfNeeded(
+            size, "constant", padding_position, padding_value, dtype=dtype
+        )
         y = layer(x)
 
-        self.assertEqual(tuple(y.shape), (1, *size, 3))
+        self.assertEqual(tuple(y.shape), (2, *size, 3))
         if padding_position == "border":
             self.assertAllClose(y[0, 0, 0, 0], padding_value)
             self.assertAllClose(y[0, 0, -1, 0], padding_value)
@@ -72,7 +80,8 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         if backend.backend() == "torch" and mode == "symmetric":
             self.skipTest("TODO: Need to investigate")
         np.random.seed(42)
-        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
+        x = np.clip(x, 0.5, 1.0)
         layer = PadIfNeeded(48, padding_mode=mode)
         y = layer(x)
 
@@ -107,7 +116,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 32, 48, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = PadIfNeeded((32, 48))
         y = layer(x)
 
@@ -119,11 +128,11 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = PadIfNeeded(48)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 48, 48, 3))
+            self.assertEqual(output.shape, (2, 48, 48, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -138,7 +147,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = PadIfNeeded(30, bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -161,7 +170,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = PadIfNeeded(30, bounding_box_format="xyxy")
 
         output = layer(input)

@@ -180,6 +180,7 @@ class RandomAffine(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
+        original_dtype = images.dtype
         images_shape = ops.shape(images)
         height = images_shape[self.h_axis]
         width = images_shape[self.w_axis]
@@ -202,6 +203,9 @@ class RandomAffine(VisionRandomLayer):
 
         # Affine
         transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
+        images = self.image_backend.transform_dtype(
+            images, backend.result_type(images.dtype, float)
+        )
         images = ops.image.affine_transform(
             images,
             transform,
@@ -210,7 +214,8 @@ class RandomAffine(VisionRandomLayer):
             self.padding_value,
             self.data_format,
         )
-        return ops.cast(images, self.compute_dtype)
+        images = self.image_backend.transform_dtype(images, original_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -241,6 +246,7 @@ class RandomAffine(VisionRandomLayer):
             target="xyxy",
             height=height,
             width=width,
+            dtype=self.bounding_box_dtype,
         )
         if self.center is None:
             center_x, center_y = 0.5, 0.5
@@ -300,7 +306,7 @@ class RandomAffine(VisionRandomLayer):
             target=self.bounding_box_format,
             height=height,
             width=width,
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -308,6 +314,7 @@ class RandomAffine(VisionRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         ops = self.backend
+        original_dtype = segmentation_masks.dtype
         segmentation_masks_shape = ops.shape(segmentation_masks)
         height = segmentation_masks_shape[self.h_axis]
         width = segmentation_masks_shape[self.w_axis]
@@ -330,6 +337,10 @@ class RandomAffine(VisionRandomLayer):
 
         # Affine
         transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
+        segmentation_masks = ops.cast(
+            segmentation_masks,
+            backend.result_type(segmentation_masks.dtype, float),
+        )
         segmentation_masks = ops.image.affine_transform(
             segmentation_masks,
             transform,
@@ -338,7 +349,8 @@ class RandomAffine(VisionRandomLayer):
             -1,
             self.data_format,
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        segmentation_masks = ops.cast(segmentation_masks, original_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

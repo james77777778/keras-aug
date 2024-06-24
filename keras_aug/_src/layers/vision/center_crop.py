@@ -130,7 +130,7 @@ class CenterCrop(VisionRandomLayer):
         images = self.image_backend.crop(
             images, offset_height, offset_width, self.size[0], self.size[1]
         )
-        return ops.cast(images, self.compute_dtype)
+        return ops.cast(images, self.image_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -158,6 +158,7 @@ class CenterCrop(VisionRandomLayer):
             target="xyxy",
             height=height,
             width=width,
+            dtype=self.bounding_box_dtype,
         )
 
         x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
@@ -195,7 +196,7 @@ class CenterCrop(VisionRandomLayer):
             target=self.bounding_box_format,
             height=self.size[0],
             width=self.size[1],
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -237,7 +238,7 @@ class CenterCrop(VisionRandomLayer):
             self.size[0],
             self.size[1],
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

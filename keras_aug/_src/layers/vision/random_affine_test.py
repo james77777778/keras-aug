@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_affine import RandomAffine
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedRandomAffine(RandomAffine):
@@ -53,28 +54,31 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(
         named_product(
             interpolation=["nearest", "bilinear"],
+            dtype=["float32", "uint8"],
         )
     )
-    def test_correctness(self, interpolation):
+    def test_correctness(self, interpolation, dtype):
         # Test channels_last
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = FixedRandomAffine(interpolation=interpolation)
+        x = get_images(dtype, "channels_last")
+        layer = FixedRandomAffine(interpolation=interpolation, dtype=dtype)
         y = layer(x)
 
         # TODO: It is difficult to be consistent with `TF.affine`
-        self.assertEqual(y.shape, (1, 32, 32, 3))
+        self.assertEqual(y.shape, (2, 32, 32, 3))
+        self.assertDType(y, dtype)
         self.assertNotAllClose(y, x)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = FixedRandomAffine(interpolation=interpolation)
+        x = get_images(dtype, "channels_first")
+        layer = FixedRandomAffine(interpolation=interpolation, dtype=dtype)
         y = layer(x)
 
         # TODO: It is difficult to be consistent with `TF.affine`
-        self.assertEqual(y.shape, (1, 3, 32, 32))
+        self.assertEqual(y.shape, (2, 3, 32, 32))
+        self.assertDType(y, dtype)
         self.assertNotAllClose(y, x)
 
     def test_shape(self):
@@ -104,7 +108,7 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 32, 32, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomAffine(degree=[10, 10])
         y = layer(x)
 
@@ -116,11 +120,11 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = RandomAffine(**self.regular_args)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -134,7 +138,7 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0, 0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedNoRotRandomAffine(bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -168,7 +172,7 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1, 2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedNoRotRandomAffine(bounding_box_format="xyxy")
 
         output = layer(input)

@@ -1,6 +1,5 @@
 import keras
 from keras import backend
-from keras import tree
 from keras.src.utils.backend_utils import in_tf_graph
 
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
@@ -88,7 +87,23 @@ class VisionRandomLayer(keras.Layer):
         self.image_backend = ImageBackend(backend.backend())
         self.bbox_backend = BoundingBoxBackend(backend.backend())
 
+        self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
+        self.autocast = False
+
+    @property
+    def image_dtype(self):
+        return self.compute_dtype
+
+    @property
+    def bounding_box_dtype(self):
+        dtype = backend.result_type(self.compute_dtype, float)
+        return dtype
+
+    @property
+    def keypoint_dtype(self):
+        dtype = backend.result_type(self.compute_dtype, float)
+        return dtype
 
     @property
     def backend(self):
@@ -346,15 +361,27 @@ class VisionRandomLayer(keras.Layer):
             raise TypeError
         ops = self.backend
         if self.IMAGES in inputs:
-            inputs[self.IMAGES] = ops.convert_to_tensor(
-                inputs[self.IMAGES], self.compute_dtype
+            inputs[self.IMAGES] = self.image_backend.transform_dtype(
+                inputs[self.IMAGES], self.image_dtype
             )
         if self.BOUNDING_BOXES in inputs:
             inputs[self.BOUNDING_BOXES]["boxes"] = ops.convert_to_tensor(
-                inputs[self.BOUNDING_BOXES]["boxes"], self.compute_dtype
+                inputs[self.BOUNDING_BOXES]["boxes"], self.bounding_box_dtype
             )
             inputs[self.BOUNDING_BOXES]["classes"] = ops.convert_to_tensor(
-                inputs[self.BOUNDING_BOXES]["classes"], self.compute_dtype
+                inputs[self.BOUNDING_BOXES]["classes"], self.bounding_box_dtype
+            )
+        if self.SEGMENTATION_MASKS in inputs:
+            masks = inputs[self.SEGMENTATION_MASKS]
+            masks = ops.convert_to_tensor(masks)
+            if backend.is_float_dtype(masks.dtype) and backend.is_float_dtype(
+                self.compute_dtype
+            ):
+                masks = ops.cast(masks, self.compute_dtype)
+            inputs[self.SEGMENTATION_MASKS] = masks
+        if self.KEYPOINTS in inputs:
+            inputs[self.KEYPOINTS] = ops.convert_to_tensor(
+                inputs[self.KEYPOINTS], self.keypoint_dtype
             )
         return inputs
 
@@ -390,22 +417,10 @@ class VisionRandomLayer(keras.Layer):
     def __call__(self, inputs, **kwargs):
         if in_tf_graph():
             self._set_backend("tensorflow")
-            inputs = tree.map_structure(
-                lambda x: self.backend.convert_to_tensor(
-                    x, dtype=self.compute_dtype
-                ),
-                inputs,
-            )
-            switch_convert_input_args = False
-            if self._convert_input_args:
-                self._convert_input_args = False
-                switch_convert_input_args = True
             try:
                 outputs = super().__call__(inputs, **kwargs)
             finally:
                 self._reset_backend()
-                if switch_convert_input_args:
-                    self._convert_input_args = True
             return outputs
         else:
             return super().__call__(inputs, **kwargs)

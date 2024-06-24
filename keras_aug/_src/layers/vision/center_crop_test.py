@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.center_crop import CenterCrop
+from keras_aug._src.utils.test_utils import get_images
 
 
 class CenterCropTest(testing.TestCase, parameterized.TestCase):
@@ -19,13 +20,14 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = CenterCrop(16)
+        x = get_images(dtype, "channels_last")
+        layer = CenterCrop(16, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.center_crop(torch.tensor(np.transpose(x, [0, 3, 1, 2])), 16)
@@ -34,31 +36,8 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = CenterCrop(16)
-        y = layer(x)
-
-        ref_y = TF.center_crop(torch.tensor(x), 16)
-        ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y)
-
-    def test_correctness_uint8(self):
-        import torch
-        import torchvision.transforms.v2.functional as TF
-
-        # Test channels_last
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("uint8")
-        layer = CenterCrop(16)
-        y = layer(x)
-
-        ref_y = TF.center_crop(torch.tensor(np.transpose(x, [0, 3, 1, 2])), 16)
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y)
-
-        # Test channels_first
-        backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 255, (2, 3, 32, 32)).astype("uint8")
-        layer = CenterCrop(16)
+        x = get_images(dtype, "channels_first")
+        layer = CenterCrop(16, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.center_crop(torch.tensor(x), 16)
@@ -72,7 +51,8 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
         if backend.backend() == "torch" and mode == "symmetric":
             self.skipTest("TODO: Need to investigate")
         np.random.seed(42)
-        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
+        x = np.clip(x, 0.5, 1.0)
         layer = CenterCrop(48, padding_mode=mode)
         y = layer(x)
 
@@ -106,7 +86,7 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 16, 16, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = CenterCrop(16)
         y = layer(x)
 
@@ -118,11 +98,11 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = CenterCrop(16)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 16, 16, 3))
+            self.assertEqual(output.shape, (2, 16, 16, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -137,7 +117,7 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = CenterCrop((18, 18), bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -158,7 +138,7 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = CenterCrop((18, 18), bounding_box_format="xyxy")
 
         output = layer(input)

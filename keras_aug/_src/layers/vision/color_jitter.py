@@ -5,7 +5,6 @@ import keras
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 from keras_aug._src.utils.argument_validation import standardize_parameter
-from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -16,8 +15,6 @@ class ColorJitter(VisionRandomLayer):
     The input images must be 3 channels.
 
     Args:
-        value_range: The range of values the incoming images will have. This is
-            typically either `[0, 1]` or `[0, 255]`.
         brightness: How much to jitter brightness. The factor will be chosen
             uniformly from `[1 - brightness, 1 + brightness]` or
             `[min, max]` if given the range of brightness. Set to `None` to
@@ -42,7 +39,6 @@ class ColorJitter(VisionRandomLayer):
 
     def __init__(
         self,
-        value_range: typing.Sequence[float],
         brightness: typing.Union[None, float, typing.Sequence[float]] = None,
         contrast: typing.Union[None, float, typing.Sequence[float]] = None,
         saturation: typing.Union[None, float, typing.Sequence[float]] = None,
@@ -51,7 +47,6 @@ class ColorJitter(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.value_range = standardize_value_range(value_range)
         self.brightness = standardize_parameter(
             brightness, "brightness", center=1.0, bound=(0, float("inf"))
         )
@@ -122,7 +117,7 @@ class ColorJitter(VisionRandomLayer):
             if self.brightness is None:
                 return images
             return self.image_backend.adjust_brightness(
-                images, brightness_factor, self.value_range
+                images, brightness_factor
             )
 
         def adjust_contrast(images):
@@ -131,7 +126,6 @@ class ColorJitter(VisionRandomLayer):
             return self.image_backend.adjust_contrast(
                 images,
                 contrast_factor,
-                self.value_range,
                 data_format=self.data_format,
             )
 
@@ -141,21 +135,14 @@ class ColorJitter(VisionRandomLayer):
             return self.image_backend.adjust_saturation(
                 images,
                 saturation_factor,
-                self.value_range,
                 data_format=self.data_format,
             )
 
         def adjust_hue(images):
             if self.hue is None:
                 return images
-            images = self.transform_value_range(
-                images, self.value_range, (0, 1), dtype=self.compute_dtype
-            )
             images = self.image_backend.adjust_hue(
                 images, hue_factor, data_format=self.data_format
-            )
-            images = self.transform_value_range(
-                images, (0, 1), self.value_range, dtype=self.compute_dtype
             )
             return images
 
@@ -188,7 +175,6 @@ class ColorJitter(VisionRandomLayer):
         config = super().get_config()
         config.update(
             {
-                "value_range": self.value_range,
                 "brightness": self.brightness,
                 "contrast": self.contrast,
                 "saturation": self.saturation,

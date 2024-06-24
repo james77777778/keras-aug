@@ -1,4 +1,3 @@
-import numpy as np
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
@@ -6,6 +5,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.backend.image import ImageBackend
+from keras_aug._src.utils.test_utils import get_images
 
 
 class ImageBackendTest(testing.TestCase, parameterized.TestCase):
@@ -19,29 +19,17 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def get_images(self, dtype, data_format="channels_first"):
-        # channels_first
-        if dtype == "float32":
-            x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype(dtype)
-        elif dtype == "uint8":
-            x = np.random.uniform(0, 255, (2, 3, 32, 32)).astype(dtype)
-        elif dtype == "int8":
-            x = np.random.uniform(-128, 127, (2, 3, 32, 32)).astype(dtype)
-        if data_format == "channels_last":
-            x = np.transpose(x, [0, 2, 3, 1])
-        return x
-
     def test_crop(self):
         image_backend = ImageBackend()
 
         # Test channels_last
-        x = self.get_images("float32", "channels_last")
+        x = get_images("float32", "channels_last")
         y = image_backend.crop(x, top=5, left=6, height=13, width=14)
         self.assertAllClose(y, x[:, 5 : 5 + 13, 6 : 6 + 14, :])
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = self.get_images("float32", "channels_first")
+        x = get_images("float32", "channels_first")
         y = image_backend.crop(x, top=5, left=6, height=13, width=14)
         self.assertAllClose(y, x[:, :, 5 : 5 + 13, 6 : 6 + 14])
 
@@ -52,7 +40,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         image_backend = ImageBackend()
 
         # Test channels_last
-        x = self.get_images("float32", "channels_last")
+        x = get_images("float32", "channels_last")
         y = image_backend.pad(x, mode, 2, 3, 4, 5)
 
         ref_y = ops.pad(
@@ -65,7 +53,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = self.get_images("float32", "channels_first")
+        x = get_images("float32", "channels_first")
         y = image_backend.pad(x, mode, 2, 3, 4, 5)
 
         ref_y = ops.pad(
@@ -82,7 +70,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.adjust_brightness(x, 0.5)
 
         ref_y = TF.adjust_brightness(torch.tensor(x), 0.5)
@@ -96,7 +84,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.adjust_contrast(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_contrast(torch.tensor(x), 0.5)
@@ -110,7 +98,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.adjust_hue(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_hue(torch.tensor(x), 0.5)
@@ -124,7 +112,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.adjust_saturation(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_saturation(torch.tensor(x), 0.5)
@@ -133,13 +121,32 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         self.assertDType(y, dtype)
 
     @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_auto_contrast(self, dtype):
+        import torch
+        import torchvision.transforms.v2.functional as TF
+
+        if dtype == "uint8":
+            atol = 1
+        else:
+            atol = 1e-6
+
+        image_backend = ImageBackend()
+        x = get_images(dtype, "channels_first")
+        y = image_backend.auto_contrast(x, "channels_first")
+
+        ref_y = TF.autocontrast(torch.tensor(x))
+        ref_y = ref_y.cpu().numpy()
+        self.assertAllClose(y, ref_y, atol=atol)
+        self.assertDType(y, dtype)
+
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
     def test_blend(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x1 = self.get_images(dtype, "channels_first")
-        x2 = self.get_images(dtype, "channels_first")
+        x1 = get_images(dtype, "channels_first")
+        x2 = get_images(dtype, "channels_first")
         y = image_backend.blend(x1, x2, 0.5)
 
         ref_y = TF._color._blend(torch.tensor(x1), torch.tensor(x2), 0.5)
@@ -153,7 +160,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         if dtype == "float32":
             atol = 1
         elif dtype == "uint8":
@@ -171,7 +178,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.rgb_to_grayscale(x, 3, "channels_first")
 
         ref_y = TF.rgb_to_grayscale(torch.tensor(x), 3)
@@ -195,7 +202,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.invert(x)
 
         ref_y = TF.invert(torch.tensor(x))
@@ -209,7 +216,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.posterize(x, bits=3)
 
         ref_y = TF.posterize(torch.tensor(x), bits=3)
@@ -223,7 +230,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         y = image_backend.sharpen(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_sharpness(torch.tensor(x), 0.5)
@@ -237,7 +244,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torchvision.transforms.v2.functional as TF
 
         image_backend = ImageBackend()
-        x = self.get_images(dtype, "channels_first")
+        x = get_images(dtype, "channels_first")
         if backend.is_float_dtype(dtype):
             threshold = 0.5
         elif dtype == "uint8":

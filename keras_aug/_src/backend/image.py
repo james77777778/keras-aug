@@ -231,40 +231,6 @@ class ImageBackend(DynamicBackend):
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix
 
-    def rgb_to_grayscale(self, images, num_channels=3, data_format=None):
-        if num_channels not in (1, 3):
-            raise ValueError(
-                "`num_channels` must be 1 or 3. "
-                f"Received: num_channels={num_channels}"
-            )
-        data_format = data_format or backend.image_data_format()
-        channels_axis = -1 if data_format == "channels_last" else -3
-
-        ops = self.backend
-        images = ops.core.convert_to_tensor(images)
-        original_dtype = backend.standardize_dtype(images.dtype)
-        images = ops.image.rgb_to_grayscale(images, data_format)
-        images = ops.core.cast(images, original_dtype)
-        if num_channels == 3:
-            images = ops.numpy.repeat(images, 3, axis=channels_axis)
-        return images
-
-    def blend(self, images1, images2, factor):
-        ops = self.backend
-        images1 = ops.convert_to_tensor(images1)
-        images2 = ops.convert_to_tensor(images2)
-        original_dtype = backend.standardize_dtype(images1.dtype)
-        is_float_inputs = backend.is_float_dtype(original_dtype)
-        max_value = self._max_value_of_dtype(original_dtype)
-
-        images1 = ops.numpy.multiply(images1, factor)
-        images2 = ops.numpy.multiply(images2, (1.0 - factor))
-        images = ops.numpy.add(images1, images2)
-        images = ops.numpy.clip(images, 0, max_value)
-        if not is_float_inputs:
-            images = ops.cast(images, original_dtype)
-        return images
-
     def adjust_brightness(self, images, factor):
         ops = self.backend
         images = ops.convert_to_tensor(images)
@@ -327,6 +293,50 @@ class ImageBackend(DynamicBackend):
         images = ops.image.hsv_to_rgb(images, data_format)
         images = ops.numpy.clip(images, 0, max_value)
         images = self.transform_dtype(images, original_dtype)
+        return images
+
+    def auto_contrast(self, images, data_format=None):
+        data_format = data_format or backend.image_data_format()
+        axis = (1, 2) if data_format == "channels_last" else (2, 3)
+
+        ops = self.backend
+        original_dtype = backend.standardize_dtype(images.dtype)
+        max_value = self._max_value_of_dtype(original_dtype)
+        if not backend.is_float_dtype(original_dtype):
+            images = ops.cast(
+                images, backend.result_type(original_dtype, float)
+            )
+
+        lows = ops.numpy.min(images, axis=axis, keepdims=True)
+        highs = ops.numpy.max(images, axis=axis, keepdims=True)
+        eq_index = ops.numpy.equal(lows, highs)
+        inverse_scale = ops.numpy.divide(
+            ops.numpy.subtract(highs, lows), max_value
+        )
+        lows = ops.numpy.where(eq_index, 0.0, lows)
+        inverse_scale = ops.numpy.where(eq_index, 1.0, inverse_scale)
+
+        images = ops.numpy.divide(
+            ops.numpy.subtract(images, lows), inverse_scale
+        )
+        images = ops.numpy.clip(images, 0, max_value)
+        images = ops.cast(images, original_dtype)
+        return images
+
+    def blend(self, images1, images2, factor):
+        ops = self.backend
+        images1 = ops.convert_to_tensor(images1)
+        images2 = ops.convert_to_tensor(images2)
+        original_dtype = backend.standardize_dtype(images1.dtype)
+        is_float_inputs = backend.is_float_dtype(original_dtype)
+        max_value = self._max_value_of_dtype(original_dtype)
+
+        images1 = ops.numpy.multiply(images1, factor)
+        images2 = ops.numpy.multiply(images2, (1.0 - factor))
+        images = ops.numpy.add(images1, images2)
+        images = ops.numpy.clip(images, 0, max_value)
+        if not is_float_inputs:
+            images = ops.cast(images, original_dtype)
         return images
 
     def equalize(self, images, bins=256, data_format=None):
@@ -399,6 +409,24 @@ class ImageBackend(DynamicBackend):
             )
         images = ops.numpy.reshape(images, images_shape)
         images = self.transform_dtype(images, original_dtype)
+        return images
+
+    def rgb_to_grayscale(self, images, num_channels=3, data_format=None):
+        if num_channels not in (1, 3):
+            raise ValueError(
+                "`num_channels` must be 1 or 3. "
+                f"Received: num_channels={num_channels}"
+            )
+        data_format = data_format or backend.image_data_format()
+        channels_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        images = ops.core.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        images = ops.image.rgb_to_grayscale(images, data_format)
+        images = ops.core.cast(images, original_dtype)
+        if num_channels == 3:
+            images = ops.numpy.repeat(images, 3, axis=channels_axis)
         return images
 
     def invert(self, images):
