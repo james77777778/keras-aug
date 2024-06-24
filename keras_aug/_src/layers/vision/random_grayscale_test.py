@@ -1,12 +1,15 @@
 import keras
 import numpy as np
+from absl.testing import parameterized
 from keras import backend
 from keras.src import testing
+from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_grayscale import RandomGrayscale
+from keras_aug._src.utils.test_utils import get_images
 
 
-class RandomGrayscaleTest(testing.TestCase):
+class RandomGrayscaleTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -17,13 +20,14 @@ class RandomGrayscaleTest(testing.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = RandomGrayscale(p=1.0)
+        x = get_images(dtype, "channels_last")
+        layer = RandomGrayscale(p=1.0, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.rgb_to_grayscale(
@@ -34,8 +38,8 @@ class RandomGrayscaleTest(testing.TestCase):
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = RandomGrayscale(p=1.0)
+        x = get_images(dtype, "channels_first")
+        layer = RandomGrayscale(p=1.0, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.rgb_to_grayscale(torch.tensor(x), num_output_channels=3)
@@ -44,8 +48,8 @@ class RandomGrayscaleTest(testing.TestCase):
 
         # Test p=0.0
         backend.set_image_data_format("channels_last")
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = RandomGrayscale(p=0.0)
+        x = get_images(dtype, "channels_last")
+        layer = RandomGrayscale(p=0.0, dtype=dtype)
         y = layer(x)
 
         self.assertAllClose(y, x)
@@ -77,20 +81,20 @@ class RandomGrayscaleTest(testing.TestCase):
 
     def test_data_format(self):
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomGrayscale()
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 32, 32, 3))
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
+        x = get_images("float32", "channels_first")
         layer = RandomGrayscale()
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 3, 32, 32))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomGrayscale(p=1.0)
         y = layer(x)
 
@@ -102,8 +106,8 @@ class RandomGrayscaleTest(testing.TestCase):
         import tensorflow as tf
 
         layer = RandomGrayscale()
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))

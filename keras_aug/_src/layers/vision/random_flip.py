@@ -96,7 +96,7 @@ class RandomFlip(VisionRandomLayer):
             ops.numpy.flip(images, axis=self.h_axis),
             images,
         )
-        return ops.cast(images, self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -124,6 +124,7 @@ class RandomFlip(VisionRandomLayer):
             target="xyxy",
             height=height,
             width=width,
+            dtype=self.bounding_box_dtype,
         )
         x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
 
@@ -154,7 +155,7 @@ class RandomFlip(VisionRandomLayer):
             target=self.bounding_box_format,
             height=height,
             width=width,
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -183,7 +184,7 @@ class RandomFlip(VisionRandomLayer):
             ops.numpy.flip(segmentation_masks, axis=self.h_axis),
             segmentation_masks,
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

@@ -46,7 +46,6 @@ class RandomChannelPermutation(VisionRandomLayer):
     def augment_images(self, images, transformations=None, **kwargs):
         ops = self.backend
         perm = transformations
-        images = ops.cast(images, self.compute_dtype)
         if self.data_format == "channels_last":
             perm = ops.numpy.expand_dims(perm, axis=[1, 2])
         else:

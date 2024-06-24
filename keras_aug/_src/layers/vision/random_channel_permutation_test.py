@@ -1,12 +1,15 @@
 import keras
 import numpy as np
+from absl.testing import parameterized
 from keras import backend
 from keras import ops
 from keras.src import testing
+from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_channel_permutation import (
     RandomChannelPermutation,
 )
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedRandomChannelPermutation(RandomChannelPermutation):
@@ -17,7 +20,7 @@ class FixedRandomChannelPermutation(RandomChannelPermutation):
         return ops.stack([ones, twos, zeros], axis=-1)
 
 
-class RandomChannelPermutationTest(testing.TestCase):
+class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -28,13 +31,14 @@ class RandomChannelPermutationTest(testing.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomChannelPermutation(3)
+        x = get_images(dtype, "channels_last")
+        layer = FixedRandomChannelPermutation(3, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.permute_channels(
@@ -45,8 +49,8 @@ class RandomChannelPermutationTest(testing.TestCase):
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = FixedRandomChannelPermutation(3)
+        x = get_images(dtype, "channels_first")
+        layer = FixedRandomChannelPermutation(3, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.permute_channels(torch.tensor(x), [1, 2, 0])
@@ -80,20 +84,20 @@ class RandomChannelPermutationTest(testing.TestCase):
 
     def test_data_format(self):
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomChannelPermutation(3)
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 32, 32, 3))
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
+        x = get_images("float32", "channels_first")
         layer = RandomChannelPermutation(3)
         y = layer(x)
         self.assertEqual(tuple(y.shape), (2, 3, 32, 32))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = FixedRandomChannelPermutation(3)
         y = layer(x)
 
@@ -105,8 +109,8 @@ class RandomChannelPermutationTest(testing.TestCase):
         import tensorflow as tf
 
         layer = RandomChannelPermutation(3)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))

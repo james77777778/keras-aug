@@ -129,8 +129,6 @@ class RandomCrop(VisionRandomLayer):
         )
 
     def augment_images(self, images, transformations, **kwargs):
-        ops = self.backend
-
         # Pad
         pad_top = transformations["pad_top"]
         pad_bottom = transformations["pad_bottom"]
@@ -153,7 +151,7 @@ class RandomCrop(VisionRandomLayer):
         images = self.image_backend.crop(
             images, crop_top, crop_left, self.size[0], self.size[1]
         )
-        return ops.cast(images, self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -181,15 +179,24 @@ class RandomCrop(VisionRandomLayer):
             target="xyxy",
             height=height,
             width=width,
+            dtype=self.bounding_box_dtype,
         )
 
         x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
 
         # Get pad and offset
-        pad_top = ops.cast(transformations["pad_top"], dtype="float32")
-        pad_left = ops.cast(transformations["pad_left"], dtype="float32")
-        crop_top = ops.cast(transformations["crop_top"], dtype="float32")
-        crop_left = ops.cast(transformations["crop_left"], dtype="float32")
+        pad_top = ops.cast(
+            transformations["pad_top"], dtype=self.bounding_box_dtype
+        )
+        pad_left = ops.cast(
+            transformations["pad_left"], dtype=self.bounding_box_dtype
+        )
+        crop_top = ops.cast(
+            transformations["crop_top"], dtype=self.bounding_box_dtype
+        )
+        crop_left = ops.cast(
+            transformations["crop_left"], dtype=self.bounding_box_dtype
+        )
         value_height = pad_top - crop_top
         value_width = pad_left - crop_left
         x1 = x1 + value_width
@@ -212,15 +219,13 @@ class RandomCrop(VisionRandomLayer):
             target=self.bounding_box_format,
             height=self.size[0],
             width=self.size[1],
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
     ):
-        ops = self.backend
-
         # Pad
         pad_top = transformations["pad_top"]
         pad_bottom = transformations["pad_bottom"]
@@ -247,7 +252,7 @@ class RandomCrop(VisionRandomLayer):
             self.size[0],
             self.size[1],
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

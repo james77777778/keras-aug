@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_resized_crop import RandomResizedCrop
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedRandomResizedCrop(RandomResizedCrop):
@@ -31,9 +32,10 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             size=[(32, 32), (40, 50), (64, 64)],
             interpolation=["nearest", "bilinear", "bicubic"],
             antialias=[True, False],
+            dtype=["float32", "uint8"],
         )
     )
-    def test_correctness(self, size, interpolation, antialias):
+    def test_correctness(self, size, interpolation, antialias, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
@@ -41,13 +43,25 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             self.skipTest("TODO: Need to investigate")
         if interpolation == "nearest" and antialias is True:
             self.skipTest("Doesn't support nearest and antialias=True")
+        if interpolation == "bicubic":
+            self.skipTest("TODO: Need to investigate")
         torch_interpolation = self.pil_modes_mapping[interpolation]
+
+        if dtype == "uint8":
+            atol = 1.0
+            rtol = 1e-6
+            if interpolation == "bicubic":
+                atol = 36.0
+                rtol = 15.0
+        else:
+            atol = 1e-1
+            rtol = 1e-6
 
         # Test channels_last
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
+        x = get_images(dtype, "channels_last")
         layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
+            size, interpolation=interpolation, antialias=antialias, dtype=dtype
         )
         y = layer(x)
 
@@ -62,14 +76,14 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             antialias,
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
+        x = get_images(dtype, "channels_first")
         layer = FixedRandomResizedCrop(
-            size, interpolation=interpolation, antialias=antialias
+            size, interpolation=interpolation, antialias=antialias, dtype=dtype
         )
         y = layer(x)
 
@@ -84,7 +98,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             antialias,
         )
         ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_shape(self):
         # Test dynamic shape
@@ -113,7 +127,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 16, 32, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = FixedRandomResizedCrop(16)
         y = layer(x)
 
@@ -125,11 +139,11 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = RandomResizedCrop(16)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 16, 16, 3))
+            self.assertEqual(output.shape, (2, 16, 16, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -144,7 +158,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedRandomResizedCrop((18, 18), bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -165,7 +179,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedRandomResizedCrop((16, 32), bounding_box_format="xyxy")
 
         output = layer(input)

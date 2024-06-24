@@ -140,7 +140,7 @@ class RandomResizedCrop(VisionRandomLayer):
             antialias=self.antialias,
             data_format=self.data_format,
         )
-        return ops.cast(images, self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -173,6 +173,7 @@ class RandomResizedCrop(VisionRandomLayer):
             target="xyxy",
             height=ori_height,
             width=ori_width,
+            dtype=self.bounding_box_dtype,
         )
 
         x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
@@ -196,7 +197,7 @@ class RandomResizedCrop(VisionRandomLayer):
             target=self.bounding_box_format,
             height=self.size[0],
             width=self.size[1],
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -222,7 +223,7 @@ class RandomResizedCrop(VisionRandomLayer):
             antialias=False,
             data_format=self.data_format,
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

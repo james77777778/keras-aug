@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_flip import RandomFlip
+from keras_aug._src.utils.test_utils import get_images
 
 
 class RandomFlipTest(testing.TestCase, parameterized.TestCase):
@@ -22,16 +23,17 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(
         named_product(
             mode=["horizontal", "vertical", "horizontal_and_vertical"],
+            dtype=["float32", "uint8"],
         )
     )
-    def test_correctness(self, mode):
+    def test_correctness(self, mode, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = RandomFlip(mode, p=1.0)
+        x = get_images(dtype, "channels_last")
+        layer = RandomFlip(mode, p=1.0, dtype=dtype)
         y = layer(x)
 
         if mode == "horizontal":
@@ -47,8 +49,8 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = RandomFlip(mode, p=1.0)
+        x = get_images(dtype, "channels_first")
+        layer = RandomFlip(mode, p=1.0, dtype=dtype)
         y = layer(x)
 
         if mode == "horizontal":
@@ -88,7 +90,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 32, 32, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomFlip(p=1.0)
         y = layer(x)
 
@@ -100,11 +102,11 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = RandomFlip()
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -119,7 +121,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = RandomFlip(p=1.0, bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -140,7 +142,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = RandomFlip(p=1.0, bounding_box_format="xyxy")
 
         output = layer(input)

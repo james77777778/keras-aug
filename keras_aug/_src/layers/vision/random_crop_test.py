@@ -7,6 +7,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_crop import RandomCrop
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedRandomCrop(RandomCrop):
@@ -32,13 +33,14 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         backend.set_image_data_format(self.data_format)
         return super().tearDown()
 
-    def test_correctness(self):
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
         # Test channels_last
-        x = np.random.uniform(0, 1, (2, 32, 32, 3)).astype("float32")
-        layer = FixedRandomCrop(16)
+        x = get_images(dtype, "channels_last")
+        layer = FixedRandomCrop(16, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.crop(
@@ -49,8 +51,8 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
-        x = np.random.uniform(0, 1, (2, 3, 32, 32)).astype("float32")
-        layer = FixedRandomCrop(16)
+        x = get_images(dtype, "channels_first")
+        layer = FixedRandomCrop(16, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.crop(torch.tensor(x), 8, 10, 16, 16)
@@ -65,7 +67,8 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         if backend.backend() == "torch" and mode == "symmetric":
             self.skipTest("TODO: Need to investigate")
         np.random.seed(42)
-        x = np.random.uniform(0.5, 1, (1, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
+        x = np.clip(x, 0.5, 1.0)
         layer = RandomCrop(48, padding_mode=mode)
         y = layer(x)
 
@@ -99,7 +102,7 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 16, 16, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = FixedRandomCrop(16)
         y = layer(x)
 
@@ -111,11 +114,11 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = RandomCrop(16)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 16, 16, 3))
+            self.assertEqual(output.shape, (2, 16, 16, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -130,7 +133,7 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedRandomCrop((18, 18), bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -151,7 +154,7 @@ class RandomCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes}
+        input = {"images": images, "bounding_boxes": boxes.copy()}
         layer = FixedRandomCrop((18, 18), bounding_box_format="xyxy")
 
         output = layer(input)

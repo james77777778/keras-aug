@@ -1,11 +1,8 @@
-import typing
-
 import keras
 from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
-from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -18,8 +15,6 @@ class RandomEqualize(VisionRandomLayer):
     the outputs.
 
     Args:
-        value_range: The range of values the incoming images will have. This is
-            typically either `[0, 1]` or `[0, 255]`.
         bins: The number of bins to use in histogram equalization. The value
             must be in the range of `[0, 256]`. Defaults to `256`.
         p: A float specifying the probability. Defaults to `0.5`.
@@ -29,16 +24,8 @@ class RandomEqualize(VisionRandomLayer):
             `keras.config.image_data_format`. Defaults to `None`.
     """
 
-    def __init__(
-        self,
-        value_range: typing.Sequence[float],
-        bins=256,
-        p: float = 0.5,
-        data_format=None,
-        **kwargs,
-    ):
+    def __init__(self, bins=256, p: float = 0.5, data_format=None, **kwargs):
         super().__init__(**kwargs)
-        self.value_range = standardize_value_range(value_range)
         self.bins = bins
         self.p = float(p)
         self.data_format = data_format or backend.image_data_format()
@@ -57,35 +44,16 @@ class RandomEqualize(VisionRandomLayer):
         p = transformations
 
         def equalize(images):
-            images_shape = ops.shape(images)
-            images = self.transform_value_range(
-                images, self.value_range, (0, 255), dtype=self.compute_dtype
+            original_dtype = backend.standardize_dtype(images.dtype)
+            images = self.image_backend.transform_dtype(images, "uint8")
+            images = self.image_backend.equalize(
+                images, self.bins, self.data_format
             )
-            images = ops.cast(images, dtype="uint8")
-            # Workaround for tf.data
-            if self._backend.name == "tensorflow":
-                import tensorflow as tf
-
-                images = tf.map_fn(self._equalize_single_image, images)
-            else:
-                images = ops.numpy.stack(
-                    [
-                        self._equalize_single_image(x)
-                        for x in ops.core.unstack(images, axis=0)
-                    ],
-                    axis=0,
-                )
-            images = ops.cast(images, dtype=self.compute_dtype)
-            images = self.transform_value_range(
-                images, (0, 255), self.value_range, dtype=self.compute_dtype
-            )
-            images = ops.numpy.reshape(images, images_shape)
+            images = self.image_backend.transform_dtype(images, original_dtype)
             return images
 
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
-        images = ops.numpy.where(
-            prob, equalize(images), ops.cast(images, self.compute_dtype)
-        )
+        images = ops.numpy.where(prob, equalize(images), images)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -148,7 +116,5 @@ class RandomEqualize(VisionRandomLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update(
-            {"value_range": self.value_range, "p": self.p, "bins": self.bins}
-        )
+        config.update({"p": self.p, "bins": self.bins})
         return config

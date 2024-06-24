@@ -1,10 +1,7 @@
-import typing
-
 import keras
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
-from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -15,16 +12,11 @@ class RandomInvert(VisionRandomLayer):
     The equation of the inversion: `y = value_range[1] - x`.
 
     Args:
-        value_range: The range of values the incoming images will have. This is
-            typically either `[0, 1]` or `[0, 255]`.
         p: A float specifying the probability. Defaults to `0.5`.
     """
 
-    def __init__(
-        self, value_range: typing.Sequence[float], p: float = 0.5, **kwargs
-    ):
+    def __init__(self, p: float = 0.5, **kwargs):
         super().__init__(**kwargs)
-        self.value_range = standardize_value_range(value_range)
         self.p = float(p)
 
     def compute_output_shape(self, input_shape):
@@ -40,10 +32,9 @@ class RandomInvert(VisionRandomLayer):
         ops = self.backend
         p = transformations
 
-        images = ops.cast(images, self.compute_dtype)
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
         images = ops.numpy.where(
-            prob, self.image_backend.invert(images, self.value_range), images
+            prob, self.image_backend.invert(images), images
         )
         return images
 
@@ -63,5 +54,5 @@ class RandomInvert(VisionRandomLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"value_range": self.value_range, "p": self.p})
+        config.update({"p": self.p})
         return config

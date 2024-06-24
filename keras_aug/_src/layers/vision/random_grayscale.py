@@ -44,7 +44,7 @@ class RandomGrayscale(VisionRandomLayer):
             ),
             images,
         )
-        return ops.cast(images, self.compute_dtype)
+        return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
