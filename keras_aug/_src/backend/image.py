@@ -9,6 +9,55 @@ class ImageBackend(DynamicBackend):
     def __init__(self, name=None):
         super().__init__(name=name)
 
+    def transform_dtype(self, images, dtype):
+        # Ref: torchvision.transforms.v2.ToDtype
+        ops = self.backend
+        from_dtype = backend.standardize_dtype(images.dtype)
+        dtype = backend.standardize_dtype(dtype)
+
+        if from_dtype == dtype:
+            return images
+
+        is_float_input = backend.is_float_dtype(from_dtype)
+        is_float_output = backend.is_float_dtype(dtype)
+
+        if is_float_input:
+            # float to float
+            if is_float_output:
+                return ops.cast(images, dtype)
+
+            # float to int
+            if (from_dtype == "float32" and dtype in ("int32", "int64")) or (
+                from_dtype == "float64" and dtype == "int64"
+            ):
+                raise ValueError(
+                    f"The conversion from {from_dtype} to {dtype} cannot be "
+                    "performed safely."
+                )
+            eps = backend.epsilon()
+            max_value = float(self._max_value_of_dtype(dtype))
+            return ops.cast(
+                ops.numpy.multiply(images, max_value + 1.0 - eps), dtype
+            )
+        else:
+            # int to float
+            if is_float_output:
+                max_value = float(self._max_value_of_dtype(from_dtype))
+                return ops.numpy.divide(ops.cast(images, dtype), max_value)
+
+            # int to int
+            num_bits_input = self._num_bits_of_dtype(from_dtype)
+            num_bits_output = self._num_bits_of_dtype(dtype)
+
+            if num_bits_input > num_bits_output:
+                return ops.cast(
+                    images >> (num_bits_input - num_bits_output), dtype
+                )
+            else:
+                return ops.cast(images, dtype) << (
+                    num_bits_output - num_bits_input
+                )
+
     def crop(self, images, top, left, height, width, data_format=None):
         data_format = data_format or backend.image_data_format()
 
@@ -193,71 +242,177 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.core.convert_to_tensor(images)
-        original_dtype = images.dtype
+        original_dtype = backend.standardize_dtype(images.dtype)
         images = ops.image.rgb_to_grayscale(images, data_format)
         images = ops.core.cast(images, original_dtype)
         if num_channels == 3:
             images = ops.numpy.repeat(images, 3, axis=channels_axis)
         return images
 
-    def blend(self, images1, images2, factor, value_range=(0.0, 1.0)):
+    def blend(self, images1, images2, factor):
         ops = self.backend
+        images1 = ops.convert_to_tensor(images1)
+        images2 = ops.convert_to_tensor(images2)
+        original_dtype = backend.standardize_dtype(images1.dtype)
+        is_float_inputs = backend.is_float_dtype(original_dtype)
+        max_value = self._max_value_of_dtype(original_dtype)
 
         images1 = ops.numpy.multiply(images1, factor)
         images2 = ops.numpy.multiply(images2, (1.0 - factor))
         images = ops.numpy.add(images1, images2)
-        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        images = ops.numpy.clip(images, 0, max_value)
+        if not is_float_inputs:
+            images = ops.cast(images, original_dtype)
         return images
 
-    def adjust_brightness(self, images, factor, value_range=(0.0, 1.0)):
+    def adjust_brightness(self, images, factor):
         ops = self.backend
+        images = ops.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        is_float_inputs = backend.is_float_dtype(original_dtype)
+        max_value = self._max_value_of_dtype(original_dtype)
 
         images = ops.numpy.multiply(images, factor)
-        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        images = ops.numpy.clip(images, 0, max_value)
+        if not is_float_inputs:
+            images = ops.cast(images, original_dtype)
         return images
 
-    def adjust_contrast(
-        self, images, factor, value_range=(0.0, 1.0), data_format=None
-    ):
+    def adjust_contrast(self, images, factor, data_format=None):
         data_format = data_format or backend.image_data_format()
 
         ops = self.backend
+        images = ops.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        is_float_inputs = backend.is_float_dtype(original_dtype)
+
         grayscales = ops.image.rgb_to_grayscale(images, data_format)
+        if not is_float_inputs:
+            grayscales = ops.numpy.floor(grayscales)
         means = ops.numpy.mean(grayscales, axis=[-3, -2, -1], keepdims=True)
-        images = self.blend(images, means, factor, value_range)
+        images = self.blend(images, means, factor)
         return images
 
-    def adjust_saturation(
-        self, images, factor, value_range=(0.0, 1.0), data_format=None
-    ):
+    def adjust_saturation(self, images, factor, data_format=None):
         data_format = data_format or backend.image_data_format()
 
         ops = self.backend
+        images = ops.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        is_float_inputs = backend.is_float_dtype(original_dtype)
+
         grayscales = ops.image.rgb_to_grayscale(images, data_format)
-        images = self.blend(images, grayscales, factor, value_range)
+        if not is_float_inputs:
+            grayscales = ops.numpy.floor(grayscales)
+        images = self.blend(images, grayscales, factor)
         return images
 
-    def adjust_hue(
-        self, images, factor, value_range=(0.0, 1.0), data_format=None
-    ):
-        if value_range[0] != 0.0 or value_range[1] != 1.0:
-            raise ValueError("`value_range` must be `(0.0, 1.0)`")
+    def adjust_hue(self, images, factor, data_format=None):
         data_format = data_format or backend.image_data_format()
         channels_axis = -1 if data_format == "channels_last" else -3
 
         ops = self.backend
+        images = ops.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        max_value = self._max_value_of_dtype(original_dtype)
+
+        images = self.transform_dtype(
+            images, backend.result_type(original_dtype, float)
+        )
         images = ops.image.rgb_to_hsv(images, data_format)
         h, s, v = ops.numpy.split(images, 3, channels_axis)
         h = ops.numpy.add(h, factor)
         h = ops.numpy.mod(h, 1.0)
         images = ops.numpy.concatenate([h, s, v], channels_axis)
         images = ops.image.hsv_to_rgb(images, data_format)
+        images = ops.numpy.clip(images, 0, max_value)
+        images = self.transform_dtype(images, original_dtype)
         return images
 
-    def invert(self, images, value_range=(0.0, 1.0)):
+    def equalize(self, images, bins=256, data_format=None):
+        if bins != 256:
+            raise NotImplementedError("`bins` must be `256`.")
+        data_format = data_format or backend.image_data_format()
+
         ops = self.backend
-        images = ops.numpy.subtract(value_range[1], images)
+        images = ops.convert_to_tensor(images)
+        original_dtype = backend.standardize_dtype(images.dtype)
+        images_shape = ops.shape(images)
+        images = self.transform_dtype(images, "uint8")
+
+        def _scale_channel(image_channel):
+            hist = ops.numpy.bincount(
+                ops.numpy.reshape(image_channel, [-1]), minlength=bins
+            )
+            nonzero = ops.numpy.where(ops.numpy.not_equal(hist, 0), None, None)
+            nonzero_hist = ops.numpy.reshape(
+                ops.numpy.take(hist, nonzero), [-1]
+            )
+            step = ops.numpy.floor_divide(
+                ops.numpy.sum(hist) - nonzero_hist[-1], 255
+            )
+
+            def step_is_0():
+                return image_channel
+
+            def step_not_0():
+                lut = ops.numpy.floor_divide(
+                    ops.numpy.add(
+                        ops.numpy.cumsum(hist), ops.numpy.floor_divide(step, 2)
+                    ),
+                    step,
+                )
+                lut = ops.numpy.pad(lut[:-1], [[1, 0]])
+                lut = ops.numpy.clip(lut, 0, 255)
+                result = ops.numpy.take(lut, ops.cast(image_channel, "int64"))
+                return ops.cast(result, "uint8")
+
+            return ops.cond(step == 0, step_is_0, step_not_0)
+
+        def _equalize_single_image(image):
+            if data_format == "channels_last":
+                return ops.numpy.stack(
+                    [
+                        _scale_channel(image[..., c])
+                        for c in range(image.shape[-1])
+                    ],
+                    axis=-1,
+                )
+            else:
+                return ops.numpy.stack(
+                    [_scale_channel(image[c]) for c in range(image.shape[-3])],
+                    axis=-3,
+                )
+
+        # Workaround for tf.data
+        if self.name == "tensorflow":
+            import tensorflow as tf
+
+            images = tf.map_fn(_equalize_single_image, images)
+        else:
+            images = ops.numpy.stack(
+                [
+                    _equalize_single_image(x)
+                    for x in ops.core.unstack(images, axis=0)
+                ],
+                axis=0,
+            )
+        images = ops.numpy.reshape(images, images_shape)
+        images = self.transform_dtype(images, original_dtype)
         return images
+
+    def invert(self, images):
+        ops = self.backend
+        images = ops.convert_to_tensor(images)
+        dtype = backend.standardize_dtype(images.dtype)
+        if backend.is_float_dtype(dtype):
+            return ops.numpy.subtract(1.0, images)
+        elif "uint" in dtype:
+            return ~images
+        else:
+            # signed integer dtypes
+            num_bits = self._num_bits_of_dtype(dtype)
+            return images ^ ((1 << num_bits) - 1)
 
     def posterize(self, images, bits):
         if not isinstance(bits, int):
@@ -270,27 +425,6 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         dtype = backend.standardize_dtype(images.dtype)
 
-        def _get_dtype_bits(dtype):
-            dtype = backend.standardize_dtype(dtype)
-            if dtype == "uint8":
-                return 8
-            elif dtype == "uint16":
-                return 15
-            elif dtype == "uint32":
-                return 32
-            elif dtype == "uint64":
-                return 64
-            elif dtype == "int8":
-                return 7
-            elif dtype == "int16":
-                return 15
-            elif dtype == "int32":
-                return 31
-            elif dtype == "int64":
-                return 63
-            else:
-                raise NotImplementedError
-
         def posterize_float(images):
             levels = 1 << bits
             images = ops.numpy.floor(ops.numpy.multiply(images, levels))
@@ -299,7 +433,7 @@ class ImageBackend(DynamicBackend):
             return images
 
         def posterize_int(images):
-            dtype_bits = _get_dtype_bits(dtype)
+            dtype_bits = self._num_bits_of_dtype(dtype)
             if bits >= dtype_bits:
                 return images
             mask = ((1 << bits) - 1) << (dtype_bits - bits)
@@ -311,17 +445,7 @@ class ImageBackend(DynamicBackend):
             images = posterize_int(images)
         return images
 
-    def solarize(self, images, threshold, value_range=(0.0, 1.0)):
-        ops = self.backend
-        images = ops.convert_to_tensor(images)
-        images = ops.numpy.where(
-            images >= ops.cast(threshold, images.dtype),
-            self.invert(images, value_range),
-            images,
-        )
-        return images
-
-    def sharpen(self, images, factor, value_range=(0.0, 1.0), data_format=None):
+    def sharpen(self, images, factor, data_format=None):
         data_format = data_format or backend.image_data_format()
         if data_format == "channels_last":
             channels_axis = -1
@@ -336,15 +460,15 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         channels = ops.shape(images)[channels_axis]
         original_dtype = images.dtype
-        compute_dtype = backend.result_type(original_dtype, float)
-        images = ops.cast(images, compute_dtype)
+        float_dtype = backend.result_type(original_dtype, float)
+        max_value = self._max_value_of_dtype(original_dtype)
+        images = ops.cast(images, float_dtype)
         # [1 1 1]
         # [1 5 1]
         # [1 1 1]
         kernel = (
             ops.convert_to_tensor(
-                [[1, 1, 1], [1, 5, 1], [1, 1, 1]],
-                images.dtype,
+                [[1, 1, 1], [1, 5, 1], [1, 1, 1]], float_dtype
             )
             / 13.0
         )
@@ -380,6 +504,69 @@ class ImageBackend(DynamicBackend):
         images = ops.numpy.concatenate([top, view, bottom], axis=h_axis)
         images = ops.numpy.concatenate([left, images, right], axis=w_axis)
 
-        images = ops.numpy.clip(images, value_range[0], value_range[1])
+        images = ops.numpy.clip(images, 0, max_value)
         images = ops.cast(images, original_dtype)
         return images
+
+    def solarize(self, images, threshold):
+        ops = self.backend
+        images = ops.convert_to_tensor(images)
+        dtype = backend.standardize_dtype(images.dtype)
+        max_value = self._max_value_of_dtype(dtype)
+        if threshold > max_value or threshold < 0:
+            raise ValueError(
+                "`threshold` should be less or equal to the maximum value of "
+                "the input dtype. "
+                f"Received: threshold={threshold}, images.dtype={dtype}"
+            )
+        images = ops.numpy.where(
+            images >= ops.cast(threshold, images.dtype),
+            self.invert(images),
+            images,
+        )
+        return images
+
+    def _max_value_of_dtype(self, dtype):
+        dtype = backend.standardize_dtype(dtype)
+        if dtype == "uint8":
+            return 255
+        elif dtype == "uint16":
+            return 65535
+        elif dtype == "uint32":
+            return 4294967295
+        elif dtype == "uint64":
+            return 18446744073709551615
+        elif dtype == "int8":
+            return 127
+        elif dtype == "int16":
+            return 32767
+        elif dtype == "int32":
+            return 2147483647
+        elif dtype == "int64":
+            return 9223372036854775807
+        else:
+            return 1
+
+    def _num_bits_of_dtype(self, dtype):
+        dtype = backend.standardize_dtype(dtype)
+        if dtype == "uint8":
+            return 8
+        elif dtype == "uint16":
+            return 16
+        elif dtype == "uint32":
+            return 32
+        elif dtype == "uint64":
+            return 64
+        elif dtype == "int8":
+            return 7
+        elif dtype == "int16":
+            return 15
+        elif dtype == "int32":
+            return 31
+        elif dtype == "int64":
+            return 63
+        else:
+            raise ValueError(
+                "_num_bits_of_dtype is only defined for integer dtypes. "
+                f"Received: dtype={dtype}"
+            )
