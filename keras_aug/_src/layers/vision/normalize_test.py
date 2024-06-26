@@ -37,6 +37,7 @@ class NormalizeTest(testing.TestCase, parameterized.TestCase):
             torch.tensor(np.transpose(x, [0, 3, 1, 2])), self.mean, self.std
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test channels_first
@@ -47,6 +48,7 @@ class NormalizeTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.normalize(torch.tensor(x), self.mean, self.std)
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
     def test_shape(self):

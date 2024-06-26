@@ -37,6 +37,7 @@ class RandomEqualizeTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.equalize(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol)
 
         # Test channels_first
@@ -47,6 +48,7 @@ class RandomEqualizeTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.equalize(torch.tensor(x))
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol)
 
         # Test p=0.0

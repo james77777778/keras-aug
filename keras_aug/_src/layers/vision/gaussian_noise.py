@@ -28,7 +28,7 @@ class GaussianNoise(VisionRandomLayer):
         if not backend.is_float_dtype(self.compute_dtype):
             dtype = self.dtype_policy
             raise ValueError(
-                "The `dtype` of GaussianNoise must be float. "
+                f"The `dtype` of '{self.__class__.__name__}' must be float. "
                 f"Received: dtype={dtype}"
             )
 
@@ -49,6 +49,7 @@ class GaussianNoise(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
+        original_dtype = backend.standardize_dtype(images.dtype)
         noise = transformations
 
         images = self.image_backend.transform_dtype(
@@ -57,6 +58,7 @@ class GaussianNoise(VisionRandomLayer):
         images = ops.numpy.add(images, noise)
         if self.clip:
             images = ops.numpy.clip(images, 0, 1)
+        images = self.image_backend.transform_dtype(images, original_dtype)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

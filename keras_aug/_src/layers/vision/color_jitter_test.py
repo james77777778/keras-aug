@@ -73,6 +73,7 @@ class ColorJitterTest(testing.TestCase, parameterized.TestCase):
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
@@ -87,6 +88,7 @@ class ColorJitterTest(testing.TestCase, parameterized.TestCase):
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_shape(self):

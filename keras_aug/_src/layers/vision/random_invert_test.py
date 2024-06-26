@@ -21,6 +21,7 @@ class RandomInvertTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.invert(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test channels_first
@@ -30,6 +31,7 @@ class RandomInvertTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.invert(torch.tensor(x))
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test p=0.0
@@ -37,6 +39,7 @@ class RandomInvertTest(testing.TestCase, parameterized.TestCase):
         layer = RandomInvert(p=0.0, dtype=dtype)
         y = layer(x)
 
+        self.assertDType(y, dtype)
         self.assertAllClose(y, x)
 
     def test_shape(self):

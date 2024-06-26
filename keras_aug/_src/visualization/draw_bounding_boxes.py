@@ -25,6 +25,17 @@ def draw_bounding_boxes(
             "`images` must be batched 4D tensor. "
             f"Received: images.shape={images_shape}"
         )
+    if not isinstance(bounding_boxes, dict):
+        raise TypeError(
+            "`bounding_boxes` should be a dict. "
+            f"Received: bounding_boxes={bounding_boxes} of type "
+            f"{type(bounding_boxes)}"
+        )
+    if "boxes" not in bounding_boxes or "classes" not in bounding_boxes:
+        raise ValueError(
+            "`bounding_boxes` should be a dict containing 'boxes' and "
+            f"'classes' keys. Received: bounding_boxes={bounding_boxes}"
+        )
     if data_format == "channels_last":
         h_axis = -3
         w_axis = -2
@@ -34,6 +45,7 @@ def draw_bounding_boxes(
     bbox_backend = BoundingBoxBackend(backend.backend())
     height = images_shape[h_axis]
     width = images_shape[w_axis]
+    bounding_boxes = bounding_boxes.copy()
     bounding_boxes = bbox_backend.convert_format(
         bounding_boxes, bounding_box_format, "xyxy", height, width
     )

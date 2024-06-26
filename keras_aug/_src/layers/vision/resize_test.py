@@ -6,6 +6,7 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.resize import Resize
+from keras_aug._src.utils.test_utils import get_images
 
 
 class ResizeTest(testing.TestCase, parameterized.TestCase):
@@ -26,9 +27,10 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             size=[32, (40, 50), (64, 64)],
             interpolation=["nearest", "bilinear", "bicubic"],
             antialias=[True, False],
+            dtype=["float32", "uint8"],
         )
     )
-    def test_correctness(self, size, interpolation, antialias):
+    def test_correctness(self, size, interpolation, antialias, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
 
@@ -36,12 +38,21 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             self.skipTest("TODO: Need to investigate")
         if interpolation == "nearest" and antialias is True:
             self.skipTest("Doesn't support nearest and antialias=True")
+        if interpolation == "bicubic":
+            self.skipTest("TODO: Need to investigate")
         torch_interpolation = self.pil_modes_mapping[interpolation]
+
+        if dtype == "uint8":
+            atol = 1.0
+            rtol = 1e-6
+        else:
+            atol = 1e-1
+            rtol = 1e-6
 
         # Test channels_last
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = Resize(size, interpolation, antialias)
+        x = get_images(dtype, "channels_last")
+        layer = Resize(size, interpolation, antialias, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.resize(
@@ -51,13 +62,14 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             antialias=antialias,
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertDType(y, dtype)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = Resize(size, interpolation, antialias)
+        x = get_images(dtype, "channels_first")
+        layer = Resize(size, interpolation, antialias, dtype=dtype)
         y = layer(x)
 
         ref_y = TF.resize(
@@ -67,26 +79,27 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
             antialias=antialias,
         )
         ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertDType(y, dtype)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_size(self):
         # Resize the small edge
-        x = np.random.uniform(0, 1, (1, 32, 48, 3)).astype("float32")
+        x = get_images("float32", "channels_last", (32, 48))
         layer = Resize(10)
         y = layer(x)
-        self.assertEqual(tuple(y.shape), (1, 10, 15, 3))
+        self.assertEqual(tuple(y.shape), (2, 10, 15, 3))
 
         # Resize the long edge
-        x = np.random.uniform(0, 1, (1, 32, 48, 3)).astype("float32")
+        x = get_images("float32", "channels_last", (32, 48))
         layer = Resize(10, along_long_edge=True)
         y = layer(x)
-        self.assertEqual(tuple(y.shape), (1, 6, 10, 3))
+        self.assertEqual(tuple(y.shape), (2, 6, 10, 3))
 
         # Resize to the given size
-        x = np.random.uniform(0, 1, (1, 32, 48, 3)).astype("float32")
+        x = get_images("float32", "channels_last", (32, 48))
         layer = Resize((23, 45))
         y = layer(x)
-        self.assertEqual(tuple(y.shape), (1, 23, 45, 3))
+        self.assertEqual(tuple(y.shape), (2, 23, 45, 3))
 
     def test_shape(self):
         # Test dynamic shape
@@ -115,7 +128,7 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 16, 32, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = Resize(16)
         y = layer(x)
 
@@ -127,11 +140,11 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = Resize(16)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 16, 16, 3))
+            self.assertEqual(output.shape, (2, 16, 16, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes

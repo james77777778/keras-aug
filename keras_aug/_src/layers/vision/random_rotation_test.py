@@ -6,11 +6,15 @@ from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_rotation import RandomRotation
+from keras_aug._src.utils.test_utils import get_images
 
 
 class FixedRandomRotation(RandomRotation):
     def get_params(self, batch_size, images=None, **kwargs):
-        return dict(angle=keras.ops.array([10.0]))
+        if batch_size == 1:
+            return dict(angle=keras.ops.array([10.0]))
+        elif batch_size == 2:
+            return dict(angle=keras.ops.array([10.0, 10.0]))
 
 
 class RandomRotationTest(testing.TestCase, parameterized.TestCase):
@@ -28,29 +32,39 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(
         named_product(
-            interpolation=["nearest", "bilinear"],
+            interpolation=["nearest", "bilinear"], dtype=["float32", "uint8"]
         )
     )
-    def test_correctness(self, interpolation):
+    def test_correctness(self, interpolation, dtype):
         # Test channels_last
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 32, 32, 3)).astype("float32")
-        layer = FixedRandomRotation(interpolation=interpolation)
+        x = get_images(dtype, "channels_last")
+        layer = FixedRandomRotation(
+            interpolation=interpolation,
+            data_format="channels_last",
+            dtype=dtype,
+        )
         y = layer(x)
 
         # TODO: It is difficult to be consistent with `TF.affine`
-        self.assertEqual(y.shape, (1, 32, 32, 3))
+        self.assertEqual(y.shape, (2, 32, 32, 3))
+        self.assertDType(y, dtype)
         self.assertNotAllClose(y, x)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
         np.random.seed(42)
-        x = np.random.uniform(0, 1, (1, 3, 32, 32)).astype("float32")
-        layer = FixedRandomRotation(interpolation=interpolation)
+        x = get_images(dtype, "channels_first")
+        layer = FixedRandomRotation(
+            interpolation=interpolation,
+            data_format="channels_first",
+            dtype=dtype,
+        )
         y = layer(x)
 
         # TODO: It is difficult to be consistent with `TF.affine`
-        self.assertEqual(y.shape, (1, 3, 32, 32))
+        self.assertEqual(y.shape, (2, 3, 32, 32))
+        self.assertDType(y, dtype)
         self.assertNotAllClose(y, x)
 
     def test_shape(self):
@@ -80,7 +94,7 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, 32, 32, 3))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = RandomRotation(degree=[10, 10])
         y = layer(x)
 
@@ -92,11 +106,11 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
         import tensorflow as tf
 
         layer = RandomRotation(**self.regular_args)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))
 
     def test_augment_bounding_box(self):
         # Test full bounding boxes
@@ -162,8 +176,8 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
 
     def test_augment_segmentation_mask(self):
         num_classes = 8
-        images_shape = (1, 32, 32, 3)
-        masks_shape = (1, 32, 32, 1)
+        images_shape = (2, 32, 32, 3)
+        masks_shape = (2, 32, 32, 1)
         images = np.random.uniform(size=images_shape).astype("float32")
         masks = np.random.randint(2, size=masks_shape) * (num_classes - 1)
         inputs = {"images": images, "segmentation_masks": masks}

@@ -25,12 +25,14 @@ class RandomAutoContrastTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.autocontrast(torch.tensor(x))
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol)
 
         # Test p=0.0
         x = get_images(dtype, "channels_last")
         layer = RandomAutoContrast(p=0.0, dtype=dtype)
         y = layer(x)
+        self.assertDType(y, dtype)
         self.assertAllClose(y, x)
 
     def test_shape(self):

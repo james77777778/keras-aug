@@ -122,6 +122,7 @@ class RandomResizedCrop(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
+        original_dtype = backend.standardize_dtype(images.dtype)
         top = transformations["top"]
         left = transformations["left"]
         height = transformations["height"]
@@ -140,7 +141,7 @@ class RandomResizedCrop(VisionRandomLayer):
             antialias=self.antialias,
             data_format=self.data_format,
         )
-        return images
+        return ops.cast(images, original_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -205,6 +206,7 @@ class RandomResizedCrop(VisionRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         ops = self.backend
+        original_dtype = backend.standardize_dtype(segmentation_masks.dtype)
         top = transformations["top"]
         left = transformations["left"]
         height = transformations["height"]
@@ -223,7 +225,7 @@ class RandomResizedCrop(VisionRandomLayer):
             antialias=False,
             data_format=self.data_format,
         )
-        return segmentation_masks
+        return ops.cast(segmentation_masks, original_dtype)
 
     def get_config(self):
         config = super().get_config()

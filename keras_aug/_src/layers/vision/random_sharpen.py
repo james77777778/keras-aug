@@ -1,10 +1,7 @@
-import typing
-
 import keras
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
-from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -13,8 +10,6 @@ class RandomSharpen(VisionRandomLayer):
     """Adjust the sharpness of the input images with a given probability.
 
     Args:
-        value_range: The range of values the incoming images will have. This is
-            typically either `[0, 1]` or `[0, 255]`.
         sharpness_factor: How much to adjust the sharpness. Can be any
             non-negative number. 0 gives a blurred image, 1 gives the
             original image while 2 increases the sharpness by a factor of 2.
@@ -27,14 +22,12 @@ class RandomSharpen(VisionRandomLayer):
 
     def __init__(
         self,
-        value_range: typing.Sequence[float],
         sharpness_factor: float,
         p: float = 0.5,
         data_format=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.value_range = standardize_value_range(value_range)
         self.sharpness_factor = float(sharpness_factor)
         self.p = float(p)
         self.data_format = data_format or keras.config.image_data_format()
@@ -58,15 +51,12 @@ class RandomSharpen(VisionRandomLayer):
         ops = self.backend
         p = transformations
 
-        images = ops.convert_to_tensor(images)
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
-        images = ops.cast(images, self.compute_dtype)
         images = ops.numpy.where(
             prob,
             self.image_backend.sharpen(
                 images,
                 self.sharpness_factor,
-                self.value_range,
                 self.data_format,
             ),
             images,
@@ -89,11 +79,5 @@ class RandomSharpen(VisionRandomLayer):
 
     def get_config(self):
         config = super().get_config()
-        config.update(
-            {
-                "value_range": self.value_range,
-                "sharpness_factor": self.sharpness_factor,
-                "p": self.p,
-            }
-        )
+        config.update({"sharpness_factor": self.sharpness_factor, "p": self.p})
         return config

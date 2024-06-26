@@ -12,12 +12,12 @@ from keras_aug._src.utils.test_utils import get_images
 class FixedRandomAffine(RandomAffine):
     def get_params(self, batch_size, images=None, **kwargs):
         return dict(
-            angle=keras.ops.array([10.0]),
-            translate_x=keras.ops.array([0.1]),
-            translate_y=keras.ops.array([-0.1]),
-            scale=keras.ops.array([1.1]),
-            shear_x=keras.ops.array([10.0]),
-            shear_y=keras.ops.array([10.0]),
+            angle=keras.ops.array([10.0, 10.0]),
+            translate_x=keras.ops.array([0.1, 0.1]),
+            translate_y=keras.ops.array([-0.1, -0.1]),
+            scale=keras.ops.array([1.1, 1.1]),
+            shear_x=keras.ops.array([10.0, 10.0]),
+            shear_y=keras.ops.array([10.0, 10.0]),
         )
 
 
@@ -138,7 +138,7 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0, 0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = FixedNoRotRandomAffine(bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -172,7 +172,7 @@ class RandomAffineTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1, 2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = FixedNoRotRandomAffine(bounding_box_format="xyxy")
 
         output = layer(input)

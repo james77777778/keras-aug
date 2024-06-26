@@ -1,5 +1,6 @@
 import keras
 from keras import backend
+from keras import tree
 from keras.src.utils.backend_utils import in_tf_graph
 
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
@@ -360,17 +361,23 @@ class VisionRandomLayer(keras.Layer):
         if not isinstance(inputs, dict):
             raise TypeError
         ops = self.backend
+        inputs = inputs.copy()
         if self.IMAGES in inputs:
+            inputs[self.IMAGES] = ops.convert_to_tensor(inputs[self.IMAGES])
             inputs[self.IMAGES] = self.image_backend.transform_dtype(
                 inputs[self.IMAGES], self.image_dtype
             )
+        if self.LABELS in inputs:
+            inputs[self.LABELS] = ops.convert_to_tensor(inputs[self.LABELS])
         if self.BOUNDING_BOXES in inputs:
-            inputs[self.BOUNDING_BOXES]["boxes"] = ops.convert_to_tensor(
-                inputs[self.BOUNDING_BOXES]["boxes"], self.bounding_box_dtype
+            bounding_boxes = inputs[self.BOUNDING_BOXES].copy()
+            bounding_boxes["boxes"] = ops.convert_to_tensor(
+                bounding_boxes["boxes"], self.bounding_box_dtype
             )
-            inputs[self.BOUNDING_BOXES]["classes"] = ops.convert_to_tensor(
-                inputs[self.BOUNDING_BOXES]["classes"], self.bounding_box_dtype
+            bounding_boxes["classes"] = ops.convert_to_tensor(
+                bounding_boxes["classes"], self.bounding_box_dtype
             )
+            inputs[self.BOUNDING_BOXES] = bounding_boxes
         if self.SEGMENTATION_MASKS in inputs:
             masks = inputs[self.SEGMENTATION_MASKS]
             masks = ops.convert_to_tensor(masks)
@@ -382,6 +389,10 @@ class VisionRandomLayer(keras.Layer):
         if self.KEYPOINTS in inputs:
             inputs[self.KEYPOINTS] = ops.convert_to_tensor(
                 inputs[self.KEYPOINTS], self.keypoint_dtype
+            )
+        if self.CUSTOM_ANNOTATIONS in inputs:
+            inputs[self.CUSTOM_ANNOTATIONS] = tree.map_structure(
+                ops.convert_to_tensor, inputs[self.CUSTOM_ANNOTATIONS]
             )
         return inputs
 

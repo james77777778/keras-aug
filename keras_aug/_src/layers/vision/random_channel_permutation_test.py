@@ -45,6 +45,7 @@ class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
             torch.tensor(np.transpose(x, [0, 3, 1, 2])), [1, 2, 0]
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test channels_first
@@ -55,6 +56,7 @@ class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.permute_channels(torch.tensor(x), [1, 2, 0])
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
     def test_shape(self):

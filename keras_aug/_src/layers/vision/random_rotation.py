@@ -103,6 +103,7 @@ class RandomRotation(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
+        original_dtype = images.dtype
         images_shape = ops.shape(images)
         batch_size = images_shape[0]
         height = images_shape[self.h_axis]
@@ -126,6 +127,9 @@ class RandomRotation(VisionRandomLayer):
 
         # Affine
         transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
+        images = self.image_backend.transform_dtype(
+            images, backend.result_type(images.dtype, float)
+        )
         images = ops.image.affine_transform(
             images,
             transform,
@@ -134,6 +138,7 @@ class RandomRotation(VisionRandomLayer):
             self.padding_value,
             self.data_format,
         )
+        images = self.image_backend.transform_dtype(images, original_dtype)
         return ops.cast(images, self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -165,6 +170,7 @@ class RandomRotation(VisionRandomLayer):
             target="xyxy",
             height=height,
             width=width,
+            dtype=self.bounding_box_dtype,
         )
         if self.center is None:
             center_x, center_y = 0.5, 0.5
@@ -173,7 +179,7 @@ class RandomRotation(VisionRandomLayer):
         matrix = self.image_backend.compute_inverse_affine_matrix(
             center_x,
             center_y,
-            -transformations["angle"],  # TODO: Why minus?
+            transformations["angle"],
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
             ops.numpy.ones([batch_size]),
@@ -205,7 +211,9 @@ class RandomRotation(VisionRandomLayer):
             ],
             axis=-1,
         )
-        transformed_points = ops.numpy.matmul(points, transposed_matrix)
+        transformed_points = ops.numpy.einsum(
+            "bnxy,byz->bnxz", points, transposed_matrix
+        )
         boxes_min = ops.numpy.amin(transformed_points, axis=2)
         boxes_max = ops.numpy.amax(transformed_points, axis=2)
         outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)
@@ -224,7 +232,7 @@ class RandomRotation(VisionRandomLayer):
             target=self.bounding_box_format,
             height=height,
             width=width,
-            dtype=self.compute_dtype,
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -232,6 +240,7 @@ class RandomRotation(VisionRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         ops = self.backend
+        original_dtype = segmentation_masks.dtype
         segmentation_masks_shape = ops.shape(segmentation_masks)
         batch_size = segmentation_masks_shape[0]
         height = segmentation_masks_shape[self.h_axis]
@@ -255,6 +264,10 @@ class RandomRotation(VisionRandomLayer):
 
         # Affine
         transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
+        segmentation_masks = ops.cast(
+            segmentation_masks,
+            backend.result_type(segmentation_masks.dtype, float),
+        )
         segmentation_masks = ops.image.affine_transform(
             segmentation_masks,
             transform,
@@ -263,7 +276,8 @@ class RandomRotation(VisionRandomLayer):
             -1,
             self.data_format,
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        segmentation_masks = ops.cast(segmentation_masks, original_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

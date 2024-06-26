@@ -198,7 +198,7 @@ class VisionRandomLayerTest(testing.TestCase):
 
     def test_casting(self):
         add_layer = RandomAddLayer(fixed_value=2.0)
-        images = np.ones((2, 8, 8, 3), dtype="uint8")
+        images = np.ones((2, 8, 8, 3), dtype="uint8") * 255
         output = add_layer(images)
 
         self.assertAllClose(
@@ -244,7 +244,9 @@ class VisionRandomLayerTest(testing.TestCase):
         import tensorflow as tf
 
         add_layer = RandomAddLayer(fixed_value=0.5)
-        images = np.random.random(size=(8, 8, 3)).astype("float32")
+        images = tf.convert_to_tensor(
+            np.random.random(size=(8, 8, 3)).astype("float32")
+        )
         filenames = tf.constant("/path/to/first.jpg")
         inputs = {"images": images, "filenames": filenames}
         output = add_layer(inputs)
@@ -408,7 +410,7 @@ class VisionRandomLayerTest(testing.TestCase):
         )
 
     def test_unbatched_all_data(self):
-        add_layer = RandomAddLayer(fixed_value=2.0)
+        add_layer = RandomAddLayer(fixed_value=0.1)
         images = np.random.random(size=(8, 8, 3)).astype("float32")
         bounding_boxes = {
             "boxes": np.random.random(size=(3, 4)).astype("float32"),
@@ -418,20 +420,20 @@ class VisionRandomLayerTest(testing.TestCase):
         segmentation_masks = np.random.random(size=(8, 8, 1)).astype("float32")
         input = {
             "images": images,
-            "bounding_boxes": bounding_boxes,
+            "bounding_boxes": bounding_boxes.copy(),
             "keypoints": keypoints,
             "segmentation_masks": segmentation_masks,
         }
 
         output = add_layer(input, training=True)
         expected_output = {
-            "images": images + 2.0,
+            "images": images + 0.1,
             "bounding_boxes": {
-                "boxes": bounding_boxes["boxes"] + 2.0,
-                "classes": bounding_boxes["classes"] + 2.0,
+                "boxes": bounding_boxes["boxes"] + 0.1,
+                "classes": bounding_boxes["classes"] + 0.1,
             },
-            "keypoints": keypoints + 2.0,
-            "segmentation_masks": segmentation_masks + 2.0,
+            "keypoints": keypoints + 0.1,
+            "segmentation_masks": segmentation_masks + 0.1,
         }
 
         self.assertAllClose(output["images"], expected_output["images"])

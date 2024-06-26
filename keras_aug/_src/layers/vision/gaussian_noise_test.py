@@ -27,6 +27,7 @@ class GaussianNoiseTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = np.clip(x + 0.5, 0, 1)
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=1e-2)
 
         # Test channels_first
@@ -35,6 +36,7 @@ class GaussianNoiseTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = np.clip(x + 0.5, 0, 1)
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=1e-2)
 
     def test_shape(self):

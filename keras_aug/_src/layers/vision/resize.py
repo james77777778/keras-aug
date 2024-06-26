@@ -137,6 +137,7 @@ class Resize(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
+        original_dtype = backend.standardize_dtype(images.dtype)
         output_size = transformations
         images = ops.image.resize(
             images,
@@ -145,7 +146,7 @@ class Resize(VisionRandomLayer):
             antialias=self.antialias,
             data_format=self.data_format,
         )
-        return ops.cast(images, self.compute_dtype)
+        return ops.cast(images, original_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
@@ -177,6 +178,7 @@ class Resize(VisionRandomLayer):
             target="rel_xyxy",
             height=ori_height,
             width=ori_width,
+            dtype=self.bounding_box_dtype,
         )
         bounding_boxes = self.bbox_backend.convert_format(
             bounding_boxes,
@@ -184,6 +186,7 @@ class Resize(VisionRandomLayer):
             target=self.bounding_box_format,
             height=ops.cast(output_size[0], "float32"),
             width=ops.cast(output_size[1], "float32"),
+            dtype=self.bounding_box_dtype,
         )
         return bounding_boxes
 
@@ -191,6 +194,7 @@ class Resize(VisionRandomLayer):
         self, segmentation_masks, transformations, **kwargs
     ):
         ops = self.backend
+        original_dtype = backend.standardize_dtype(segmentation_masks.dtype)
         output_size = transformations
         segmentation_masks = ops.image.resize(
             segmentation_masks,
@@ -199,7 +203,7 @@ class Resize(VisionRandomLayer):
             antialias=self.antialias,
             data_format=self.data_format,
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return ops.cast(segmentation_masks, original_dtype)
 
     def _compute_resized_output_size(
         self, height, width, size, along_long_edge=False

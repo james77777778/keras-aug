@@ -46,6 +46,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         )
         y = layer(x)
 
+        self.assertDType(y, dtype)
         self.assertEqual(tuple(y.shape), (2, *size, 3))
         if padding_position == "border":
             self.assertAllClose(y[0, 0, 0, 0], padding_value)
@@ -147,7 +148,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = PadIfNeeded(30, bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -170,7 +171,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = PadIfNeeded(30, bounding_box_format="xyxy")
 
         output = layer(input)

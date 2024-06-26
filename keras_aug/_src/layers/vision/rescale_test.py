@@ -1,18 +1,29 @@
 import keras
-import numpy as np
+from absl.testing import parameterized
 from keras.src import testing
+from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.rescale import Rescale
+from keras_aug._src.utils.test_utils import get_images
 
 
-class RescaleTest(testing.TestCase):
-    def test_correctness(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("uint8")
-        layer = Rescale(scale=2, offset=0.5)
+class RescaleTest(testing.TestCase, parameterized.TestCase):
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "bfloat16"])
+    )
+    def test_correctness(self, dtype):
+        if dtype == "bfloat16":
+            atol = 1e-2
+        else:
+            atol = 1e-6
+
+        x = get_images(dtype, "channels_last")
+        layer = Rescale(scale=0.5, offset=0.1, dtype=dtype)
         y = layer(x)
 
-        ref_y = x * 2.0 + 0.5
-        self.assertAllClose(y, ref_y)
+        ref_y = x * 0.5 + 0.1
+        self.assertDType(y, dtype)
+        self.assertAllClose(y, ref_y, atol=atol)
 
     def test_shape(self):
         # Test dynamic shape
@@ -33,7 +44,7 @@ class RescaleTest(testing.TestCase):
         self.assertEqual(model.output_shape, (None, None, None, 5))
 
     def test_config(self):
-        x = np.random.uniform(0, 255, (2, 32, 32, 3)).astype("float32")
+        x = get_images("float32", "channels_last")
         layer = Rescale(scale=2, offset=0.5)
         y = layer(x)
 
@@ -45,8 +56,8 @@ class RescaleTest(testing.TestCase):
         import tensorflow as tf
 
         layer = Rescale(scale=2, offset=0.5)
-        x = np.random.uniform(size=(3, 32, 32, 3)).astype("float32") * 255
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(3).map(layer)
+        x = get_images("float32", "channels_last")
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
             self.assertIsInstance(output, tf.Tensor)
-            self.assertEqual(output.shape, (3, 32, 32, 3))
+            self.assertEqual(output.shape, (2, 32, 32, 3))

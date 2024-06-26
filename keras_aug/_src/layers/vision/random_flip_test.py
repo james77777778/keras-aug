@@ -44,6 +44,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ref_y = TF.hflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
             ref_y = TF.vflip(ref_y)
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=0.1)
 
         # Test channels_first
@@ -61,6 +62,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ref_y = TF.hflip(torch.tensor(x))
             ref_y = TF.vflip(ref_y)
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=0.1)
 
     def test_shape(self):
@@ -121,7 +123,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = RandomFlip(p=1.0, bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -142,7 +144,7 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = RandomFlip(p=1.0, bounding_box_format="xyxy")
 
         output = layer(input)

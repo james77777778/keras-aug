@@ -34,6 +34,7 @@ class RandomGrayscaleTest(testing.TestCase, parameterized.TestCase):
             torch.tensor(np.transpose(x, [0, 3, 1, 2])), num_output_channels=3
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test channels_first
@@ -44,6 +45,7 @@ class RandomGrayscaleTest(testing.TestCase, parameterized.TestCase):
 
         ref_y = TF.rgb_to_grayscale(torch.tensor(x), num_output_channels=3)
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
         # Test p=0.0
@@ -52,6 +54,7 @@ class RandomGrayscaleTest(testing.TestCase, parameterized.TestCase):
         layer = RandomGrayscale(p=0.0, dtype=dtype)
         y = layer(x)
 
+        self.assertDType(y, dtype)
         self.assertAllClose(y, x)
 
     def test_shape(self):

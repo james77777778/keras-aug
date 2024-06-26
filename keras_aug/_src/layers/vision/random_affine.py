@@ -255,12 +255,12 @@ class RandomAffine(VisionRandomLayer):
         matrix = self.image_backend.compute_inverse_affine_matrix(
             center_x,
             center_y,
-            -transformations["angle"],  # TODO: Why minus?
+            transformations["angle"],
             transformations["translate_x"],
             transformations["translate_y"],
             transformations["scale"],
-            -transformations["shear_x"],  # TODO: Why minus?
-            -transformations["shear_y"],  # TODO: Why minus?
+            transformations["shear_x"],
+            transformations["shear_y"],
             height,
             width,
         )
@@ -287,7 +287,9 @@ class RandomAffine(VisionRandomLayer):
             ],
             axis=-1,
         )
-        transformed_points = ops.numpy.matmul(points, transposed_matrix)
+        transformed_points = ops.numpy.einsum(
+            "bnxy,byz->bnxz", points, transposed_matrix
+        )
         boxes_min = ops.numpy.amin(transformed_points, axis=2)
         boxes_max = ops.numpy.amax(transformed_points, axis=2)
         outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)

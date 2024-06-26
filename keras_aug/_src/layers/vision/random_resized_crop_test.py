@@ -50,9 +50,6 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         if dtype == "uint8":
             atol = 1.0
             rtol = 1e-6
-            if interpolation == "bicubic":
-                atol = 36.0
-                rtol = 15.0
         else:
             atol = 1e-1
             rtol = 1e-6
@@ -66,7 +63,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.resized_crop(
-            torch.tensor(np.transpose(x.copy(), [0, 3, 1, 2])),
+            torch.tensor(np.transpose(x, [0, 3, 1, 2])),
             10,
             5,
             8,
@@ -76,6 +73,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             antialias,
         )
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
@@ -88,7 +86,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.resized_crop(
-            torch.tensor(x.copy()),
+            torch.tensor(x),
             10,
             5,
             8,
@@ -98,6 +96,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             antialias,
         )
         ref_y = ref_y.cpu().numpy()
+        self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_shape(self):
@@ -158,7 +157,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = FixedRandomResizedCrop((18, 18), bounding_box_format="rel_xyxy")
 
         output = layer(input)
@@ -179,7 +178,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             ),
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
-        input = {"images": images, "bounding_boxes": boxes.copy()}
+        input = {"images": images, "bounding_boxes": boxes}
         layer = FixedRandomResizedCrop((16, 32), bounding_box_format="xyxy")
 
         output = layer(input)

@@ -132,7 +132,7 @@ class ImageBackend(DynamicBackend):
         height = ops.cast(height, dtype)
         cx = center_x * width
         cy = center_y * height
-        degree_to_radian_factor = 1.0 / 180.0 * math.pi
+        degree_to_radian_factor = math.pi / 180.0
         rot = ops.numpy.multiply(angle, degree_to_radian_factor)
         tx = -translate_x * width
         ty = -translate_y * height
@@ -184,6 +184,10 @@ class ImageBackend(DynamicBackend):
         width = ops.cast(width, dtype)
         height = ops.cast(height, dtype)
 
+        angle = -angle
+        shear_x = -shear_x
+        shear_y = -shear_y
+
         cx = center_x * width
         cy = center_y * height
         rot = ops.numpy.multiply(angle, 1.0 / 180.0 * math.pi)
@@ -226,7 +230,8 @@ class ImageBackend(DynamicBackend):
                 ops.numpy.zeros([batch_size], dtype),
                 ops.numpy.zeros([batch_size], dtype),
                 ops.numpy.ones([batch_size], dtype),
-            ]
+            ],
+            axis=-1,
         )
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix

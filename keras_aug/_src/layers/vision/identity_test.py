@@ -28,6 +28,7 @@ class IdentityTest(testing.TestCase, parameterized.TestCase):
             "keypoints": np.random.uniform(0, 1, (2, 10, 17)),
         }
         y = layer(x)
+        self.assertDType(y["images"], dtype)
         self.assertAllClose(y["images"], x["images"])
         self.assertAllClose(
             y["bounding_boxes"]["boxes"], x["bounding_boxes"]["boxes"]
