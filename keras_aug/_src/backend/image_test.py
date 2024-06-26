@@ -173,6 +173,26 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         self.assertDType(y, dtype)
 
     @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    def test_guassian_blur(self, dtype):
+        import torch
+        import torchvision.transforms.v2.functional as TF
+
+        image_backend = ImageBackend()
+        x = get_images(dtype, "channels_first")
+        if dtype == "float32":
+            atol = 1
+        elif dtype == "uint8":
+            atol = 1e-6
+        y = image_backend.guassian_blur(
+            x, (3, 3), (0.1, 0.1), data_format="channels_first"
+        )
+
+        ref_y = TF.gaussian_blur(torch.tensor(x), (3, 3), (0.1, 0.1))
+        ref_y = ref_y.cpu().numpy()
+        self.assertAllClose(y, ref_y, atol=atol)
+        self.assertDType(y, dtype)
+
+    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
     def test_rgb_to_grayscale(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF

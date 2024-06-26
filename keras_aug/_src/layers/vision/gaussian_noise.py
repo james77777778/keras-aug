@@ -38,10 +38,12 @@ class GaussianNoise(VisionRandomLayer):
     def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         random_generator = self.random_generator
+
+        dtype = backend.result_type(images.dtype, float)
         noise = (
             self.mean
             + ops.random.normal(
-                ops.shape(images), dtype=images.dtype, seed=random_generator
+                ops.shape(images), dtype=dtype, seed=random_generator
             )
             * self.sigma
         )

@@ -416,6 +416,57 @@ class ImageBackend(DynamicBackend):
         images = self.transform_dtype(images, original_dtype)
         return images
 
+    def guassian_blur(self, images, kernel_size, sigma, data_format=None):
+        data_format = data_format or backend.image_data_format()
+        channels_axis = -1 if data_format == "channels_last" else -3
+
+        ops = self.backend
+        images = ops.core.convert_to_tensor(images)
+        channels = ops.shape(images)[channels_axis]
+        original_dtype = backend.standardize_dtype(images.dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+
+        def _get_gaussian_kernel_1d(kernel_size, sigma, dtype):
+            lim = (kernel_size - 1) / (2.0 * math.sqrt(2.0) * sigma)
+            x = ops.numpy.linspace(-lim, lim, num=kernel_size, dtype=dtype)
+            kernel_1d = ops.nn.softmax(-ops.numpy.power(x, 2), axis=0)
+            return kernel_1d
+
+        def _get_gaussian_kernel_2d(kernel_size, sigma, dtype):
+            kernel_1d_x = _get_gaussian_kernel_1d(
+                kernel_size[0], sigma[0], dtype
+            )
+            kernel_1d_y = _get_gaussian_kernel_1d(
+                kernel_size[1], sigma[1], dtype
+            )
+            kernel_2d = ops.numpy.multiply(
+                ops.numpy.expand_dims(kernel_1d_y, axis=-1), kernel_1d_x
+            )
+            return kernel_2d
+
+        images = ops.cast(images, compute_dtype)
+        kernel = _get_gaussian_kernel_2d(kernel_size, sigma, compute_dtype)
+
+        kernel = ops.numpy.expand_dims(kernel, axis=(2, 3))
+        kernel = ops.numpy.tile(kernel, [1, 1, channels, 1])
+
+        # Padding
+        pad_width = [
+            [kernel_size[1] // 2, kernel_size[1] // 2],  # y
+            [kernel_size[0] // 2, kernel_size[0] // 2],  # x
+        ]
+        if data_format == "channels_last":
+            pad_width = pad_width + [[0, 0]]
+        else:
+            pad_width = [[0, 0]] + pad_width
+        pad_width = [[0, 0]] + pad_width
+        images = ops.numpy.pad(images, pad_width, mode="reflect")
+        images = ops.nn.depthwise_conv(images, kernel, data_format=data_format)
+        if backend.is_int_dtype(original_dtype):
+            images = ops.numpy.round(images)
+            images = ops.cast(images, original_dtype)
+        return images
+
     def rgb_to_grayscale(self, images, num_channels=3, data_format=None):
         if num_channels not in (1, 3):
             raise ValueError(
