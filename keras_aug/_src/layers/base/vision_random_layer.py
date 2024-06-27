@@ -147,7 +147,9 @@ class VisionRandomLayer(keras.Layer):
         Returns:
             output 4D tensor, which will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting images."
+        )
 
     def augment_labels(self, labels, transformations, **kwargs):
         """Augment a batch of labels.
@@ -162,7 +164,9 @@ class VisionRandomLayer(keras.Layer):
         Returns:
             output 2D tensor, which will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting labels."
+        )
 
     def augment_bounding_boxes(self, bounding_boxes, transformations, **kwargs):
         """Augment bounding boxes for one image.
@@ -178,7 +182,10 @@ class VisionRandomLayer(keras.Layer):
         Returns:
             output 3D tensor, which will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting "
+            "bounding boxes."
+        )
 
     def augment_keypoints(self, keypoints, transformations, **kwargs):
         """Augment a batch of keypoints for one image.
@@ -195,7 +202,10 @@ class VisionRandomLayer(keras.Layer):
         Returns:
             output 3D tensor, which will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting "
+            "keypoints."
+        )
 
     def augment_segmentation_masks(
         self, segmentation_masks, transformations, **kwargs
@@ -216,7 +226,10 @@ class VisionRandomLayer(keras.Layer):
             output 4D tensor containing the augmented segmentation mask, which
             will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting "
+            "segmentation masks."
+        )
 
     def augment_custom_annotations(
         self, custom_annotations, transformations, **kwargs
@@ -234,7 +247,10 @@ class VisionRandomLayer(keras.Layer):
             output 4D tensor containing the augmented segmentation mask, which
             will be forward to `layer.call()`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support augmenting "
+            "custom annotations."
+        )
 
     def _batch_augment(self, inputs):
         images = inputs.get(self.IMAGES, None)

@@ -112,130 +112,6 @@ class ImageBackend(DynamicBackend):
         )
         return images
 
-    def compute_affine_matrix(
-        self,
-        center_x,
-        center_y,
-        angle,
-        translate_x,
-        translate_y,
-        scale,
-        shear_x,
-        shear_y,
-        height,
-        width,
-    ):
-        ops = self.backend
-        batch_size = ops.shape(angle)[0]
-        dtype = angle.dtype
-        width = ops.cast(width, dtype)
-        height = ops.cast(height, dtype)
-        cx = center_x * width
-        cy = center_y * height
-        degree_to_radian_factor = math.pi / 180.0
-        rot = ops.numpy.multiply(angle, degree_to_radian_factor)
-        tx = -translate_x * width
-        ty = -translate_y * height
-        sx = ops.numpy.multiply(shear_x, degree_to_radian_factor)
-        sy = ops.numpy.multiply(shear_y, degree_to_radian_factor)
-
-        # Compute rotation & scaling & shear & translation matrix
-        # cv2.getRotationMatrix2D
-        alpha = ops.numpy.cos(rot) / scale
-        beta = ops.numpy.sin(rot) / scale
-        matrix = ops.numpy.stack(
-            [
-                alpha,
-                # + sx (shear)
-                beta + sx,
-                # - cx * sx (shear) + tx (translate)
-                (1.0 - alpha) * cx - beta * cy - cx * sx + tx,
-                # + sy (shear)
-                -beta + sy,
-                alpha,
-                # - cy * sy (shear) + ty (translate)
-                beta * cx + (1.0 - alpha) * cy - cy * sy + ty,
-                ops.numpy.zeros([batch_size], dtype),
-                ops.numpy.zeros([batch_size], dtype),
-                ops.numpy.ones([batch_size], dtype),
-            ],
-            axis=-1,
-        )
-        matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
-        return matrix
-
-    def compute_inverse_affine_matrix(
-        self,
-        center_x,
-        center_y,
-        angle,
-        translate_x,
-        translate_y,
-        scale,
-        shear_x,
-        shear_y,
-        height,
-        width,
-    ):
-        # Ref: TF._geometry._get_inverse_affine_matrix
-        ops = self.backend
-        batch_size = ops.shape(angle)[0]
-        dtype = angle.dtype
-        width = ops.cast(width, dtype)
-        height = ops.cast(height, dtype)
-
-        angle = -angle
-        shear_x = -shear_x
-        shear_y = -shear_y
-
-        cx = center_x * width
-        cy = center_y * height
-        rot = ops.numpy.multiply(angle, 1.0 / 180.0 * math.pi)
-        tx = -translate_x * width
-        ty = -translate_y * height
-        sx = ops.numpy.multiply(shear_x, 1.0 / 180.0 * math.pi)
-        sy = ops.numpy.multiply(shear_y, 1.0 / 180.0 * math.pi)
-
-        # Cached results
-        cos_sy = ops.numpy.cos(sy)
-        tan_sx = ops.numpy.tan(sx)
-        rot_minus_sy = rot - sy
-        cx_plus_tx = cx + tx
-        cy_plus_ty = cy + ty
-
-        # Rotate Scale Shear (RSS) without scaling
-        a = ops.numpy.cos(rot_minus_sy) / cos_sy
-        b = -(a * tan_sx + ops.numpy.sin(rot))
-        c = ops.numpy.sin(rot_minus_sy) / cos_sy
-        d = ops.numpy.cos(rot) - c * tan_sx
-
-        # Inverted rotation matrix with scale and shear
-        # det([[a, b], [c, d]]) == 1, since det(rotation) = 1 and det(shear) = 1
-        a0 = d * scale
-        a1 = -b * scale
-        b0 = -c * scale
-        b1 = a * scale
-        a2 = cx - a0 * cx_plus_tx - a1 * cy_plus_ty
-        b2 = cy - b0 * cx_plus_tx - b1 * cy_plus_ty
-
-        # Shape of matrix: [[batch_size], ...] -> [batch_size, 6]
-        matrix = ops.numpy.stack(
-            [
-                a0,
-                a1,
-                a2,
-                b0,
-                b1,
-                b2,
-                ops.numpy.zeros([batch_size], dtype),
-                ops.numpy.zeros([batch_size], dtype),
-                ops.numpy.ones([batch_size], dtype),
-            ],
-            axis=-1,
-        )
-        matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
-        return matrix
-
     def adjust_brightness(self, images, factor):
         ops = self.backend
         images = ops.convert_to_tensor(images)
@@ -609,6 +485,164 @@ class ImageBackend(DynamicBackend):
             images,
         )
         return images
+
+    def compute_affine_matrix(
+        self,
+        center_x,
+        center_y,
+        angle,
+        translate_x,
+        translate_y,
+        scale,
+        shear_x,
+        shear_y,
+        height,
+        width,
+    ):
+        ops = self.backend
+        batch_size = ops.shape(angle)[0]
+        dtype = angle.dtype
+        width = ops.cast(width, dtype)
+        height = ops.cast(height, dtype)
+        cx = center_x * width
+        cy = center_y * height
+        degree_to_radian_factor = math.pi / 180.0
+        rot = ops.numpy.multiply(angle, degree_to_radian_factor)
+        tx = -translate_x * width
+        ty = -translate_y * height
+        sx = ops.numpy.multiply(shear_x, degree_to_radian_factor)
+        sy = ops.numpy.multiply(shear_y, degree_to_radian_factor)
+
+        # Compute rotation & scaling & shear & translation matrix
+        # cv2.getRotationMatrix2D
+        alpha = ops.numpy.cos(rot) / scale
+        beta = ops.numpy.sin(rot) / scale
+        matrix = ops.numpy.stack(
+            [
+                alpha,
+                # + sx (shear)
+                beta + sx,
+                # - cx * sx (shear) + tx (translate)
+                (1.0 - alpha) * cx - beta * cy - cx * sx + tx,
+                # + sy (shear)
+                -beta + sy,
+                alpha,
+                # - cy * sy (shear) + ty (translate)
+                beta * cx + (1.0 - alpha) * cy - cy * sy + ty,
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.ones([batch_size], dtype),
+            ],
+            axis=-1,
+        )
+        matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
+        return matrix
+
+    def compute_inverse_affine_matrix(
+        self,
+        center_x,
+        center_y,
+        angle,
+        translate_x,
+        translate_y,
+        scale,
+        shear_x,
+        shear_y,
+        height,
+        width,
+    ):
+        # Ref: TF._geometry._get_inverse_affine_matrix
+        ops = self.backend
+        batch_size = ops.shape(angle)[0]
+        dtype = angle.dtype
+        width = ops.cast(width, dtype)
+        height = ops.cast(height, dtype)
+
+        angle = -angle
+        shear_x = -shear_x
+        shear_y = -shear_y
+
+        cx = center_x * width
+        cy = center_y * height
+        rot = ops.numpy.multiply(angle, 1.0 / 180.0 * math.pi)
+        tx = -translate_x * width
+        ty = -translate_y * height
+        sx = ops.numpy.multiply(shear_x, 1.0 / 180.0 * math.pi)
+        sy = ops.numpy.multiply(shear_y, 1.0 / 180.0 * math.pi)
+
+        # Cached results
+        cos_sy = ops.numpy.cos(sy)
+        tan_sx = ops.numpy.tan(sx)
+        rot_minus_sy = rot - sy
+        cx_plus_tx = cx + tx
+        cy_plus_ty = cy + ty
+
+        # Rotate Scale Shear (RSS) without scaling
+        a = ops.numpy.cos(rot_minus_sy) / cos_sy
+        b = -(a * tan_sx + ops.numpy.sin(rot))
+        c = ops.numpy.sin(rot_minus_sy) / cos_sy
+        d = ops.numpy.cos(rot) - c * tan_sx
+
+        # Inverted rotation matrix with scale and shear
+        # det([[a, b], [c, d]]) == 1, since det(rotation) = 1 and det(shear) = 1
+        a0 = d * scale
+        a1 = -b * scale
+        b0 = -c * scale
+        b1 = a * scale
+        a2 = cx - a0 * cx_plus_tx - a1 * cy_plus_ty
+        b2 = cy - b0 * cx_plus_tx - b1 * cy_plus_ty
+
+        # Shape of matrix: [[batch_size], ...] -> [batch_size, 6]
+        matrix = ops.numpy.stack(
+            [
+                a0,
+                a1,
+                a2,
+                b0,
+                b1,
+                b2,
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.ones([batch_size], dtype),
+            ],
+            axis=-1,
+        )
+        matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
+        return matrix
+
+    def fill_rectangles(self, images, fill_images, boxes, data_format=None):
+        data_format = data_format or backend.image_data_format()
+        if data_format == "channels_last":
+            h_axis, w_axis, c_axis = -3, -2, -1
+        else:
+            c_axis, h_axis, w_axis = -3, -2, -1
+
+        ops = self.backend
+        images_shape = ops.shape(images)
+        height, width = images_shape[h_axis], images_shape[w_axis]
+        x0, y0, x1, y1 = boxes
+
+        def _to_mask(start, end, mask_len):
+            batch_size = ops.shape(start)[0]
+            axis_indices = ops.numpy.arange(mask_len, dtype=start.dtype)
+            axis_indices = ops.numpy.expand_dims(axis_indices, 0)
+            axis_indices = ops.numpy.tile(axis_indices, [batch_size, 1])
+
+            start = ops.numpy.expand_dims(start, axis=-1)
+            end = ops.numpy.expand_dims(end, axis=-1)
+            mask = ops.numpy.logical_and(
+                ops.numpy.greater_equal(axis_indices, start),
+                ops.numpy.less(axis_indices, end),
+            )
+            return mask
+
+        w_masks = _to_mask(x0, x1, width)
+        h_masks = _to_mask(y0, y1, height)
+        w_masks = ops.numpy.expand_dims(w_masks, axis=-2)
+        h_masks = ops.numpy.expand_dims(h_masks, axis=-1)
+        masks = ops.numpy.logical_and(w_masks, h_masks)
+        masks = ops.numpy.expand_dims(masks, axis=c_axis)
+        return ops.numpy.where(masks, fill_images, images)
 
     def _max_value_of_dtype(self, dtype):
         dtype = backend.standardize_dtype(dtype)
