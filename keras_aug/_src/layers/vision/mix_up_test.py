@@ -16,7 +16,7 @@ class FixedMixUp(MixUp):
         return lam
 
 
-class CutMixTest(testing.TestCase, parameterized.TestCase):
+class MixUpTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
