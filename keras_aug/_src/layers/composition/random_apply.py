@@ -17,6 +17,9 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 class RandomApply(keras.Layer):
     """Apply randomly a list of transformations with a given probability.
 
+    Note that due to implementation limitations, a single sampled `p` will
+    be applied to the entire batch of inputs.
+
     Args:
         transforms: A list of transformations or a `keras.Layer`.
         p: A float specifying the probability. Defaults to `0.5`.
@@ -69,6 +72,7 @@ class RandomApply(keras.Layer):
     def get_params(self):
         ops = self.backend
         random_generator = self.random_generator
+
         p = ops.random.uniform((1,), seed=random_generator)
         return p[0]
 
