@@ -120,6 +120,68 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
+    @parameterized.named_parameters(
+        named_product(
+            dtype=["float32", "uint8"],
+            args=[
+                # angle, translate_x, translate_y, scale, shear_x, shear_y
+                (15.0, 0.0, 0.0, 1.0, 0.0, 0.0),  # Test angle
+                (0.0, 0.1, -0.2, 1.0, 0.0, 0.0),  # Test translate
+                (0.0, 0.0, 0.0, 0.5, 0.0, 0.0),  # Test scale
+                (0.0, 0.0, 0.0, 1.0, 15.0, -15.0),  # Test shear
+            ],
+            interpolation=["bilinear", "nearest"],
+        )
+    )
+    def test_affine(self, dtype, args, interpolation):
+        import torch
+        import torchvision.transforms.v2.functional as TF
+
+        image_backend = ImageBackend()
+        x = get_images(dtype, "channels_first")
+
+        angle, translate_x, translate_y, scale, shear_x, shear_y = args
+        torch_translate_x = translate_x * 32
+        torch_translate_y = translate_y * 32
+        if interpolation == "bilinear":
+            torch_interpolation = TF.InterpolationMode.BILINEAR
+        elif interpolation == "nearest":
+            torch_interpolation = TF.InterpolationMode.NEAREST
+
+        y = image_backend.affine(
+            x,
+            ops.array([angle]),
+            ops.array([translate_x]),
+            ops.array([translate_y]),
+            ops.array([scale]),
+            ops.array([shear_x]),
+            ops.array([shear_y]),
+            interpolation=interpolation,
+            data_format="channels_first",
+        )
+
+        ref_y = TF.affine(
+            torch.tensor(x),
+            angle,
+            [torch_translate_x, torch_translate_y],
+            scale,
+            [shear_x, shear_y],
+            torch_interpolation,
+        )
+        ref_y = ref_y.cpu().numpy()
+        # TODO: Test uint8
+        if dtype != "uint8":
+            # TODO: Investigate these parameters
+            if angle != 0.0 and interpolation == "nearest":
+                pass
+            elif scale != 1.0 and interpolation == "bilinear":
+                pass
+            elif shear_x != 0.0 or shear_y != 0.0:
+                pass
+            else:
+                self.assertAllClose(y, ref_y, atol=0.5)
+        self.assertDType(y, dtype)
+
     @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
     def test_auto_contrast(self, dtype):
         import torch

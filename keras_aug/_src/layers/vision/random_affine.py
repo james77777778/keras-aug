@@ -179,42 +179,25 @@ class RandomAffine(VisionRandomLayer):
         )
 
     def augment_images(self, images, transformations, **kwargs):
-        ops = self.backend
-        original_dtype = images.dtype
-        images_shape = ops.shape(images)
-        height = images_shape[self.h_axis]
-        width = images_shape[self.w_axis]
         if self.center is None:
             center_x, center_y = 0.5, 0.5
         else:
             center_x, center_y = self.center
-        matrix = self.image_backend.compute_affine_matrix(
-            center_x,
-            center_y,
+        images = self.image_backend.affine(
+            images,
             transformations["angle"],
             transformations["translate_x"],
             transformations["translate_y"],
             transformations["scale"],
             transformations["shear_x"],
             transformations["shear_y"],
-            height,
-            width,
-        )
-
-        # Affine
-        transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
-        images = self.image_backend.transform_dtype(
-            images, backend.result_type(images.dtype, float)
-        )
-        images = ops.image.affine_transform(
-            images,
-            transform,
+            center_x,
+            center_y,
             self.interpolation,
             self.padding_mode,
             self.padding_value,
             self.data_format,
         )
-        images = self.image_backend.transform_dtype(images, original_dtype)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

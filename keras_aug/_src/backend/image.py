@@ -3,6 +3,7 @@ import math
 from keras import backend
 
 from keras_aug._src.backend.dynamic_backend import DynamicBackend
+from keras_aug._src.utils.argument_validation import standardize_interpolation
 
 
 class ImageBackend(DynamicBackend):
@@ -173,6 +174,64 @@ class ImageBackend(DynamicBackend):
         images = ops.numpy.concatenate([h, s, v], channels_axis)
         images = ops.image.hsv_to_rgb(images, data_format)
         images = ops.numpy.clip(images, 0, max_value)
+        images = self.transform_dtype(images, original_dtype)
+        return images
+
+    def affine(
+        self,
+        images,
+        angle,
+        translate_x,
+        translate_y,
+        scale,
+        shear_x,
+        shear_y,
+        center_x=None,
+        center_y=None,
+        interpolation="bilinear",
+        padding_mode="constant",
+        padding_value=0,
+        data_format=None,
+    ):
+        interpolation = standardize_interpolation(interpolation)
+        data_format = data_format or backend.image_data_format()
+        if data_format == "channels_last":
+            h_axis, w_axis = -3, -2
+        else:
+            h_axis, w_axis = -2, -1
+
+        ops = self.backend
+        original_dtype = backend.standardize_dtype(images.dtype)
+        images_shape = ops.shape(images)
+        height, width = images_shape[h_axis], images_shape[w_axis]
+        if center_x is None:
+            center_x = 0.5
+        if center_y is None:
+            center_y = 0.5
+        matrix = self.compute_affine_matrix(
+            center_x,
+            center_y,
+            angle,
+            translate_x,
+            translate_y,
+            scale,
+            shear_x,
+            shear_y,
+            height,
+            width,
+        )
+        transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
+        images = self.transform_dtype(
+            images, backend.result_type(original_dtype, float)
+        )
+        images = ops.image.affine_transform(
+            images,
+            transform,
+            interpolation,
+            padding_mode,
+            padding_value,
+            data_format,
+        )
         images = self.transform_dtype(images, original_dtype)
         return images
 
