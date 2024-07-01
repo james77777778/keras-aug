@@ -17,8 +17,8 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 class RandomOrder(keras.Layer):
     """Apply a list of transformations in a random order.
 
-    Note that due to implementation limitations, a single sampled ordering
-    will be applied to the entire batch of inputs.
+    Note that due to implementation limitations, the randomness occurs in a
+    batch manner.
 
     Args:
         transforms: A list of transformations or a `keras.Layer`.

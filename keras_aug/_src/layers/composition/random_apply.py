@@ -17,8 +17,8 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 class RandomApply(keras.Layer):
     """Apply randomly a list of transformations with a given probability.
 
-    Note that due to implementation limitations, a single sampled `p` will
-    be applied to the entire batch of inputs.
+    Note that due to implementation limitations, the randomness occurs in a
+    batch manner.
 
     Args:
         transforms: A list of transformations or a `keras.Layer`.

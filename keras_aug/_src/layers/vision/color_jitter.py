@@ -81,7 +81,7 @@ class ColorJitter(VisionRandomLayer):
 
         def generate_params(low, high):
             return ops.random.uniform(
-                [batch_size, 1, 1, 1], low, high, seed=random_generator
+                [batch_size], low, high, seed=random_generator
             )
 
         if self.brightness is not None:

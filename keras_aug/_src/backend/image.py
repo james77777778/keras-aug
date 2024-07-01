@@ -119,6 +119,8 @@ class ImageBackend(DynamicBackend):
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
         max_value = self._max_value_of_dtype(original_dtype)
+        if len(ops.shape(factor)) == 1:
+            factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
         images = ops.numpy.multiply(images, factor)
         images = ops.numpy.clip(images, 0, max_value)
@@ -133,6 +135,8 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
+        if len(ops.shape(factor)) == 1:
+            factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
         grayscales = ops.image.rgb_to_grayscale(images, data_format)
         if not is_float_inputs:
@@ -148,6 +152,8 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
+        if len(ops.shape(factor)) == 1:
+            factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
         grayscales = ops.image.rgb_to_grayscale(images, data_format)
         if not is_float_inputs:
@@ -163,6 +169,8 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         original_dtype = backend.standardize_dtype(images.dtype)
         max_value = self._max_value_of_dtype(original_dtype)
+        if len(ops.shape(factor)) == 1:
+            factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
         images = self.transform_dtype(
             images, backend.result_type(original_dtype, float)
@@ -481,6 +489,8 @@ class ImageBackend(DynamicBackend):
         original_dtype = images.dtype
         float_dtype = backend.result_type(original_dtype, float)
         max_value = self._max_value_of_dtype(original_dtype)
+        if len(ops.shape(factor)) == 1:
+            factor = ops.numpy.expand_dims(factor, [1, 2, 3])
         images = ops.cast(images, float_dtype)
         # [1 1 1]
         # [1 5 1]

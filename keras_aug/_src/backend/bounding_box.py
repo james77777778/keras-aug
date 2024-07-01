@@ -1,3 +1,5 @@
+import math
+
 from keras_aug._src.backend.dynamic_backend import DynamicBackend
 
 
@@ -145,6 +147,73 @@ class BoundingBoxBackend(DynamicBackend):
         result["classes"] = classes
         return result
 
+    def affine(
+        self,
+        boxes,
+        angle,
+        translate_x,
+        translate_y,
+        scale,
+        shear_x,
+        shear_y,
+        height,
+        width,
+        center_x=None,
+        center_y=None,
+    ):
+        ops = self.backend
+
+        boxes_shape = ops.shape(boxes)
+        batch_size = boxes_shape[0]
+        n_boxes = boxes_shape[1]
+        if center_x is None:
+            center_x = 0.5
+        if center_y is None:
+            center_y = 0.5
+
+        matrix = self._compute_inverse_affine_matrix(
+            center_x,
+            center_y,
+            angle,
+            translate_x,
+            translate_y,
+            scale,
+            shear_x,
+            shear_y,
+            height,
+            width,
+        )
+        transposed_matrix = ops.numpy.transpose(matrix[:, :2, :], [0, 2, 1])
+        points = boxes  # [B, N, 4]
+        points = ops.numpy.stack(
+            [
+                points[..., 0],
+                points[..., 1],
+                points[..., 2],
+                points[..., 1],
+                points[..., 2],
+                points[..., 3],
+                points[..., 0],
+                points[..., 3],
+            ],
+            axis=-1,
+        )
+        points = ops.numpy.reshape(points, [batch_size, n_boxes, 4, 2])
+        points = ops.numpy.concatenate(
+            [
+                points,
+                ops.numpy.ones([batch_size, n_boxes, 4, 1], points.dtype),
+            ],
+            axis=-1,
+        )
+        transformed_points = ops.numpy.einsum(
+            "bnxy,byz->bnxz", points, transposed_matrix
+        )
+        boxes_min = ops.numpy.amin(transformed_points, axis=2)
+        boxes_max = ops.numpy.amax(transformed_points, axis=2)
+        outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)
+        return outputs
+
     # Converters
 
     def _xyxy_to_xyxy(self, boxes, height=None, width=None):
@@ -251,3 +320,76 @@ class BoundingBoxBackend(DynamicBackend):
         widths = x2 - x1
         heights = y2 - y1
         return widths * heights
+
+    # Affine
+    def _compute_inverse_affine_matrix(
+        self,
+        center_x,
+        center_y,
+        angle,
+        translate_x,
+        translate_y,
+        scale,
+        shear_x,
+        shear_y,
+        height,
+        width,
+    ):
+        # Ref: TF._geometry._get_inverse_affine_matrix
+        ops = self.backend
+        batch_size = ops.shape(angle)[0]
+        dtype = angle.dtype
+        width = ops.cast(width, dtype)
+        height = ops.cast(height, dtype)
+
+        angle = -angle
+        shear_x = -shear_x
+        shear_y = -shear_y
+
+        cx = center_x * width
+        cy = center_y * height
+        rot = ops.numpy.multiply(angle, 1.0 / 180.0 * math.pi)
+        tx = -translate_x * width
+        ty = -translate_y * height
+        sx = ops.numpy.multiply(shear_x, 1.0 / 180.0 * math.pi)
+        sy = ops.numpy.multiply(shear_y, 1.0 / 180.0 * math.pi)
+
+        # Cached results
+        cos_sy = ops.numpy.cos(sy)
+        tan_sx = ops.numpy.tan(sx)
+        rot_minus_sy = rot - sy
+        cx_plus_tx = cx + tx
+        cy_plus_ty = cy + ty
+
+        # Rotate Scale Shear (RSS) without scaling
+        a = ops.numpy.cos(rot_minus_sy) / cos_sy
+        b = -(a * tan_sx + ops.numpy.sin(rot))
+        c = ops.numpy.sin(rot_minus_sy) / cos_sy
+        d = ops.numpy.cos(rot) - c * tan_sx
+
+        # Inverted rotation matrix with scale and shear
+        # det([[a, b], [c, d]]) == 1, since det(rotation) = 1 and det(shear) = 1
+        a0 = d * scale
+        a1 = -b * scale
+        b0 = -c * scale
+        b1 = a * scale
+        a2 = cx - a0 * cx_plus_tx - a1 * cy_plus_ty
+        b2 = cy - b0 * cx_plus_tx - b1 * cy_plus_ty
+
+        # Shape of matrix: [[batch_size], ...] -> [batch_size, 6]
+        matrix = ops.numpy.stack(
+            [
+                a0,
+                a1,
+                a2,
+                b0,
+                b1,
+                b2,
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.zeros([batch_size], dtype),
+                ops.numpy.ones([batch_size], dtype),
+            ],
+            axis=-1,
+        )
+        matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
+        return matrix

@@ -219,10 +219,8 @@ class RandomAffine(VisionRandomLayer):
         ops = self.backend
 
         images_shape = ops.shape(raw_images)
-        batch_size = images_shape[0]
         height = images_shape[self.h_axis]
         width = images_shape[self.w_axis]
-        n_boxes = ops.shape(bounding_boxes["boxes"])[1]
         bounding_boxes = self.bbox_backend.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,
@@ -231,13 +229,8 @@ class RandomAffine(VisionRandomLayer):
             width=width,
             dtype=self.bounding_box_dtype,
         )
-        if self.center is None:
-            center_x, center_y = 0.5, 0.5
-        else:
-            center_x, center_y = self.center
-        matrix = self.image_backend.compute_inverse_affine_matrix(
-            center_x,
-            center_y,
+        boxes = self.bbox_backend.affine(
+            bounding_boxes["boxes"],
             transformations["angle"],
             transformations["translate_x"],
             transformations["translate_y"],
@@ -247,38 +240,8 @@ class RandomAffine(VisionRandomLayer):
             height,
             width,
         )
-        transposed_matrix = ops.numpy.transpose(matrix[:, :2, :], [0, 2, 1])
-        points = bounding_boxes["boxes"]  # [B, N, 4]
-        points = ops.numpy.stack(
-            [
-                points[..., 0],
-                points[..., 1],
-                points[..., 2],
-                points[..., 1],
-                points[..., 2],
-                points[..., 3],
-                points[..., 0],
-                points[..., 3],
-            ],
-            axis=-1,
-        )
-        points = ops.numpy.reshape(points, [batch_size, n_boxes, 4, 2])
-        points = ops.numpy.concatenate(
-            [
-                points,
-                ops.numpy.ones([batch_size, n_boxes, 4, 1], points.dtype),
-            ],
-            axis=-1,
-        )
-        transformed_points = ops.numpy.einsum(
-            "bnxy,byz->bnxz", points, transposed_matrix
-        )
-        boxes_min = ops.numpy.amin(transformed_points, axis=2)
-        boxes_max = ops.numpy.amax(transformed_points, axis=2)
-        outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)
-
         bounding_boxes = bounding_boxes.copy()
-        bounding_boxes["boxes"] = outputs
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
             height=height,

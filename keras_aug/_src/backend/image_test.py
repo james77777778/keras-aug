@@ -150,12 +150,12 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
 
         y = image_backend.affine(
             x,
-            ops.array([angle]),
-            ops.array([translate_x]),
-            ops.array([translate_y]),
-            ops.array([scale]),
-            ops.array([shear_x]),
-            ops.array([shear_y]),
+            ops.array([angle, angle]),
+            ops.array([translate_x, translate_x]),
+            ops.array([translate_y, translate_y]),
+            ops.array([scale, scale]),
+            ops.array([shear_x, shear_x]),
+            ops.array([shear_y, shear_y]),
             interpolation=interpolation,
             data_format="channels_first",
         )
