@@ -4,13 +4,14 @@ from absl.testing import parameterized
 from keras import backend
 from keras.src import testing
 
-from keras_aug._src.layers.composition.random_apply import RandomApply
+from keras_aug._src.layers.composition.random_choice import RandomChoice
+from keras_aug._src.layers.vision.identity import Identity
 from keras_aug._src.layers.vision.random_grayscale import RandomGrayscale
 from keras_aug._src.layers.vision.resize import Resize
 from keras_aug._src.utils.test_utils import get_images
 
 
-class RandomApplyTest(testing.TestCase, parameterized.TestCase):
+class RandomChoiceTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -25,7 +26,9 @@ class RandomApplyTest(testing.TestCase, parameterized.TestCase):
         import torch
         import torchvision.transforms.v2.functional as TF
 
-        layer = RandomApply(transforms=[RandomGrayscale(p=1.0)], p=1.0)
+        layer = RandomChoice(
+            transforms=[RandomGrayscale(p=1.0), Identity()], p=[1.0, 0.0]
+        )
 
         x = get_images("float32", "channels_last")
         y = layer(x)
@@ -37,13 +40,15 @@ class RandomApplyTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(y, ref_y)
 
         # Test p=0.0
-        layer = RandomApply(transforms=[RandomGrayscale(p=1.0)], p=0.0)
+        layer = RandomChoice(
+            transforms=[RandomGrayscale(p=1.0), Identity()], p=[0.0, 1.0]
+        )
         y = layer(x)
 
         self.assertAllClose(y, x)
 
     def test_shape(self):
-        layer = RandomApply(transforms=RandomGrayscale(p=1.0))
+        layer = RandomChoice(transforms=[RandomGrayscale(p=1.0), Identity()])
 
         # Test dynamic shape
         x = keras.KerasTensor((None, None, None, 3))
@@ -56,14 +61,13 @@ class RandomApplyTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(y.shape, (None, 32, 32, 3))
 
         # Test deterministic shape
-        transform = Resize((16, 16))
-        layer = RandomApply(transforms=transform)
+        layer = RandomChoice(transforms=[Resize((16, 16)), Resize((16, 16))])
         x = keras.KerasTensor((None, 16, 16, 3))
         y = layer(x)
         self.assertEqual(y.shape, (None, 16, 16, 3))
 
     def test_model(self):
-        layer = RandomApply(transforms=RandomGrayscale(p=1.0))
+        layer = RandomChoice(transforms=[RandomGrayscale(p=1.0), Identity()])
         inputs = keras.layers.Input(shape=[None, None, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
@@ -71,17 +75,21 @@ class RandomApplyTest(testing.TestCase, parameterized.TestCase):
 
     def test_config(self):
         x = get_images("float32", "channels_last")
-        layer = RandomApply(transforms=RandomGrayscale(p=1.0), p=1.0)
+        layer = RandomChoice(
+            transforms=[RandomGrayscale(p=1.0), Identity()], p=[1.0, 0.0]
+        )
         y = layer(x)
 
-        layer = RandomApply.from_config(layer.get_config())
+        layer = RandomChoice.from_config(layer.get_config())
         y2 = layer(x)
         self.assertAllClose(y, y2)
 
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = RandomApply(transforms=RandomGrayscale(p=1.0))
+        layer = RandomChoice(
+            transforms=[RandomGrayscale(p=1.0), RandomGrayscale(p=1.0)]
+        )
         x = get_images("float32", "channels_last")
         ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):

@@ -14,15 +14,23 @@ from keras_aug._src.keras_aug_export import keras_aug_export
     parent_path=["keras_aug.layers.composition", "keras_aug.layers"]
 )
 @keras.saving.register_keras_serializable(package="keras_aug")
-class RandomApply(keras.Layer):
-    """Apply randomly a list of transformations with a given probability.
+class RandomChoice(keras.Layer):
+    """Apply single transformation randomly picked from a list.
 
     Args:
         transforms: A list of transformations or a `keras.Layer`.
-        p: A float specifying the probability. Defaults to `0.5`.
+        p: A list of probability of each transform being picked. If p doesn't
+            sum to `1.0`, it is automatically normalized. If `None`, all
+            transforms have the same probability. Defaults to `None`.
     """
 
-    def __init__(self, transforms, p: float = 0.5, seed=None, **kwargs):
+    def __init__(
+        self,
+        transforms,
+        p: typing.Optional[typing.Sequence[keras.Layer]] = None,
+        seed=None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self._backend = DynamicBackend(backend.backend())
         self._random_generator = DynamicRandomGenerator(
@@ -39,8 +47,24 @@ class RandomApply(keras.Layer):
             )
         if isinstance(transforms, keras.Layer):
             transforms = [transforms]
+        if p is not None:
+            if not isinstance(p, typing.Sequence):
+                raise TypeError(
+                    "If `p` is provided, it must be a sequence. "
+                    f"Received: p={p} of type {type(p)}"
+                )
+            if len(p) != len(transforms):
+                raise ValueError(
+                    "If `p` is provided, the length of it should be the same "
+                    "`transforms`. "
+                    f"Received: transforms={transforms}, p={p}"
+                )
+        else:
+            p = [1.0] * len(transforms)
+
         self.transforms = list(transforms)
-        self.p = float(p)
+        total = sum(p)
+        self.p = [prob / total for prob in p]
 
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
@@ -55,27 +79,27 @@ class RandomApply(keras.Layer):
         return self._random_generator.random_generator
 
     def compute_output_shape(self, input_shape):
-        output_shape = input_shape
-        for transfrom in self.transforms:
-            output_shape = transfrom.compute_output_shape(output_shape)
-        if output_shape != input_shape:
+        transform_shape = [
+            transfrom.compute_output_shape(input_shape)
+            for transfrom in self.transforms
+        ]
+        transform_shape = set(transform_shape)
+        if len(transform_shape) > 1:
             raise ValueError(
-                "The output shape must be the same as input shape. "
+                "The output shape of all `transforms` must be the same. "
                 f"Received: input_shape={input_shape}, "
-                f"output_shape={output_shape}"
+                f"possible transform_shape={list(transform_shape)}"
             )
+        output_shape = list(transform_shape)[0]
         return output_shape
 
     def get_params(self):
         ops = self.backend
         random_generator = self.random_generator
-        p = ops.random.uniform((1,), seed=random_generator)
-        return p[0]
-
-    def _apply_transforms(self, inputs):
-        for layer in self.transforms:
-            inputs = layer(inputs)
-        return inputs
+        p = ops.convert_to_tensor([self.p])
+        p = ops.random.categorical(ops.numpy.log(p), 1, seed=random_generator)
+        p = p[0][0]
+        return p
 
     def __call__(self, inputs, **kwargs):
         if in_tf_graph():
@@ -92,9 +116,7 @@ class RandomApply(keras.Layer):
         ops = self.backend
         p = self.get_params()
 
-        outputs = ops.core.cond(
-            p < self.p, lambda: self._apply_transforms(inputs), lambda: inputs
-        )
+        outputs = ops.core.switch(p, self.transforms, inputs)
         return outputs
 
     def get_config(self):
