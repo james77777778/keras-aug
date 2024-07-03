@@ -83,27 +83,39 @@ class RandAugment(VisionRandomLayer):
         else:
             self.h_axis, self.w_axis = -2, -1
         num_bins = self.num_magnitude_bins
-        m = self.magnitude
         self.augmentation_space = {
             "Identity": None,
-            "ShearX": np.degrees(np.arctan(np.linspace(0.0, 0.3, num_bins)))[m],
-            "ShearY": np.degrees(np.arctan(np.linspace(0.0, 0.3, num_bins)))[m],
-            "TranslateX": np.linspace(0.0, 150.0 / 331.0, num_bins)[m],
-            "TranslateY": np.linspace(0.0, 150.0 / 331.0, num_bins)[m],
-            "Rotate": np.linspace(0.0, 30.0, num_bins)[m],
-            "Brightness": np.linspace(0.0, 0.9, num_bins)[m],
-            "Color": np.linspace(0.0, 0.9, num_bins)[m],
-            "Contrast": np.linspace(0.0, 0.9, num_bins)[m],
-            "Sharpness": np.linspace(0.0, 0.9, num_bins)[m],
+            "Brightness": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
+            "Color": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
+            "Contrast": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
+            "Sharpness": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
             "Posterize": (
                 (8 - (np.arange(num_bins) / ((num_bins - 1) / 4)))
                 .round()
                 .astype("int32")
-            )[m],
-            "Solarize": np.linspace(1.0, 0.0, num_bins)[m],
+            ),
+            "Solarize": np.linspace(1.0, 0.0, num_bins, dtype="float32"),
             "AutoContrast": None,
             "Equalize": None,
         }
+        if self.geometric:
+            self.augmentation_space.update(
+                {
+                    "ShearX": np.degrees(
+                        np.arctan(np.linspace(0.0, 0.3, num_bins))
+                    ).astype("float32"),
+                    "ShearY": np.degrees(
+                        np.arctan(np.linspace(0.0, 0.3, num_bins))
+                    ).astype("float32"),
+                    "TranslateX": np.linspace(
+                        0.0, 150.0 / 331.0, num_bins, dtype="float32"
+                    ),
+                    "TranslateY": np.linspace(
+                        0.0, 150.0 / 331.0, num_bins, dtype="float32"
+                    ),
+                    "Rotate": np.linspace(0.0, 30.0, num_bins, dtype="float32"),
+                }
+            )
         p = [1.0] * len(self.augmentation_space)
         total = sum(p)
         self.p = [prob / total for prob in p]
@@ -115,6 +127,9 @@ class RandAugment(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
+        magnitude = ops.numpy.full(
+            [self.num_ops], self.magnitude, dtype="int32"
+        )
         fn_idx_p = ops.convert_to_tensor([self.p])
         fn_idx = ops.random.categorical(
             ops.numpy.log(fn_idx_p), self.num_ops, seed=random_generator
@@ -123,11 +138,12 @@ class RandAugment(VisionRandomLayer):
         signed_p = ops.random.uniform([batch_size]) > 0.5
         signed = ops.cast(ops.numpy.where(signed_p, 1.0, -1.0), dtype="float32")
         return dict(
+            magnitude=magnitude,
             fn_idx=fn_idx,  # shape: (self.num_ops,)
             signed=signed,  # shape: (batch_size,)
         )
 
-    def _apply_images_transform(self, images, idx, signed):
+    def _apply_images_transform(self, images, magnitude, idx, signed):
         ops = self.backend
 
         dtype = backend.standardize_dtype(images.dtype)
@@ -136,70 +152,105 @@ class RandAugment(VisionRandomLayer):
         # Build branches for ops.switch
         aug_space = self.augmentation_space
         max_value = self.image_backend._max_value_of_dtype(dtype)
-        transforms = [
-            # Identity
-            lambda x: x,
-            # Brightness
-            lambda x: self.image_backend.adjust_brightness(
-                x,
-                ops.numpy.add(1.0, signed * aug_space["Brightness"]),
-            ),
-            # Color
-            lambda x: self.image_backend.adjust_saturation(
-                x,
-                ops.numpy.add(1.0, signed * aug_space["Color"]),
-                data_format=self.data_format,
-            ),
-            # Contrast
-            lambda x: self.image_backend.adjust_contrast(
-                x,
-                ops.numpy.add(1.0, signed * aug_space["Contrast"]),
-                data_format=self.data_format,
-            ),
-            # Sharpness
-            lambda x: self.image_backend.sharpen(
-                x,
-                ops.numpy.add(1.0, signed * aug_space["Sharpness"]),
-                data_format=self.data_format,
-            ),
-            # Posterize
-            lambda x: self.image_backend.posterize(
-                x, int(aug_space["Posterize"])
-            ),
-            # Solarize
-            lambda x: self.image_backend.solarize(
-                x, max_value * aug_space["Solarize"]
-            ),
-            # AutoContrast
-            lambda x: self.image_backend.auto_contrast(
-                x, data_format=self.data_format
-            ),
-            # Equalize
-            lambda x: self.image_backend.equalize(
-                x, data_format=self.data_format
-            ),
-        ]
-        if self.geometric:
-            transforms.extend(
-                [
-                    # ShearX
+        transforms = []
+        for key in sorted(self.augmentation_space.keys()):
+            if key == "Identity":
+                transforms.append(lambda x: x)
+            elif key == "Brightness":
+                factor = ops.numpy.add(
+                    1.0,
+                    ops.numpy.multiply(
+                        signed,
+                        ops.numpy.take(aug_space["Brightness"], magnitude),
+                    ),
+                )
+                transforms.append(
+                    lambda x: self.image_backend.adjust_brightness(x, factor)
+                )
+            elif key == "Color":
+                factor = ops.numpy.add(
+                    1.0,
+                    signed * ops.numpy.take(aug_space["Color"], magnitude),
+                )
+                transforms.append(
+                    lambda x: self.image_backend.adjust_saturation(x, factor)
+                )
+            elif key == "Contrast":
+                factor = ops.numpy.add(
+                    1.0,
+                    signed * ops.numpy.take(aug_space["Contrast"], magnitude),
+                )
+                transforms.append(
+                    lambda x: self.image_backend.adjust_contrast(
+                        x, factor, data_format=self.data_format
+                    )
+                )
+            elif key == "Sharpness":
+                factor = ops.numpy.add(
+                    1.0,
+                    signed * ops.numpy.take(aug_space["Sharpness"], magnitude),
+                )
+                transforms.append(
+                    lambda x: self.image_backend.sharpen(
+                        x, factor, data_format=self.data_format
+                    )
+                )
+            elif key == "Posterize":
+                bits = ops.numpy.take(aug_space["Posterize"], magnitude)
+                transforms.append(
+                    lambda x: self.image_backend.posterize(x, bits)
+                )
+            elif key == "Solarize":
+                factor = ops.numpy.multiply(
+                    max_value, ops.numpy.take(aug_space["Solarize"], magnitude)
+                )
+                transforms.append(
+                    lambda x: self.image_backend.solarize(x, factor)
+                )
+            elif key == "AutoContrast":
+                transforms.append(
+                    lambda x: self.image_backend.auto_contrast(
+                        x, data_format=self.data_format
+                    )
+                )
+            elif key == "Equalize":
+                transforms.append(
+                    lambda x: self.image_backend.equalize(
+                        x, data_format=self.data_format
+                    )
+                )
+            elif key == "ShearX":
+                shear_x = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["ShearX"], magnitude),
+                    ),
+                )
+                transforms.append(
                     lambda x: self.image_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["ShearX"]),
-                        ),
+                        shear_x,
                         ops.numpy.zeros([batch_size]),
                         interpolation=self.interpolation,
                         padding_mode=self.padding_mode,
                         padding_value=self.padding_value,
                         data_format=self.data_format,
+                    )
+                )
+            elif key == "ShearY":
+                shear_y = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["ShearY"], magnitude),
                     ),
-                    # ShearY
+                )
+                transforms.append(
                     lambda x: self.image_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
@@ -207,61 +258,26 @@ class RandAugment(VisionRandomLayer):
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
                         ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["ShearY"]),
-                        ),
+                        shear_y,
                         interpolation=self.interpolation,
                         padding_mode=self.padding_mode,
                         padding_value=self.padding_value,
                         data_format=self.data_format,
+                    )
+                )
+            elif key == "TranlateX":
+                translate_x = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["TranlateX"], magnitude),
                     ),
-                    # TranlateX
+                )
+                transforms.append(
                     lambda x: self.image_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full(
-                                [batch_size], aug_space["TranslateX"]
-                            ),
-                        ),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.ones([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        interpolation=self.interpolation,
-                        padding_mode=self.padding_mode,
-                        padding_value=self.padding_value,
-                        data_format=self.data_format,
-                    ),
-                    # TranlateY
-                    lambda x: self.image_backend.affine(
-                        x,
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full(
-                                [batch_size], aug_space["TranslateY"]
-                            ),
-                        ),
-                        ops.numpy.ones([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        interpolation=self.interpolation,
-                        padding_mode=self.padding_mode,
-                        padding_value=self.padding_value,
-                        data_format=self.data_format,
-                    ),
-                    # Rotate
-                    lambda x: self.image_backend.affine(
-                        x,
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["Rotate"]),
-                        ),
-                        ops.numpy.zeros([batch_size]),
+                        translate_x,
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
                         ops.numpy.zeros([batch_size]),
@@ -270,25 +286,72 @@ class RandAugment(VisionRandomLayer):
                         padding_mode=self.padding_mode,
                         padding_value=self.padding_value,
                         data_format=self.data_format,
+                    )
+                )
+            elif key == "TranlateY":
+                translate_y = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["TranlateY"], magnitude),
                     ),
-                ]
-            )
+                )
+                transforms.append(
+                    lambda x: self.image_backend.affine(
+                        x,
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        translate_y,
+                        ops.numpy.ones([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        interpolation=self.interpolation,
+                        padding_mode=self.padding_mode,
+                        padding_value=self.padding_value,
+                        data_format=self.data_format,
+                    )
+                )
+            elif key == "Rotate":
+                angle = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["Rotate"], magnitude),
+                    ),
+                )
+                transforms.append(
+                    lambda x: self.image_backend.affine(
+                        x,
+                        angle,
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.ones([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        interpolation=self.interpolation,
+                        padding_mode=self.padding_mode,
+                        padding_value=self.padding_value,
+                        data_format=self.data_format,
+                    )
+                )
         images = ops.core.switch(idx, transforms, images)
         return images
 
     def augment_images(self, images, transformations, **kwargs):
+        magnitude = transformations["magnitude"]
         fn_idx = transformations["fn_idx"]
         signed = transformations["signed"]
         for i in range(self.num_ops):
             idx = fn_idx[i]
-            images = self._apply_images_transform(images, idx, signed)
+            m = magnitude[i]
+            images = self._apply_images_transform(images, m, idx, signed)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
 
     def _apply_bounding_boxes_transform(
-        self, bounding_boxes, height, width, idx, signed
+        self, bounding_boxes, height, width, magnitude, idx, signed
     ):
         ops = self.backend
 
@@ -296,45 +359,56 @@ class RandAugment(VisionRandomLayer):
 
         # Build branches for ops.switch
         aug_space = self.augmentation_space
-        transforms = [
-            # Identity
-            lambda x: x,
-            # Brightness
-            lambda x: x,
-            # Color
-            lambda x: x,
-            # Contrast
-            lambda x: x,
-            # Sharpness
-            lambda x: x,
-            # Posterize
-            lambda x: x,
-            # Solarize
-            lambda x: x,
-            # AutoContrast
-            lambda x: x,
-            # Equalize
-            lambda x: x,
-        ]
-        if self.geometric:
-            transforms.extend(
-                [
-                    # ShearX
+        transforms = []
+        for key in sorted(self.augmentation_space.keys()):
+            if key == "Identity":
+                transforms.append(lambda x: x)
+            elif key == "Brightness":
+                transforms.append(lambda x: x)
+            elif key == "Color":
+                transforms.append(lambda x: x)
+            elif key == "Contrast":
+                transforms.append(lambda x: x)
+            elif key == "Sharpness":
+                transforms.append(lambda x: x)
+            elif key == "Posterize":
+                transforms.append(lambda x: x)
+            elif key == "Solarize":
+                transforms.append(lambda x: x)
+            elif key == "AutoContrast":
+                transforms.append(lambda x: x)
+            elif key == "Equalize":
+                transforms.append(lambda x: x)
+            elif key == "ShearX":
+                shear_x = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["ShearX"], magnitude),
+                    ),
+                )
+                transforms.append(
                     lambda x: self.bbox_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["ShearX"]),
-                        ),
+                        shear_x,
                         ops.numpy.zeros([batch_size]),
                         height=height,
                         width=width,
+                    )
+                )
+            elif key == "ShearY":
+                shear_y = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["ShearY"], magnitude),
                     ),
-                    # ShearY
+                )
+                transforms.append(
                     lambda x: self.bbox_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
@@ -342,64 +416,73 @@ class RandAugment(VisionRandomLayer):
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
                         ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["ShearY"]),
-                        ),
+                        shear_y,
                         height=height,
                         width=width,
+                    )
+                )
+            elif key == "TranlateX":
+                translate_x = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["TranlateX"], magnitude),
                     ),
-                    # TranlateX
+                )
+                transforms.append(
                     lambda x: self.bbox_backend.affine(
                         x,
                         ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full(
-                                [batch_size], aug_space["TranslateX"]
-                            ),
-                        ),
+                        translate_x,
+                        ops.numpy.ones([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        height=height,
+                        width=width,
+                    )
+                )
+            elif key == "TranlateY":
+                translate_y = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["TranlateY"], magnitude),
+                    ),
+                )
+                transforms.append(
+                    lambda x: self.bbox_backend.affine(
+                        x,
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        translate_y,
+                        ops.numpy.ones([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        ops.numpy.zeros([batch_size]),
+                        height=height,
+                        width=width,
+                    )
+                )
+            elif key == "Rotate":
+                angle = ops.numpy.multiply(
+                    signed,
+                    ops.numpy.full(
+                        [batch_size],
+                        ops.numpy.take(aug_space["Rotate"], magnitude),
+                    ),
+                )
+                transforms.append(
+                    lambda x: self.bbox_backend.affine(
+                        x,
+                        angle,
+                        ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.ones([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         ops.numpy.zeros([batch_size]),
                         height=height,
                         width=width,
-                    ),
-                    # TranlateY
-                    lambda x: self.bbox_backend.affine(
-                        x,
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full(
-                                [batch_size], aug_space["TranslateY"]
-                            ),
-                        ),
-                        ops.numpy.ones([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        height=height,
-                        width=width,
-                    ),
-                    # Rotate
-                    lambda x: self.bbox_backend.affine(
-                        x,
-                        ops.numpy.multiply(
-                            signed,
-                            ops.numpy.full([batch_size], aug_space["Rotate"]),
-                        ),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.ones([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        ops.numpy.zeros([batch_size]),
-                        height=height,
-                        width=width,
-                    ),
-                ]
-            )
+                    )
+                )
         boxes = ops.core.switch(idx, transforms, bounding_boxes["boxes"])
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
@@ -420,6 +503,7 @@ class RandAugment(VisionRandomLayer):
             )
         ops = self.backend
 
+        magnitude = transformations["magnitude"]
         fn_idx = transformations["fn_idx"]
         signed = transformations["signed"]
         images_shape = ops.shape(raw_images)
@@ -435,8 +519,9 @@ class RandAugment(VisionRandomLayer):
         )
         for i in range(self.num_ops):
             idx = fn_idx[i]
+            m = magnitude[i]
             bounding_boxes = self._apply_bounding_boxes_transform(
-                bounding_boxes, height, width, idx, signed
+                bounding_boxes, height, width, m, idx, signed
             )
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,

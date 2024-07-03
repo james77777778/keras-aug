@@ -442,18 +442,13 @@ class ImageBackend(DynamicBackend):
             return images ^ ((1 << num_bits) - 1)
 
     def posterize(self, images, bits):
-        if not isinstance(bits, int):
-            raise TypeError(
-                "`bits` must be an integer. "
-                f"Received: bits={bits} of type {type(bits)}"
-            )
-
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        bits = ops.convert_to_tensor(bits)
         dtype = backend.standardize_dtype(images.dtype)
 
         def posterize_float(images):
-            levels = 1 << bits
+            levels = ops.cast(ops.numpy.power(2, bits), images.dtype)
             images = ops.numpy.floor(ops.numpy.multiply(images, levels))
             images = ops.numpy.clip(images, 0, levels - 1)
             images = ops.numpy.multiply(images, 1.0 / levels)
@@ -461,9 +456,11 @@ class ImageBackend(DynamicBackend):
 
         def posterize_int(images):
             dtype_bits = self._num_bits_of_dtype(dtype)
-            if bits >= dtype_bits:
-                return images
-            mask = ((1 << bits) - 1) << (dtype_bits - bits)
+            mask = ops.numpy.subtract(ops.numpy.power(2, bits), 1)
+            mask = ops.numpy.multiply(
+                mask, ops.numpy.power(2, dtype_bits - bits)
+            )
+            mask = ops.cast(mask, images.dtype)
             return images & mask
 
         if backend.is_float_dtype(dtype):
@@ -540,14 +537,7 @@ class ImageBackend(DynamicBackend):
     def solarize(self, images, threshold):
         ops = self.backend
         images = ops.convert_to_tensor(images)
-        dtype = backend.standardize_dtype(images.dtype)
-        max_value = self._max_value_of_dtype(dtype)
-        if threshold > max_value or threshold < 0:
-            raise ValueError(
-                "`threshold` should be less or equal to the maximum value of "
-                "the input dtype. "
-                f"Received: threshold={threshold}, images.dtype={dtype}"
-            )
+        threshold = ops.convert_to_tensor(threshold)
         images = ops.numpy.where(
             images >= ops.cast(threshold, images.dtype),
             self.invert(images),
