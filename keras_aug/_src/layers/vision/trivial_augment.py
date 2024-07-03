@@ -11,19 +11,16 @@ from keras_aug._src.utils.argument_validation import standardize_interpolation
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
 @keras.saving.register_keras_serializable(package="keras_aug")
-class RandAugment(VisionRandomLayer):
-    """RandAugment data augmentation method.
+class TrivialAugmentWide(VisionRandomLayer):
+    """TrivialAugment (wide) data augmentation method.
 
     Note that due to implementation limitations, the randomness occurs in a
     batch manner.
 
     References:
-    - [RandAugment: Practical automated data augmentation with a reduced search space](https://arxiv.org/abs/1909.13719)
+    - [TrivialAugment: Tuning-free Yet State-of-the-Art Data Augmentation](https://arxiv.org/abs/2103.10158)
 
     Args:
-        num_ops: Number of augmentation transformations to apply sequentially.
-            Defaults to `2`.
-        magnitude: Magnitude for all the transformations. Defaults to `9`.
         num_magnitude_bins: The number of different magnitude values. Defaults
             to `31`.
         geometric: Whether to include geometric augmentations. This
@@ -47,8 +44,6 @@ class RandAugment(VisionRandomLayer):
 
     def __init__(
         self,
-        num_ops: int = 2,
-        magnitude: int = 9,
         num_magnitude_bins: int = 31,
         geometric: bool = True,
         interpolation: str = "bilinear",
@@ -60,16 +55,6 @@ class RandAugment(VisionRandomLayer):
     ):
         super().__init__(**kwargs)
         # Check
-        if magnitude >= num_magnitude_bins or magnitude < 0:
-            raise ValueError(
-                "`magnitude` must be a positive value and lower that "
-                "`num_magnitude_bins`. "
-                f"Received: magnitude={magnitude}, "
-                f"num_magnitude_bins={num_magnitude_bins}"
-            )
-
-        self.num_ops = int(num_ops)
-        self.magnitude = int(magnitude)
         self.num_magnitude_bins = int(num_magnitude_bins)
         self.geometric = bool(geometric)
         self.interpolation = standardize_interpolation(interpolation)
@@ -85,12 +70,12 @@ class RandAugment(VisionRandomLayer):
         num_bins = self.num_magnitude_bins
         self.augmentation_space = {
             "Identity": None,
-            "Brightness": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
-            "Color": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
-            "Contrast": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
-            "Sharpness": np.linspace(0.0, 0.9, num_bins, dtype="float32"),
+            "Brightness": np.linspace(0.0, 0.99, num_bins, dtype="float32"),
+            "Color": np.linspace(0.0, 0.99, num_bins, dtype="float32"),
+            "Contrast": np.linspace(0.0, 0.99, num_bins, dtype="float32"),
+            "Sharpness": np.linspace(0.0, 0.99, num_bins, dtype="float32"),
             "Posterize": (
-                (8 - (np.arange(num_bins) / ((num_bins - 1) / 4)))
+                (8 - (np.arange(num_bins) / ((num_bins - 1) / 6)))
                 .round()
                 .astype("int32")
             ),
@@ -102,18 +87,20 @@ class RandAugment(VisionRandomLayer):
             self.augmentation_space.update(
                 {
                     "ShearX": np.degrees(
-                        np.arctan(np.linspace(0.0, 0.3, num_bins))
+                        np.arctan(np.linspace(0.0, 0.99, num_bins))
                     ).astype("float32"),
                     "ShearY": np.degrees(
-                        np.arctan(np.linspace(0.0, 0.3, num_bins))
+                        np.arctan(np.linspace(0.0, 0.99, num_bins))
                     ).astype("float32"),
                     "TranslateX": np.linspace(
-                        0.0, 150.0 / 331.0, num_bins, dtype="float32"
+                        0.0, 32.0 / 224.0, num_bins, dtype="float32"
                     ),
                     "TranslateY": np.linspace(
-                        0.0, 150.0 / 331.0, num_bins, dtype="float32"
+                        0.0, 32.0 / 224.0, num_bins, dtype="float32"
                     ),
-                    "Rotate": np.linspace(0.0, 30.0, num_bins, dtype="float32"),
+                    "Rotate": np.linspace(
+                        0.0, 135.0, num_bins, dtype="float32"
+                    ),
                 }
             )
         p = [1.0] * len(self.augmentation_space)
@@ -127,19 +114,17 @@ class RandAugment(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
-        magnitude = ops.numpy.full(
-            [self.num_ops, batch_size], self.magnitude, dtype="int32"
-        )
+        magnitude = ops.random.randint([batch_size], 0, self.num_magnitude_bins)
         fn_idx_p = ops.convert_to_tensor([self.p])
         fn_idx = ops.random.categorical(
-            ops.numpy.log(fn_idx_p), self.num_ops, seed=random_generator
+            ops.numpy.log(fn_idx_p), 1, seed=random_generator
         )
         fn_idx = fn_idx[0]
         signed_p = ops.random.uniform([batch_size]) > 0.5
         signed = ops.cast(ops.numpy.where(signed_p, 1.0, -1.0), dtype="float32")
         return dict(
-            magnitude=magnitude,  # shape: (self.num_ops, batch_size)
-            fn_idx=fn_idx,  # shape: (self.num_ops,)
+            magnitude=magnitude,  # shape: (batch_size,)
+            fn_idx=fn_idx,  # shape: (1,)
             signed=signed,  # shape: (batch_size,)
         )
 
@@ -159,10 +144,7 @@ class RandAugment(VisionRandomLayer):
             elif key == "Brightness":
                 factor = ops.numpy.add(
                     1.0,
-                    ops.numpy.multiply(
-                        signed,
-                        ops.numpy.take(aug_space["Brightness"], magnitude),
-                    ),
+                    signed * ops.numpy.take(aug_space["Brightness"], magnitude),
                 )
                 transforms.append(
                     lambda x: self.image_backend.adjust_brightness(x, factor)
@@ -221,11 +203,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "ShearX":
                 shear_x = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["ShearX"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["ShearX"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.image_backend.affine(
@@ -244,11 +222,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "ShearY":
                 shear_y = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["ShearY"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["ShearY"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.image_backend.affine(
@@ -267,11 +241,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "TranlateX":
                 translate_x = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["TranlateX"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["TranlateX"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.image_backend.affine(
@@ -290,11 +260,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "TranlateY":
                 translate_y = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["TranlateY"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["TranlateY"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.image_backend.affine(
@@ -313,11 +279,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "Rotate":
                 angle = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["Rotate"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["Rotate"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.image_backend.affine(
@@ -339,12 +301,9 @@ class RandAugment(VisionRandomLayer):
 
     def augment_images(self, images, transformations, **kwargs):
         magnitude = transformations["magnitude"]
-        fn_idx = transformations["fn_idx"]
+        fn_idx = transformations["fn_idx"][0]
         signed = transformations["signed"]
-        for i in range(self.num_ops):
-            idx = fn_idx[i]
-            m = magnitude[i]
-            images = self._apply_images_transform(images, m, idx, signed)
+        images = self._apply_images_transform(images, magnitude, fn_idx, signed)
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
@@ -381,11 +340,7 @@ class RandAugment(VisionRandomLayer):
                 transforms.append(lambda x: x)
             elif key == "ShearX":
                 shear_x = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["ShearX"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["ShearX"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.bbox_backend.affine(
@@ -402,11 +357,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "ShearY":
                 shear_y = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["ShearY"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["ShearY"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.bbox_backend.affine(
@@ -423,11 +374,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "TranlateX":
                 translate_x = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["TranlateX"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["TranlateX"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.bbox_backend.affine(
@@ -443,11 +390,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "TranlateY":
                 translate_y = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["TranlateY"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["TranlateY"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.bbox_backend.affine(
@@ -464,11 +407,7 @@ class RandAugment(VisionRandomLayer):
                 )
             elif key == "Rotate":
                 angle = ops.numpy.multiply(
-                    signed,
-                    ops.numpy.full(
-                        [batch_size],
-                        ops.numpy.take(aug_space["Rotate"], magnitude),
-                    ),
+                    signed, ops.numpy.take(aug_space["Rotate"], magnitude)
                 )
                 transforms.append(
                     lambda x: self.bbox_backend.affine(
@@ -504,7 +443,7 @@ class RandAugment(VisionRandomLayer):
         ops = self.backend
 
         magnitude = transformations["magnitude"]
-        fn_idx = transformations["fn_idx"]
+        fn_idx = transformations["fn_idx"][0]
         signed = transformations["signed"]
         images_shape = ops.shape(raw_images)
         height = images_shape[self.h_axis]
@@ -517,12 +456,9 @@ class RandAugment(VisionRandomLayer):
             width=width,
             dtype=self.bounding_box_dtype,
         )
-        for i in range(self.num_ops):
-            idx = fn_idx[i]
-            m = magnitude[i]
-            bounding_boxes = self._apply_bounding_boxes_transform(
-                bounding_boxes, height, width, m, idx, signed
-            )
+        bounding_boxes = self._apply_bounding_boxes_transform(
+            bounding_boxes, height, width, magnitude, fn_idx, signed
+        )
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
             height=height,
@@ -543,8 +479,6 @@ class RandAugment(VisionRandomLayer):
         config = super().get_config()
         config.update(
             {
-                "num_ops": self.num_ops,
-                "magnitude": self.magnitude,
                 "num_magnitude_bins": self.num_magnitude_bins,
                 "geometric": self.geometric,
                 "interpolation": self.interpolation,

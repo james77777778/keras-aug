@@ -449,6 +449,9 @@ class ImageBackend(DynamicBackend):
 
         def posterize_float(images):
             levels = ops.cast(ops.numpy.power(2, bits), images.dtype)
+            if len(ops.shape(levels)) == 0:
+                levels = ops.numpy.expand_dims(levels, axis=0)
+            levels = ops.numpy.expand_dims(levels, axis=(1, 2, 3))
             images = ops.numpy.floor(ops.numpy.multiply(images, levels))
             images = ops.numpy.clip(images, 0, levels - 1)
             images = ops.numpy.multiply(images, 1.0 / levels)
@@ -538,6 +541,9 @@ class ImageBackend(DynamicBackend):
         ops = self.backend
         images = ops.convert_to_tensor(images)
         threshold = ops.convert_to_tensor(threshold)
+        if len(ops.shape(threshold)) == 0:
+            threshold = ops.numpy.expand_dims(threshold, axis=0)
+        threshold = ops.numpy.expand_dims(threshold, axis=(1, 2, 3))
         images = ops.numpy.where(
             images >= ops.cast(threshold, images.dtype),
             self.invert(images),
