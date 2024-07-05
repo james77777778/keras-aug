@@ -5,11 +5,11 @@ from keras import backend
 from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
-from keras_aug._src.layers.vision.pad_if_needed import PadIfNeeded
+from keras_aug._src.layers.vision.pad import Pad
 from keras_aug._src.utils.test_utils import get_images
 
 
-class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
+class PadTest(testing.TestCase, parameterized.TestCase):
     def setUp(self):
         # Defaults to channels_last
         self.data_format = backend.image_data_format()
@@ -41,7 +41,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             x = np.clip(x, 0.5, 1.0)
         elif dtype == "uint8":
             x = np.clip(x, 127, 255)
-        layer = PadIfNeeded(
+        layer = Pad(
             size, "constant", padding_position, padding_value, dtype=dtype
         )
         y = layer(x)
@@ -83,7 +83,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         np.random.seed(42)
         x = get_images("float32", "channels_last")
         x = np.clip(x, 0.5, 1.0)
-        layer = PadIfNeeded(48, padding_mode=mode)
+        layer = Pad(48, padding_mode=mode)
         y = layer(x)
 
         pad_width = [[0, 0], [8, 8], [8, 8], [0, 0]]
@@ -93,24 +93,24 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
     def test_shape(self):
         # Test dynamic shape
         x = keras.KerasTensor((None, None, None, 3))
-        y = PadIfNeeded(16)(x)
+        y = Pad(16)(x)
         self.assertEqual(y.shape, (None, None, None, 3))
 
         # Test static shape
         x = keras.KerasTensor((None, 32, 32, 3))
-        y = PadIfNeeded(48)(x)
+        y = Pad(48)(x)
         self.assertEqual(y.shape, (None, 48, 48, 3))
 
     def test_model(self):
         # Test dynamic shape
-        layer = PadIfNeeded(16)
+        layer = Pad(16)
         inputs = keras.layers.Input(shape=[None, None, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
         self.assertEqual(model.output_shape, (None, None, None, 3))
 
         # Test static shape
-        layer = PadIfNeeded((32, 48))
+        layer = Pad((32, 48))
         inputs = keras.layers.Input(shape=[32, 32, 3])
         outputs = layer(inputs)
         model = keras.models.Model(inputs, outputs)
@@ -118,17 +118,17 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
 
     def test_config(self):
         x = get_images("float32", "channels_last")
-        layer = PadIfNeeded((32, 48))
+        layer = Pad((32, 48))
         y = layer(x)
 
-        layer = PadIfNeeded.from_config(layer.get_config())
+        layer = Pad.from_config(layer.get_config())
         y2 = layer(x)
         self.assertAllClose(y, y2)
 
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = PadIfNeeded(48)
+        layer = Pad(48)
         x = get_images("float32", "channels_last")
         ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
         for output in ds.take(1):
@@ -149,7 +149,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 0], [0, 0]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = PadIfNeeded(30, bounding_box_format="rel_xyxy")
+        layer = Pad(30, bounding_box_format="rel_xyxy")
 
         output = layer(input)
         self.assertNotAllClose(
@@ -172,7 +172,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
             "classes": np.array([[0, 1], [2, 3]], "float32"),
         }
         input = {"images": images, "bounding_boxes": boxes}
-        layer = PadIfNeeded(30, bounding_box_format="xyxy")
+        layer = Pad(30, bounding_box_format="xyxy")
 
         output = layer(input)
         expected_boxes = {
@@ -200,7 +200,7 @@ class PadIfNeededTest(testing.TestCase, parameterized.TestCase):
         masks = np.random.randint(2, size=masks_shape) * (num_classes - 1) + 1
         inputs = {"images": images, "segmentation_masks": masks}
 
-        layer = PadIfNeeded(48)
+        layer = Pad(48)
         output = layer(inputs)
         output_masks = output["segmentation_masks"][:, 8:-8, 8:-8, :]
         output_masks_border = output["segmentation_masks"][:, :8, :8, :]

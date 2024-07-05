@@ -5,6 +5,7 @@ from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.utils.argument_validation import standardize_data_format
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -36,7 +37,7 @@ class Normalize(VisionRandomLayer):
         super().__init__(has_generator=False, **kwargs)
         self.mean = tuple(mean)
         self.std = tuple(std)
-        self.data_format = data_format or backend.image_data_format()
+        self.data_format = standardize_data_format(data_format)
 
         if not backend.is_float_dtype(self.compute_dtype):
             dtype = self.dtype_policy

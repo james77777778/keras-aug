@@ -6,6 +6,8 @@ from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.utils.argument_validation import standardize_bbox_format
+from keras_aug._src.utils.argument_validation import standardize_data_format
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -68,8 +70,8 @@ class Resize(VisionRandomLayer):
         self.interpolation = interpolation
         self.antialias = antialias
         self.along_long_edge = along_long_edge
-        self.bounding_box_format = bounding_box_format
-        self.data_format = data_format or backend.image_data_format()
+        self.bounding_box_format = standardize_bbox_format(bounding_box_format)
+        self.data_format = standardize_data_format(data_format)
 
         if self.data_format == "channels_last":
             self.h_axis, self.w_axis = -3, -2

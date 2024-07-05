@@ -5,6 +5,7 @@ from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.utils.argument_validation import standardize_data_format
 
 
 @keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
@@ -45,7 +46,7 @@ class MixUp(VisionRandomLayer):
         super().__init__(**kwargs)
         self.alpha = float(alpha)
         self.num_classes = int(num_classes) if num_classes is not None else None
-        self.data_format = data_format or backend.image_data_format()
+        self.data_format = standardize_data_format(data_format)
 
         if self.data_format == "channels_last":
             self.h_axis, self.w_axis = -3, -2

@@ -6,6 +6,8 @@ from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.utils.argument_validation import standardize_bbox_format
+from keras_aug._src.utils.argument_validation import standardize_data_format
 from keras_aug._src.utils.argument_validation import standardize_interpolation
 from keras_aug._src.utils.argument_validation import standardize_size
 from keras_aug._src.utils.argument_validation import standardize_value_range
@@ -58,8 +60,8 @@ class RandomResizedCrop(VisionRandomLayer):
         self.ratio = standardize_value_range(ratio)
         self.interpolation = standardize_interpolation(interpolation)
         self.antialias = antialias
-        self.bounding_box_format = bounding_box_format
-        self.data_format = data_format or backend.image_data_format()
+        self.bounding_box_format = standardize_bbox_format(bounding_box_format)
+        self.data_format = standardize_data_format(data_format)
 
         self.log_ratio = (math.log(self.ratio[0]), math.log(self.ratio[1]))
         if self.data_format == "channels_last":

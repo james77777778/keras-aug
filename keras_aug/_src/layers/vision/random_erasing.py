@@ -9,6 +9,7 @@ from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.utils.argument_validation import standardize_data_format
 from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
@@ -64,7 +65,7 @@ class RandomErasing(VisionRandomLayer):
         self.scale = standardize_value_range(scale)
         self.ratio = standardize_value_range(ratio)
         self.value = value
-        self.data_format = data_format or backend.image_data_format()
+        self.data_format = standardize_data_format(data_format)
 
         self.log_ratio = (math.log(self.ratio[0]), math.log(self.ratio[1]))
         if self.data_format == "channels_last":
