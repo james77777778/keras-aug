@@ -10,9 +10,7 @@ from keras_aug._src.backend.dynamic_backend import DynamicRandomGenerator
 from keras_aug._src.keras_aug_export import keras_aug_export
 
 
-@keras_aug_export(
-    parent_path=["keras_aug.layers.composition", "keras_aug.layers"]
-)
+@keras_aug_export(parent_path=["keras_aug.layers.composition"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomApply(keras.Layer):
     """Apply randomly a list of transformations with a given probability.

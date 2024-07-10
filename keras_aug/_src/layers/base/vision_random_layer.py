@@ -10,7 +10,7 @@ from keras_aug._src.backend.image import ImageBackend
 from keras_aug._src.keras_aug_export import keras_aug_export
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.base", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.base"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class VisionRandomLayer(keras.Layer):
     """Abstract base layer for vectorized image augmentation.

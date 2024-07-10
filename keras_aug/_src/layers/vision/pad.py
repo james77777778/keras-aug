@@ -10,7 +10,7 @@ from keras_aug._src.utils.argument_validation import standardize_padding_mode
 from keras_aug._src.utils.argument_validation import standardize_size
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class Pad(VisionRandomLayer):
     """Pad the inputs to the given size.

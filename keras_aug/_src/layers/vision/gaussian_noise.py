@@ -5,7 +5,7 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class GaussianNoise(VisionRandomLayer):
     """Add gaussian noise to the input images.

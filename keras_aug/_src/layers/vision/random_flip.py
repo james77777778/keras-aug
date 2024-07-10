@@ -8,7 +8,7 @@ from keras_aug._src.utils.argument_validation import standardize_bbox_format
 from keras_aug._src.utils.argument_validation import standardize_data_format
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomFlip(VisionRandomLayer):
     """Flip the inputs with a given probability.

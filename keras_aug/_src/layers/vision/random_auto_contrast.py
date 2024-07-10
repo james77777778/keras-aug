@@ -5,7 +5,7 @@ from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 from keras_aug._src.utils.argument_validation import standardize_data_format
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomAutoContrast(VisionRandomLayer):
     """Autocontrast the images randomly with a given probability.

@@ -13,7 +13,7 @@ from keras_aug._src.utils.argument_validation import standardize_data_format
 from keras_aug._src.utils.argument_validation import standardize_value_range
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class RandomErasing(VisionRandomLayer):
     """Randomly select a rectangle region in the input images erase its pixels.

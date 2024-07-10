@@ -8,7 +8,7 @@ from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 from keras_aug._src.utils.argument_validation import standardize_parameter
 
 
-@keras_aug_export(parent_path=["keras_aug.layers.vision", "keras_aug.layers"])
+@keras_aug_export(parent_path=["keras_aug.layers.vision"])
 @keras.saving.register_keras_serializable(package="keras_aug")
 class GaussianBlur(VisionRandomLayer):
     """Blurs the input images with randomly chosen Gaussian blur kernel.
