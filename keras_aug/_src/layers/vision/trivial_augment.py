@@ -56,7 +56,6 @@ class TrivialAugmentWide(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        # Check
         self.num_magnitude_bins = int(num_magnitude_bins)
         self.geometric = bool(geometric)
         self.interpolation = standardize_interpolation(interpolation)

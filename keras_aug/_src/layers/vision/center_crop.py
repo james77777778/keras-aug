@@ -45,14 +45,6 @@ class CenterCrop(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(has_generator=False, **kwargs)
-        # Check
-        available_padding_mode = ("constant", "reflect", "symmetric")
-        if padding_mode not in available_padding_mode:
-            raise ValueError(
-                "Invalid `padding_mode`. Available values are: "
-                f"{list(available_padding_mode)}. "
-                f"Received: padding_mode={padding_mode}"
-            )
         self.size = standardize_size(size)
         self.padding_mode = standardize_padding_mode(padding_mode)
         self.padding_value = padding_value

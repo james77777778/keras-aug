@@ -252,7 +252,7 @@ class VisionRandomLayer(keras.Layer):
             "custom annotations."
         )
 
-    def _batch_augment(self, inputs):
+    def _batch_augment(self, inputs, **kwargs):
         images = inputs.get(self.IMAGES, None)
         raw_images = images
         labels = inputs.get(self.LABELS, None)
@@ -452,13 +452,13 @@ class VisionRandomLayer(keras.Layer):
         else:
             return super().__call__(inputs, **kwargs)
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         ops = self.backend
         inputs, metadata = self._format_inputs(inputs)
         inputs = self._cast_inputs(inputs)
         images = inputs[self.IMAGES]
         images_shape = ops.shape(images)
-        if len(images_shape) == 3 or len(images_shape) == 4:
+        if len(images_shape) == 4:
             return self._format_output(self._batch_augment(inputs), metadata)
         else:
             raise ValueError(

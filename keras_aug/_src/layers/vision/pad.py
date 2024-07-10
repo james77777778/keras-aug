@@ -47,14 +47,6 @@ class Pad(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(has_generator=False, **kwargs)
-        # Check
-        available_padding_mode = ("constant", "reflect", "symmetric")
-        if padding_mode not in available_padding_mode:
-            raise ValueError(
-                "Invalid `padding_mode`. Available values are: "
-                f"{list(available_padding_mode)}. "
-                f"Received: padding_mode={padding_mode}"
-            )
         available_padding_position = (
             "border",
             "top_left",
