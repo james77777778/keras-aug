@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "keras-aug"
-authors = [{ name = "Hongyu, Chiu (james77777778)" }]
 description = "A library that includes Keras 3 preprocessing and augmentation layers"
 keywords = [
     "deep-learning",
@@ -15,6 +14,8 @@ keywords = [
     "tensorflow",
     "torch",
 ]
+authors = [{ name = "Hong-Yu Chiu", email = "james77777778@gmail.com" }]
+maintainers = [{ name = "Hong-Yu Chiu", email = "james77777778@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache License 2.0" }
@@ -37,15 +38,16 @@ dependencies = ["keras"]
 
 [project.urls]
 Homepage = "https://github.com/james77777778/keras-aug"
-Documentation = "https://kerasaug.readthedocs.io/en/latest/"
-Repository = "https://github.com/james77777778/keras-aug"
+Documentation = "https://github.com/james77777778/keras-aug"
+Repository = "https://github.com/james77777778/keras-aug.git"
 Issues = "https://github.com/james77777778/keras-aug/issues"
 
 [project.optional-dependencies]
 tests = [
     # linter and formatter
+    "isort",
     "ruff",
-    "black[jupyter]",
+    "black",
     "pytest",
     "pytest-cov",
     "coverage",
@@ -99,7 +101,6 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::FutureWarning",
 ]
-markers = ["large: mark test as being slow"]
 
 [tool.coverage.run]
 source = ["keras_aug"]

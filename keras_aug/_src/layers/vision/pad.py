@@ -175,7 +175,6 @@ class Pad(VisionRandomLayer):
         raw_images=None,
         **kwargs,
     ):
-
         if self.bounding_box_format is None:
             raise ValueError(
                 f"{self.__class__.__name__} was called with bounding boxes,"

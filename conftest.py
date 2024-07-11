@@ -1,9 +1,19 @@
 import os
 
 import pytest
+from keras import backend
 
 
-def pytest_configure():
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run_serialization",
+        action="store_true",
+        default=False,
+        help="run serialization tests",
+    )
+
+
+def pytest_configure(config):
     import tensorflow as tf
 
     # disable tensorflow gpu memory preallocation
@@ -15,21 +25,26 @@ def pytest_configure():
     # https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--skip-large",
-        action="store_true",
-        default=False,
-        help="skip large tests",
+    config.addinivalue_line(
+        "markers", "serialization: mark test as a serialization test"
+    )
+    config.addinivalue_line(
+        "markers",
+        "requires_trainable_backend: mark test for trainable backend only",
     )
 
 
 def pytest_collection_modifyitems(config, items):
-    skip_large_tests = config.getoption("--skip-large")
-    skip_large = pytest.mark.skipif(
-        skip_large_tests, reason="need no --skip-large option to run"
+    run_serialization_tests = config.getoption("--run_serialization")
+    skip_serialization = pytest.mark.skipif(
+        not run_serialization_tests,
+        reason="need --run_serialization option to run",
+    )
+    requires_trainable_backend = pytest.mark.skipif(
+        backend.backend() == "numpy", reason="require trainable backend"
     )
     for item in items:
-        if "large" in item.keywords:
-            item.add_marker(skip_large)
+        if "requires_trainable_backend" in item.keywords:
+            item.add_marker(requires_trainable_backend)
+        if "serialization" in item.name:
+            item.add_marker(skip_serialization)
