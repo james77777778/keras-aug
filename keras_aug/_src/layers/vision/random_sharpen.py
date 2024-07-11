@@ -56,7 +56,7 @@ class RandomSharpen(VisionRandomLayer):
             prob,
             self.image_backend.sharpen(
                 images,
-                self.sharpness_factor,
+                ops.convert_to_tensor([self.sharpness_factor]),
                 self.data_format,
             ),
             images,

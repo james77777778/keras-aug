@@ -116,6 +116,7 @@ class ImageBackend(DynamicBackend):
     def adjust_brightness(self, images, factor):
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
         max_value = self._max_value_of_dtype(original_dtype)
@@ -133,6 +134,7 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
         if len(ops.shape(factor)) == 1:
@@ -150,6 +152,7 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
         if len(ops.shape(factor)) == 1:
@@ -167,6 +170,7 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         max_value = self._max_value_of_dtype(original_dtype)
         if len(ops.shape(factor)) == 1:
@@ -298,31 +302,62 @@ class ImageBackend(DynamicBackend):
         images_shape = ops.shape(images)
         images = self.transform_dtype(images, "uint8")
 
-        def _scale_channel(image_channel):
-            hist = ops.numpy.bincount(
-                ops.numpy.reshape(image_channel, [-1]), minlength=bins
-            )
-            nonzero = ops.numpy.where(ops.numpy.not_equal(hist, 0), None, None)
-            nonzero_hist = ops.numpy.reshape(
-                ops.numpy.take(hist, nonzero), [-1]
+        def _scale_channel(images):
+            images = ops.cast(images, "int32")
+            if self.name == "tensorflow":
+                import tensorflow as tf
+
+                hist = tf.histogram_fixed_width(
+                    tf.reshape(images, [-1]), [0, 255], nbins=256
+                )
+            elif self.name == "jax":
+                import jax.numpy as jnp
+
+                hist = jnp.bincount(
+                    jnp.reshape(images, [-1]), minlength=bins, length=bins
+                )
+            else:
+                hist = ops.numpy.bincount(
+                    ops.numpy.reshape(images, [-1]), minlength=bins
+                )
+
+            big_number = 1410065408
+            nonzero_hist = ops.numpy.where(
+                ops.numpy.equal(hist, 0), big_number, hist
             )
             step = ops.numpy.floor_divide(
-                ops.numpy.sum(hist) - nonzero_hist[-1], 255
+                ops.numpy.sum(hist) - ops.numpy.min(nonzero_hist), 255
             )
 
+            def build_mapping(histogram, step):
+                # Replace where step is 0 with 1 to avoid division by 0.
+                # This doesn't change the result, because where step==0 the
+                # original image is returned
+                _step = ops.numpy.where(ops.numpy.equal(step, 0), 1, step)
+
+                # Compute the cumulative sum, shifting by step // 2
+                # and then normalization by step.
+                lookup_table = ops.numpy.floor_divide(
+                    ops.numpy.add(
+                        ops.numpy.cumsum(histogram),
+                        ops.numpy.floor_divide(_step, 2),
+                    ),
+                    _step,
+                )
+
+                # Shift lookup_table, prepending with 0.
+                lookup_table = ops.numpy.pad(lookup_table[:-1], [[1, 0]])
+
+                # Clip the counts to be in range. This is done
+                # in the C code for image.point.
+                return ops.numpy.clip(lookup_table, 0, 255)
+
             def step_is_0():
-                return image_channel
+                return ops.cast(images, "uint8")
 
             def step_not_0():
-                lut = ops.numpy.floor_divide(
-                    ops.numpy.add(
-                        ops.numpy.cumsum(hist), ops.numpy.floor_divide(step, 2)
-                    ),
-                    step,
-                )
-                lut = ops.numpy.pad(lut[:-1], [[1, 0]])
-                lut = ops.numpy.clip(lut, 0, 255)
-                result = ops.numpy.take(lut, ops.cast(image_channel, "int64"))
+                lut = build_mapping(hist, step)
+                result = ops.numpy.take(lut, images)
                 return ops.cast(result, "uint8")
 
             return ops.cond(step == 0, step_is_0, step_not_0)
@@ -485,6 +520,7 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
+        factor = ops.convert_to_tensor(factor)
         channels = ops.shape(images)[channels_axis]
         original_dtype = images.dtype
         float_dtype = backend.result_type(original_dtype, float)
