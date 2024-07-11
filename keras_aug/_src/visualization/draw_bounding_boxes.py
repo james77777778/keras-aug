@@ -1,11 +1,12 @@
-import cv2
 import numpy as np
 from keras import backend
 from keras import ops
 
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
+from keras_aug._src.keras_aug_export import keras_aug_export
 
 
+@keras_aug_export(parent_path=["keras_aug.visualization"])
 def draw_bounding_boxes(
     images,
     bounding_boxes,
@@ -16,6 +17,13 @@ def draw_bounding_boxes(
     font_scale=1.0,
     data_format=None,
 ):
+    try:
+        import cv2
+    except ImportError:
+        raise ImportError(
+            "Cannot import OpenCV. You can install it by "
+            "`pip install opencv-python`."
+        )
     class_mapping = class_mapping or {}
     thickness = int(thickness)
     data_format = data_format or backend.image_data_format()

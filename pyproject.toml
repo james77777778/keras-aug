@@ -5,8 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "keras-aug"
 authors = [{ name = "Hongyu, Chiu (james77777778)" }]
-description = "A library that includes pure TF/Keras preprocessing and augmentation layers"
-keywords = ["tensorflow", "keras", "preprocessing", "augmentation"]
+description = "A library that includes Keras 3 preprocessing and augmentation layers"
+keywords = [
+    "deep-learning",
+    "preprocessing",
+    "augmentation",
+    "keras",
+    "jax",
+    "tensorflow",
+    "torch",
+]
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache License 2.0" }
@@ -45,7 +53,6 @@ tests = [
     "pre-commit",
     "namex",
 ]
-examples = ["matplotlib", "opencv-python", "tensorflow-datasets"]
 
 [tool.setuptools.packages]
 find = { include = ["keras_aug*"] }
@@ -67,7 +74,6 @@ exclude = [
     ".devcontainer",
     "venv",
     "__pycache__",
-    "streamlit_app",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -97,7 +103,7 @@ markers = ["large: mark test as being slow"]
 
 [tool.coverage.run]
 source = ["keras_aug"]
-omit = ["**/__init__.py", "**/demo.py", "**/conditional_imports.py", "*test*"]
+omit = ["**/__init__.py", "*test*"]
 
 [tool.coverage.report]
 exclude_lines = [
