@@ -109,33 +109,24 @@ class RandomRotation(VisionRandomLayer):
         original_dtype = images.dtype
         images_shape = ops.shape(images)
         batch_size = images_shape[0]
-        height = images_shape[self.h_axis]
-        width = images_shape[self.w_axis]
         if self.center is None:
             center_x, center_y = 0.5, 0.5
         else:
             center_x, center_y = self.center
-        matrix = self.image_backend.compute_affine_matrix(
-            center_x,
-            center_y,
+
+        images = self.image_backend.transform_dtype(
+            images, backend.result_type(images.dtype, float)
+        )
+        images = self.image_backend.affine(
+            images,
             transformations["angle"],
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
             ops.numpy.ones([batch_size]),
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
-            height,
-            width,
-        )
-
-        # Affine
-        transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
-        images = self.image_backend.transform_dtype(
-            images, backend.result_type(images.dtype, float)
-        )
-        images = ops.image.affine_transform(
-            images,
-            transform,
+            center_x,
+            center_y,
             self.interpolation,
             self.padding_mode,
             self.padding_value,
@@ -166,7 +157,6 @@ class RandomRotation(VisionRandomLayer):
         batch_size = images_shape[0]
         height = images_shape[self.h_axis]
         width = images_shape[self.w_axis]
-        n_boxes = ops.shape(bounding_boxes["boxes"])[1]
         bounding_boxes = self.bbox_backend.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,
@@ -179,9 +169,8 @@ class RandomRotation(VisionRandomLayer):
             center_x, center_y = 0.5, 0.5
         else:
             center_x, center_y = self.center
-        matrix = self.image_backend.compute_inverse_affine_matrix(
-            center_x,
-            center_y,
+        boxes = self.bbox_backend.affine(
+            bounding_boxes["boxes"],
             transformations["angle"],
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
@@ -190,39 +179,11 @@ class RandomRotation(VisionRandomLayer):
             ops.numpy.zeros([batch_size]),
             height,
             width,
+            center_x,
+            center_y,
         )
-        transposed_matrix = ops.numpy.transpose(matrix[:, :2, :], [0, 2, 1])
-        points = bounding_boxes["boxes"]  # [B, N, 4]
-        points = ops.numpy.stack(
-            [
-                points[..., 0],
-                points[..., 1],
-                points[..., 2],
-                points[..., 1],
-                points[..., 2],
-                points[..., 3],
-                points[..., 0],
-                points[..., 3],
-            ],
-            axis=-1,
-        )
-        points = ops.numpy.reshape(points, [batch_size, n_boxes, 4, 2])
-        points = ops.numpy.concatenate(
-            [
-                points,
-                ops.numpy.ones([batch_size, n_boxes, 4, 1], points.dtype),
-            ],
-            axis=-1,
-        )
-        transformed_points = ops.numpy.einsum(
-            "bnxy,byz->bnxz", points, transposed_matrix
-        )
-        boxes_min = ops.numpy.amin(transformed_points, axis=2)
-        boxes_max = ops.numpy.amax(transformed_points, axis=2)
-        outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)
-
         bounding_boxes = bounding_boxes.copy()
-        bounding_boxes["boxes"] = outputs
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
             height=height,
@@ -246,41 +207,31 @@ class RandomRotation(VisionRandomLayer):
         original_dtype = segmentation_masks.dtype
         segmentation_masks_shape = ops.shape(segmentation_masks)
         batch_size = segmentation_masks_shape[0]
-        height = segmentation_masks_shape[self.h_axis]
-        width = segmentation_masks_shape[self.w_axis]
         if self.center is None:
             center_x, center_y = 0.5, 0.5
         else:
             center_x, center_y = self.center
-        matrix = self.image_backend.compute_affine_matrix(
-            center_x,
-            center_y,
+
+        segmentation_masks = ops.cast(
+            segmentation_masks,
+            backend.result_type(segmentation_masks.dtype, float),
+        )
+        segmentation_masks = self.image_backend.affine(
+            segmentation_masks,
             transformations["angle"],
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
             ops.numpy.ones([batch_size]),
             ops.numpy.zeros([batch_size]),
             ops.numpy.zeros([batch_size]),
-            height,
-            width,
-        )
-
-        # Affine
-        transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
-        segmentation_masks = ops.cast(
-            segmentation_masks,
-            backend.result_type(segmentation_masks.dtype, float),
-        )
-        segmentation_masks = ops.image.affine_transform(
-            segmentation_masks,
-            transform,
+            center_x,
+            center_y,
             "nearest",
             "constant",
             -1,
             self.data_format,
         )
-        segmentation_masks = ops.cast(segmentation_masks, original_dtype)
-        return segmentation_masks
+        return ops.cast(segmentation_masks, original_dtype)
 
     def get_config(self):
         config = super().get_config()

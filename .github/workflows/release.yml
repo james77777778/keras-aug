@@ -1,10 +1,9 @@
 name: Release
-env:
-  PYTHON_VERSION: '3.8'
-  TF_VERSION: '2.13.0'
+
 on:
   release:
     types: [published]
+
 jobs:
   pypi-publish:
     name: Upload release to PyPI
@@ -15,36 +14,37 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v4
-      id: setup-python
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    - name: Cache virtualenv
-      uses: actions/cache@v3
-      id: cache-venv
-      with:
-        path: ./.venv/
-        key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-venv-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        python -m venv ./.venv
-        source ./.venv/bin/activate
-        pip install --upgrade pip setuptools
-        pip install tensorflow-cpu==${{ env.TF_VERSION }}
-        pip install -e ".[tests]" --progress-bar off --upgrade
-      if: steps.cache-venv.outputs.cache-hit != 'true'
-    - name: Build wheels
-      shell: bash
-      run: |
-        source ./.venv/bin/activate
-        pip install --upgrade pip setuptools wheel twine build
-        python -m build
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        verbose: true
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Lint
+        uses: pre-commit/action@v3.0.1
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt --progress-bar off --upgrade
+          pip install -e ".[tests]" --progress-bar off --upgrade
+      - name: Check for API changes
+        run: |
+          bash shell/api_gen.sh
+          git status
+          clean=$(git status | grep "nothing to commit")
+          if [ -z "$clean" ]; then
+            echo "Please run shell/api_gen.sh to generate API."
+            exit 1
+          fi
+      - name: Build wheels
+        shell: bash
+        run: |
+          pip install --upgrade pip setuptools wheel twine build
+          python -m build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true

@@ -201,12 +201,13 @@ class Mosaic(VisionRandomLayer):
         offset_width = ops.numpy.floor_divide((width - self.size[1]), 2)
         offset_height = ops.cast(offset_height, self.bounding_box_dtype)
         offset_width = ops.cast(offset_width, self.bounding_box_dtype)
-        x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
-        x1 = x1 - offset_width
-        y1 = y1 - offset_height
-        x2 = x2 - offset_width
-        y2 = y2 - offset_height
-        boxes = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        boxes = self.bbox_backend.crop(
+            boxes,
+            offset_height,
+            offset_width,
+            height=self.size[0],
+            width=self.size[1],
+        )
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes

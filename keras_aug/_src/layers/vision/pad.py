@@ -198,18 +198,14 @@ class Pad(VisionRandomLayer):
             width=ori_width,
         )
 
-        x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
-
         pad_top = ops.cast(transformations["pad_top"], dtype="float32")
         pad_left = ops.cast(transformations["pad_left"], dtype="float32")
-        x1 = x1 + pad_left
-        y1 = y1 + pad_top
-        x2 = x2 + pad_left
-        y2 = y2 + pad_top
-        outputs = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        boxes = self.bbox_backend.pad(
+            bounding_boxes["boxes"], pad_top, pad_left
+        )
 
         bounding_boxes = bounding_boxes.copy()
-        bounding_boxes["boxes"] = outputs
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = self.bbox_backend.convert_format(
             bounding_boxes,
             source=self.bounding_box_format,

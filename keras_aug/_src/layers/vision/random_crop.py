@@ -176,8 +176,6 @@ class RandomCrop(VisionRandomLayer):
             dtype=self.bounding_box_dtype,
         )
 
-        x1, y1, x2, y2 = ops.numpy.split(bounding_boxes["boxes"], 4, axis=-1)
-
         # Get pad and offset
         pad_top = ops.cast(
             transformations["pad_top"], dtype=self.bounding_box_dtype
@@ -191,16 +189,15 @@ class RandomCrop(VisionRandomLayer):
         crop_left = ops.cast(
             transformations["crop_left"], dtype=self.bounding_box_dtype
         )
-        value_height = pad_top - crop_top
-        value_width = pad_left - crop_left
-        x1 = x1 + value_width
-        y1 = y1 + value_height
-        x2 = x2 + value_width
-        y2 = y2 + value_height
-        outputs = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        boxes = self.bbox_backend.pad(
+            bounding_boxes["boxes"], pad_top, pad_left
+        )
+        boxes = self.bbox_backend.crop(
+            boxes, crop_top, crop_left, height=self.size[0], width=self.size[1]
+        )
 
         bounding_boxes = bounding_boxes.copy()
-        bounding_boxes["boxes"] = outputs
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
             height=self.size[0],

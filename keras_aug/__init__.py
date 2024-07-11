@@ -5,6 +5,7 @@ since your modifications would be overwritten.
 """
 
 from keras_aug import layers
+from keras_aug import ops
 from keras_aug import visualization
 from keras_aug._src.version import version
 

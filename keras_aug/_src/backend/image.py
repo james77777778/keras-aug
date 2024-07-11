@@ -220,7 +220,7 @@ class ImageBackend(DynamicBackend):
             center_x = 0.5
         if center_y is None:
             center_y = 0.5
-        matrix = self.compute_affine_matrix(
+        matrix = self._compute_affine_matrix(
             center_x,
             center_y,
             angle,
@@ -587,7 +587,7 @@ class ImageBackend(DynamicBackend):
         )
         return images
 
-    def compute_affine_matrix(
+    def _compute_affine_matrix(
         self,
         center_x,
         center_y,
@@ -639,7 +639,7 @@ class ImageBackend(DynamicBackend):
         matrix = ops.numpy.reshape(matrix, [batch_size, 3, 3])
         return matrix
 
-    def compute_inverse_affine_matrix(
+    def _compute_inverse_affine_matrix(
         self,
         center_x,
         center_y,

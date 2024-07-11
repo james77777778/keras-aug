@@ -168,16 +168,19 @@ class CenterCrop(VisionRandomLayer):
         offset_width = ops.numpy.floor_divide(
             (width + pad_left + pad_right - self.size[1]), 2
         )
-        value_height = pad_top - offset_height
-        value_width = pad_left - offset_width
-        x1 = x1 + value_width
-        y1 = y1 + value_height
-        x2 = x2 + value_width
-        y2 = y2 + value_height
-        outputs = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        boxes = self.bbox_backend.pad(
+            bounding_boxes["boxes"], pad_top, pad_left
+        )
+        boxes = self.bbox_backend.crop(
+            boxes,
+            offset_height,
+            offset_width,
+            height=self.size[0],
+            width=self.size[1],
+        )
 
         bounding_boxes = bounding_boxes.copy()
-        bounding_boxes["boxes"] = outputs
+        bounding_boxes["boxes"] = boxes
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
             height=self.size[0],

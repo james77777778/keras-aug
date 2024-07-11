@@ -214,6 +214,32 @@ class BoundingBoxBackend(DynamicBackend):
         outputs = ops.numpy.concatenate([boxes_min, boxes_max], axis=-1)
         return outputs
 
+    def crop(self, boxes, top, left, height, width):
+        ops = self.backend
+
+        x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
+        x1 = x1 - left
+        y1 = y1 - top
+        x2 = x2 - left
+        y2 = y2 - top
+        x1 = ops.numpy.clip(x1, 0, width)
+        y1 = ops.numpy.clip(y1, 0, height)
+        x2 = ops.numpy.clip(x2, 0, width)
+        y2 = ops.numpy.clip(y2, 0, height)
+        outputs = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        return outputs
+
+    def pad(self, boxes, top, left):
+        ops = self.backend
+
+        x1, y1, x2, y2 = ops.numpy.split(boxes, 4, axis=-1)
+        x1 = x1 + left
+        y1 = y1 + top
+        x2 = x2 + left
+        y2 = y2 + top
+        outputs = ops.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+        return outputs
+
     # Converters
 
     def _xyxy_to_xyxy(self, boxes, height=None, width=None):
@@ -310,7 +336,6 @@ class BoundingBoxBackend(DynamicBackend):
         )
 
     # Clip
-
     def _compute_area(self, boxes, format="xyxy"):
         if format not in ("xyxy", "rel_xyxy"):
             raise NotImplementedError
