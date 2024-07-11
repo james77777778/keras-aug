@@ -1,4 +1,0 @@
-build
-setuptools
-wheel
-twine
