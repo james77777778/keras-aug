@@ -49,6 +49,7 @@ class MaxBoundingBox(VisionRandomLayer):
         boxes = bounding_boxes["boxes"]
         classes = bounding_boxes["classes"]
         boxes_shape = ops.shape(boxes)
+        batch_size = boxes_shape[0]
         num_boxes = boxes_shape[1]
 
         # Get pad size
@@ -65,6 +66,10 @@ class MaxBoundingBox(VisionRandomLayer):
         classes = ops.numpy.pad(
             classes, [[0, 0], [0, pad_size]], constant_values=self.fill_value
         )
+
+        # Ensure shape
+        boxes = ops.numpy.reshape(boxes, [batch_size, self.max_number, 4])
+        classes = ops.numpy.reshape(classes, [batch_size, self.max_number])
 
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
