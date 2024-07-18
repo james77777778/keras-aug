@@ -104,9 +104,26 @@ class Mosaic(VisionRandomLayer):
             segmentation_masks_shape = list(segmentation_masks_shape)
             segmentation_masks_shape[self.h_axis] = self.size[0]
             segmentation_masks_shape[self.w_axis] = self.size[1]
-        return self._set_shape(
+        output_shape = self._set_shape(
             top_left_shape, images_shape, segmentation_masks_shape
         )
+
+        if isinstance(output_shape, dict) and "bounding_boxes" in output_shape:
+            input_keys = set(output_shape["bounding_boxes"].keys())
+            extra_keys = input_keys - set(("boxes", "classes"))
+            if extra_keys:
+                raise KeyError(
+                    "There are unsupported keys in `bounding_boxes`: "
+                    f"{list(extra_keys)}. "
+                    "Only `boxes` and `classes` are supported."
+                )
+            boxes_shape = list(output_shape["bounding_boxes"]["boxes"])
+            boxes_shape[1] *= 4
+            classes_shape = list(output_shape["bounding_boxes"]["classes"])
+            classes_shape[1] *= 4
+            output_shape["bounding_boxes"]["boxes"] = boxes_shape
+            output_shape["bounding_boxes"]["classes"] = classes_shape
+        return output_shape
 
     def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
@@ -130,8 +147,8 @@ class Mosaic(VisionRandomLayer):
         height, width = images_shape[self.h_axis], images_shape[self.w_axis]
 
         # Affine
-        translate_x = (cx - 0.5) * 2.0
-        translate_y = (cy - 0.5) * 2.0
+        translate_x = cx - 0.5
+        translate_y = cy - 0.5
         images = self.image_backend.affine(
             images,
             ops.numpy.zeros([batch_size]),
@@ -183,8 +200,8 @@ class Mosaic(VisionRandomLayer):
         cy = transformations["centers_y"]
 
         # Affine
-        translate_x = (cx - 0.5) * 2.0
-        translate_y = (cy - 0.5) * 2.0
+        translate_x = cx - 0.5
+        translate_y = cy - 0.5
         boxes = self.bbox_backend.affine(
             bounding_boxes["boxes"],
             ops.numpy.zeros([batch_size]),
@@ -240,8 +257,8 @@ class Mosaic(VisionRandomLayer):
         height, width = images_shape[self.h_axis], images_shape[self.w_axis]
 
         # Affine
-        translate_x = (cx - 0.5) * 2.0
-        translate_y = (cy - 0.5) * 2.0
+        translate_x = cx - 0.5
+        translate_y = cy - 0.5
         segmentation_masks = ops.cast(
             segmentation_masks,
             backend.result_type(segmentation_masks.dtype, float),
@@ -424,8 +441,10 @@ class Mosaic(VisionRandomLayer):
             bboxes_bl = bottom_left[self.BOUNDING_BOXES]
             bboxes_br = bottom_right[self.BOUNDING_BOXES]
             images_shape = ops.shape(images_tl)
-            height = images_shape[self.h_axis]
-            width = images_shape[self.w_axis]
+            height = ops.cast(
+                images_shape[self.h_axis], self.bounding_box_dtype
+            )
+            width = ops.cast(images_shape[self.w_axis], self.bounding_box_dtype)
 
             def compute_bboxes(bounding_boxes, position="top_left"):
                 bounding_boxes = self.bbox_backend.convert_format(

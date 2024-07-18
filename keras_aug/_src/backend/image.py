@@ -10,52 +10,53 @@ class ImageBackend(DynamicBackend):
     def __init__(self, name=None):
         super().__init__(name=name)
 
-    def transform_dtype(self, images, dtype):
+    def transform_dtype(self, images, from_dtype, to_dtype):
         # Ref: torchvision.transforms.v2.ToDtype
         ops = self.backend
-        from_dtype = backend.standardize_dtype(images.dtype)
-        dtype = backend.standardize_dtype(dtype)
+        from_dtype = backend.standardize_dtype(from_dtype)
+        to_dtype = backend.standardize_dtype(to_dtype)
 
-        if from_dtype == dtype:
+        if from_dtype == to_dtype:
             return images
 
         is_float_input = backend.is_float_dtype(from_dtype)
-        is_float_output = backend.is_float_dtype(dtype)
+        is_float_output = backend.is_float_dtype(to_dtype)
 
         if is_float_input:
             # float to float
             if is_float_output:
-                return ops.cast(images, dtype)
+                return ops.cast(images, to_dtype)
 
             # float to int
-            if (from_dtype == "float32" and dtype in ("int32", "int64")) or (
-                from_dtype == "float64" and dtype == "int64"
+            if (from_dtype == "float32" and to_dtype in ("int32", "int64")) or (
+                from_dtype == "float64" and to_dtype == "int64"
             ):
                 raise ValueError(
-                    f"The conversion from {from_dtype} to {dtype} cannot be "
+                    f"The conversion from {from_dtype} to {to_dtype} cannot be "
                     "performed safely."
                 )
-            eps = backend.epsilon()
-            max_value = float(self._max_value_of_dtype(dtype))
+            # See https://github.com/pytorch/vision/pull/2078#issuecomment-613524965 for details # noqa: E501
+            eps = 1e-3
+            max_value = float(self._max_value_of_dtype(to_dtype))
             return ops.cast(
-                ops.numpy.multiply(images, max_value + 1.0 - eps), dtype
+                ops.numpy.multiply(images, max_value + 1.0 - eps), to_dtype
             )
         else:
             # int to float
             if is_float_output:
                 max_value = float(self._max_value_of_dtype(from_dtype))
-                return ops.numpy.divide(ops.cast(images, dtype), max_value)
+                return ops.numpy.divide(ops.cast(images, to_dtype), max_value)
 
             # int to int
             num_bits_input = self._num_bits_of_dtype(from_dtype)
-            num_bits_output = self._num_bits_of_dtype(dtype)
+            num_bits_output = self._num_bits_of_dtype(to_dtype)
 
             if num_bits_input > num_bits_output:
                 return ops.cast(
-                    images >> (num_bits_input - num_bits_output), dtype
+                    images >> (num_bits_input - num_bits_output), to_dtype
                 )
             else:
-                return ops.cast(images, dtype) << (
+                return ops.cast(images, to_dtype) << (
                     num_bits_output - num_bits_input
                 )
 
@@ -177,7 +178,7 @@ class ImageBackend(DynamicBackend):
             factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
         images = self.transform_dtype(
-            images, backend.result_type(original_dtype, float)
+            images, images.dtype, backend.result_type(original_dtype, float)
         )
         images = ops.image.rgb_to_hsv(images, data_format)
         h, s, v = ops.numpy.split(images, 3, channels_axis)
@@ -186,7 +187,7 @@ class ImageBackend(DynamicBackend):
         images = ops.numpy.concatenate([h, s, v], channels_axis)
         images = ops.image.hsv_to_rgb(images, data_format)
         images = ops.numpy.clip(images, 0, max_value)
-        images = self.transform_dtype(images, original_dtype)
+        images = self.transform_dtype(images, images.dtype, original_dtype)
         return images
 
     def affine(
@@ -213,6 +214,7 @@ class ImageBackend(DynamicBackend):
             h_axis, w_axis = -2, -1
 
         ops = self.backend
+        images = ops.convert_to_tensor(images)
         original_dtype = backend.standardize_dtype(images.dtype)
         images_shape = ops.shape(images)
         height, width = images_shape[h_axis], images_shape[w_axis]
@@ -234,8 +236,17 @@ class ImageBackend(DynamicBackend):
         )
         transform = ops.numpy.reshape(matrix, [-1, 9])[:, :8]
         images = self.transform_dtype(
-            images, backend.result_type(original_dtype, float)
+            images, original_dtype, backend.result_type(original_dtype, float)
         )
+        # Fix padding_value
+        if not backend.is_float_dtype(original_dtype):
+            if original_dtype == "uint8":
+                padding_value = float(padding_value) / 255.0
+            else:
+                raise NotImplementedError(
+                    f"Unrecognize images.dtype={original_dtype}. Supported "
+                    "dtypes are floating and 'uint8'."
+                )
         images = ops.image.affine_transform(
             images,
             transform,
@@ -244,7 +255,7 @@ class ImageBackend(DynamicBackend):
             padding_value,
             data_format,
         )
-        images = self.transform_dtype(images, original_dtype)
+        images = self.transform_dtype(images, images.dtype, original_dtype)
         return images
 
     def auto_contrast(self, images, data_format=None):
@@ -300,7 +311,7 @@ class ImageBackend(DynamicBackend):
         images = ops.convert_to_tensor(images)
         original_dtype = backend.standardize_dtype(images.dtype)
         images_shape = ops.shape(images)
-        images = self.transform_dtype(images, "uint8")
+        images = self.transform_dtype(images, images.dtype, "uint8")
 
         def _scale_channel(images):
             images = ops.cast(images, "int32")
@@ -391,7 +402,7 @@ class ImageBackend(DynamicBackend):
                 axis=0,
             )
         images = ops.numpy.reshape(images, images_shape)
-        images = self.transform_dtype(images, original_dtype)
+        images = self.transform_dtype(images, images.dtype, original_dtype)
         return images
 
     def guassian_blur(self, images, kernel_size, sigma, data_format=None):

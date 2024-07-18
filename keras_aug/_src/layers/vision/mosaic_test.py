@@ -13,8 +13,8 @@ class FixedMosaic(Mosaic):
     def get_params(self, batch_size, images=None, **kwargs):
         ops = self.backend
         return dict(
-            centers_x=ops.numpy.ones([batch_size]) * 0.625,
-            centers_y=ops.numpy.ones([batch_size]) * 0.625,
+            centers_x=ops.numpy.ones([batch_size]) * 0.75,
+            centers_y=ops.numpy.ones([batch_size]) * 0.75,
         )
 
 

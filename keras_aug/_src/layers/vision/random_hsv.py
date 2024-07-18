@@ -100,7 +100,7 @@ class RandomHSV(VisionRandomLayer):
         c_axis = -1 if self.data_format == "channels_last" else -3
         original_dtype = backend.standardize_dtype(images.dtype)
         images = self.image_backend.transform_dtype(
-            images, backend.result_type(original_dtype, float)
+            images, images.dtype, backend.result_type(original_dtype, float)
         )
         images = ops.image.rgb_to_hsv(images, data_format=self.data_format)
         hue, saturation, value = ops.numpy.split(images, 3, axis=c_axis)
@@ -118,7 +118,9 @@ class RandomHSV(VisionRandomLayer):
         images = ops.numpy.concatenate([hue, saturation, value], axis=c_axis)
         images = ops.numpy.clip(images, 0.0, 1.0)
         images = ops.image.hsv_to_rgb(images, data_format=self.data_format)
-        images = self.image_backend.transform_dtype(images, original_dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, original_dtype
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

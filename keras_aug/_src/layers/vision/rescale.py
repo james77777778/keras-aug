@@ -36,12 +36,14 @@ class Rescale(VisionRandomLayer):
         ops = self.backend
         original_dtype = backend.standardize_dtype(images.dtype)
         images = self.image_backend.transform_dtype(
-            images, backend.result_type(images.dtype, float)
+            images, images.dtype, backend.result_type(images.dtype, float)
         )
         scale = ops.convert_to_tensor(self.scale, images.dtype)
         offset = ops.convert_to_tensor(self.offset, images.dtype)
         images = ops.numpy.add(ops.numpy.multiply(images, scale), offset)
-        images = self.image_backend.transform_dtype(images, original_dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, original_dtype
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

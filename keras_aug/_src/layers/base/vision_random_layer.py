@@ -76,6 +76,14 @@ class VisionRandomLayer(keras.Layer):
 
     def __init__(self, has_generator=True, seed=None, **kwargs):
         super().__init__(**kwargs)
+        # Check dtype
+        if not backend.is_float_dtype(self.compute_dtype):
+            if self.compute_dtype != "uint8":
+                raise ValueError(
+                    "Only floating and 'uint8' are supported for compute dtype."
+                    f" Received: compute_dtype={self.compute_dtype}"
+                )
+
         self._backend = DynamicBackend(backend.backend())
         if has_generator:
             self._random_generator = DynamicRandomGenerator(
@@ -381,7 +389,7 @@ class VisionRandomLayer(keras.Layer):
         if self.IMAGES in inputs:
             inputs[self.IMAGES] = ops.convert_to_tensor(inputs[self.IMAGES])
             inputs[self.IMAGES] = self.image_backend.transform_dtype(
-                inputs[self.IMAGES], self.image_dtype
+                inputs[self.IMAGES], inputs[self.IMAGES].dtype, self.image_dtype
             )
         if self.LABELS in inputs:
             inputs[self.LABELS] = ops.convert_to_tensor(inputs[self.LABELS])

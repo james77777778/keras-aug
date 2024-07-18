@@ -1,3 +1,5 @@
+from keras.src.utils.backend_utils import in_tf_graph
+
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
 from keras_aug._src.keras_aug_export import keras_aug_export
 
@@ -6,14 +8,16 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 def convert_format(
     boxes, source: str, target: str, height=None, width=None, dtype="float32"
 ):
-    return BoundingBoxBackend().convert_format(
+    backend = "tensorflow" if in_tf_graph() else None
+    return BoundingBoxBackend(backend).convert_format(
         boxes, source, target, height=height, width=width, dtype=dtype
     )
 
 
 @keras_aug_export(parent_path=["keras_aug.ops.bounding_box"])
 def clip_to_images(bounding_boxes, height=None, width=None, format="xyxy"):
-    return BoundingBoxBackend().clip_to_images(
+    backend = "tensorflow" if in_tf_graph() else None
+    return BoundingBoxBackend(backend).clip_to_images(
         bounding_boxes, height=height, width=width, format=format
     )
 
@@ -35,7 +39,8 @@ def affine(
 ):
     if format != "xyxy":
         raise NotImplementedError
-    return BoundingBoxBackend().affine(
+    backend = "tensorflow" if in_tf_graph() else None
+    return BoundingBoxBackend(backend).affine(
         boxes,
         angle,
         translate_x,
@@ -54,11 +59,13 @@ def affine(
 def crop(boxes, top, left, height, width, format="xyxy"):
     if format != "xyxy":
         raise NotImplementedError
-    return BoundingBoxBackend().crop(boxes, top, left, height, width)
+    backend = "tensorflow" if in_tf_graph() else None
+    return BoundingBoxBackend(backend).crop(boxes, top, left, height, width)
 
 
 @keras_aug_export(parent_path=["keras_aug.ops.bounding_box"])
 def pad(boxes, top, left, format="xyxy"):
     if format != "xyxy":
         raise NotImplementedError
-    return BoundingBoxBackend().pad(boxes, top, left)
+    backend = "tensorflow" if in_tf_graph() else None
+    return BoundingBoxBackend(backend).pad(boxes, top, left)

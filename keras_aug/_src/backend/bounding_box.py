@@ -59,17 +59,21 @@ class BoundingBoxBackend(DynamicBackend):
 
         to_xyxy_converters = {
             "xyxy": self._xyxy_to_xyxy,
+            "yxyx": self._yxyx_to_xyxy,
             "xywh": self._xywh_to_xyxy,
             "center_xywh": self._center_xywh_to_xyxy,
             "rel_xyxy": self._rel_xyxy_to_xyxy,
+            "rel_yxyx": self._rel_yxyx_to_xyxy,
             "rel_xywh": self._rel_xywh_to_xyxy,
             "rel_center_xywh": self._rel_center_xywh_to_xyxy,
         }
         from_xyxy_converters = {
             "xyxy": self._xyxy_to_xyxy,
+            "yxyx": self._xyxy_to_yxyx,
             "xywh": self._xyxy_to_xywh,
             "center_xywh": self._xyxy_to_center_xywh,
             "rel_xyxy": self._xyxy_to_rel_xyxy,
+            "rel_yxyx": self._xyxy_to_rel_yxyx,
             "rel_xywh": self._xyxy_to_rel_xywh,
             "rel_center_xywh": self._xyxy_to_rel_center_xywh,
         }
@@ -96,11 +100,14 @@ class BoundingBoxBackend(DynamicBackend):
         boxes = ops.cast(boxes, dtype)
         if source == target:
             return boxes
+        if height is not None:
+            height = ops.cast(height, dtype)
+        if width is not None:
+            width = ops.cast(width, dtype)
 
         if source.startswith("rel_") and target.startswith("rel_"):
             source = source.replace("rel_", "", 1)
             target = target.replace("rel_", "", 1)
-
         to_xyxy_converter = to_xyxy_converters[source]
         from_xyxy_converter = from_xyxy_converters[target]
         in_xyxy_boxes = to_xyxy_converter(boxes, height, width)
@@ -245,6 +252,10 @@ class BoundingBoxBackend(DynamicBackend):
     def _xyxy_to_xyxy(self, boxes, height=None, width=None):
         return boxes
 
+    def _yxyx_to_xyxy(self, boxes, height=None, width=None):
+        y1, x1, y2, x2 = self.backend.numpy.split(boxes, 4, axis=-1)
+        return self.backend.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+
     def _xywh_to_xyxy(self, boxes, height=None, width=None):
         x1, y1, w, h = self.backend.numpy.split(boxes, 4, axis=-1)
         x2 = x1 + w
@@ -271,6 +282,15 @@ class BoundingBoxBackend(DynamicBackend):
         y2 = rel_y2 * height
         return self.backend.numpy.concatenate([x1, y1, x2, y2], axis=-1)
 
+    def _rel_yxyx_to_xyxy(self, boxes, height=None, width=None):
+        ops = self.backend
+        rel_y1, rel_x1, rel_y2, rel_x2 = ops.numpy.split(boxes, 4, axis=-1)
+        x1 = rel_x1 * width
+        y1 = rel_y1 * height
+        x2 = rel_x2 * width
+        y2 = rel_y2 * height
+        return self.backend.numpy.concatenate([x1, y1, x2, y2], axis=-1)
+
     def _rel_xywh_to_xyxy(self, boxes, height=None, width=None):
         ops = self.backend
         rel_x1, rel_y1, rel_w, rel_h = ops.numpy.split(boxes, 4, axis=-1)
@@ -291,6 +311,10 @@ class BoundingBoxBackend(DynamicBackend):
         y2 = (rel_cy + half_rel_h) * width
         return self.backend.numpy.concatenate([x1, y1, x2, y2], axis=-1)
 
+    def _xyxy_to_yxyx(self, boxes, height=None, width=None):
+        x1, y1, x2, y2 = self.backend.numpy.split(boxes, 4, axis=-1)
+        return self.backend.numpy.concatenate([y1, x1, y2, x2], axis=-1)
+
     def _xyxy_to_xywh(self, boxes, height=None, width=None):
         x1, y1, x2, y2 = self.backend.numpy.split(boxes, 4, axis=-1)
         w = x2 - x1
@@ -307,12 +331,22 @@ class BoundingBoxBackend(DynamicBackend):
 
     def _xyxy_to_rel_xyxy(self, boxes, height=None, width=None):
         x1, y1, x2, y2 = self.backend.numpy.split(boxes, 4, axis=-1)
-        rel_x1 = x1 / width
-        rel_y1 = y1 / height
-        rel_x2 = x2 / width
-        rel_y2 = y2 / height
+        rel_x1 = self.backend.numpy.divide(x1, width)
+        rel_y1 = self.backend.numpy.divide(y1, height)
+        rel_x2 = self.backend.numpy.divide(x2, width)
+        rel_y2 = self.backend.numpy.divide(y2, height)
         return self.backend.numpy.concatenate(
             [rel_x1, rel_y1, rel_x2, rel_y2], axis=-1
+        )
+
+    def _xyxy_to_rel_yxyx(self, boxes, height=None, width=None):
+        x1, y1, x2, y2 = self.backend.numpy.split(boxes, 4, axis=-1)
+        rel_x1 = self.backend.numpy.divide(x1, width)
+        rel_y1 = self.backend.numpy.divide(y1, height)
+        rel_x2 = self.backend.numpy.divide(x2, width)
+        rel_y2 = self.backend.numpy.divide(y2, height)
+        return self.backend.numpy.concatenate(
+            [rel_y1, rel_x1, rel_y2, rel_x2], axis=-1
         )
 
     def _xyxy_to_rel_xywh(self, boxes, height=None, width=None):

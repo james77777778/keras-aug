@@ -10,6 +10,7 @@ from keras_aug._src.layers.vision.cut_mix import CutMix
 from keras_aug._src.layers.vision.gaussian_blur import GaussianBlur
 from keras_aug._src.layers.vision.gaussian_noise import GaussianNoise
 from keras_aug._src.layers.vision.identity import Identity
+from keras_aug._src.layers.vision.max_bounding_box import MaxBoundingBox
 from keras_aug._src.layers.vision.mix_up import MixUp
 from keras_aug._src.layers.vision.mosaic import Mosaic
 from keras_aug._src.layers.vision.normalize import Normalize

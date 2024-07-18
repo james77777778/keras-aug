@@ -72,15 +72,18 @@ class MixUp(VisionRandomLayer):
 
         lam = transformations
         original_dtype = backend.standardize_dtype(images.dtype)
-        dtype = backend.result_type(images.dtype, float)
-        images = self.image_backend.transform_dtype(images, dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, backend.result_type(images.dtype, float)
+        )
         rolled_images = ops.numpy.roll(images, shift=1, axis=0)
         lam = ops.numpy.expand_dims(lam, axis=[1, 2, 3])
         images = ops.numpy.add(
             ops.numpy.multiply(rolled_images, 1.0 - lam),
             ops.numpy.multiply(images, lam),
         )
-        images = self.image_backend.transform_dtype(images, original_dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, original_dtype
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):

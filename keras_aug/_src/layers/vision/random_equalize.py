@@ -46,11 +46,15 @@ class RandomEqualize(VisionRandomLayer):
 
         def equalize(images):
             original_dtype = backend.standardize_dtype(images.dtype)
-            images = self.image_backend.transform_dtype(images, "uint8")
+            images = self.image_backend.transform_dtype(
+                images, images.dtype, "uint8"
+            )
             images = self.image_backend.equalize(
                 images, self.bins, self.data_format
             )
-            images = self.image_backend.transform_dtype(images, original_dtype)
+            images = self.image_backend.transform_dtype(
+                images, images.dtype, original_dtype
+            )
             return images
 
         prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])

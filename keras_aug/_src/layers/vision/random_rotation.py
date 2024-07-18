@@ -115,7 +115,7 @@ class RandomRotation(VisionRandomLayer):
             center_x, center_y = self.center
 
         images = self.image_backend.transform_dtype(
-            images, backend.result_type(images.dtype, float)
+            images, images.dtype, backend.result_type(images.dtype, float)
         )
         images = self.image_backend.affine(
             images,
@@ -132,7 +132,9 @@ class RandomRotation(VisionRandomLayer):
             self.padding_value,
             self.data_format,
         )
-        images = self.image_backend.transform_dtype(images, original_dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, original_dtype
+        )
         return ops.cast(images, self.compute_dtype)
 
     def augment_labels(self, labels, transformations, **kwargs):

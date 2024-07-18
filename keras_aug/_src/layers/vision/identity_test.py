@@ -69,7 +69,7 @@ class IdentityTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(model.output_shape, (None, None, None, 3))
 
     def test_config(self):
-        x = x = get_images("float32", "channels_last")
+        x = get_images("float32", "channels_last")
         layer = Identity()
         y = layer(x)
 

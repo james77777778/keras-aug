@@ -79,7 +79,7 @@ class RandomAffine(VisionRandomLayer):
         )
         self.degree = standardize_parameter(degree)
         self.translate = translate
-        self.scale = standardize_parameter(scale)
+        self.scale = standardize_parameter(scale, center=1.0)
         self.shear = shear
         self.center = center
         self.interpolation = standardize_interpolation(interpolation)

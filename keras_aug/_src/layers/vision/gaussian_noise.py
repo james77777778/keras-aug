@@ -55,12 +55,14 @@ class GaussianNoise(VisionRandomLayer):
         noise = transformations
 
         images = self.image_backend.transform_dtype(
-            images, backend.result_type(images.dtype, float)
+            images, images.dtype, backend.result_type(images.dtype, float)
         )
         images = ops.numpy.add(images, noise)
         if self.clip:
             images = ops.numpy.clip(images, 0, 1)
-        images = self.image_backend.transform_dtype(images, original_dtype)
+        images = self.image_backend.transform_dtype(
+            images, images.dtype, original_dtype
+        )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
