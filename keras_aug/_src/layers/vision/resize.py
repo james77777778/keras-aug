@@ -94,13 +94,20 @@ class Resize(VisionRandomLayer):
         images_shape = list(images_shape)
         images_shape[self.h_axis] = new_h
         images_shape[self.w_axis] = new_w
-        images = KerasTensor(tuple(images_shape), dtype=images.dtype)
+        images_shape = list(
+            int(s) if s is not None else None for s in images_shape
+        )
+        images = KerasTensor(images_shape, dtype=images.dtype)
         if segmentation_masks is not None:
             segmentation_masks_shape = list(segmentation_masks)
             segmentation_masks_shape[self.h_axis] = new_h
             segmentation_masks_shape[self.w_axis] = new_w
+            segmentation_masks_shape = list(
+                int(s) if s is not None else None
+                for s in segmentation_masks_shape
+            )
             segmentation_masks = KerasTensor(
-                tuple(segmentation_masks_shape), dtype=segmentation_masks.dtype
+                segmentation_masks_shape, dtype=segmentation_masks.dtype
             )
 
         return self._set_spec(inputs, images, segmentation_masks)
