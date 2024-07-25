@@ -241,7 +241,7 @@ class Pad(VisionRandomLayer):
         segmentation_masks = ops.numpy.pad(
             segmentation_masks, pad_width, "constant", -1
         )
-        return ops.cast(segmentation_masks, self.compute_dtype)
+        return segmentation_masks
 
     def get_config(self):
         config = super().get_config()

@@ -5,3 +5,6 @@ since your modifications would be overwritten.
 """
 
 from keras_aug._src.visualization.draw_bounding_boxes import draw_bounding_boxes
+from keras_aug._src.visualization.draw_segmentation_masks import (
+    draw_segmentation_masks,
+)
