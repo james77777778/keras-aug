@@ -52,6 +52,12 @@ jobs:
       fail-fast: false
       matrix:
         backend: [tensorflow, jax, torch]
+        version: [keras-stable]
+        include:
+          - backend: jax
+            version: keras-3.1
+          - backend: jax
+            version: keras-nightly
     name: Run tests
     runs-on: ubuntu-latest
     env:
@@ -76,6 +82,16 @@ jobs:
         run: |
           pip install -r requirements_ci.txt --progress-bar off --upgrade
           pip install -e ".[tests]" --progress-bar off --upgrade
+      - name: Pin Keras 3.1
+        if: ${{ matrix.version == 'keras-3.1'}}
+        run: |
+          pip uninstall -y keras
+          pip install keras==3.1.0 --progress-bar off
+      - name: Pin Keras Nightly
+        if: ${{ matrix.version == 'keras-nightly'}}
+        run: |
+          pip uninstall -y keras
+          pip install keras-nightly --progress-bar off
       - name: Test with pytest
         run: |
           pytest
