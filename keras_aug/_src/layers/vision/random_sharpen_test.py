@@ -3,6 +3,7 @@ import numpy as np
 from absl.testing import parameterized
 from keras import backend
 from keras.src import testing
+from keras.src.testing.test_case import tensorflow_uses_gpu
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_sharpen import RandomSharpen
@@ -38,6 +39,8 @@ class RandomSharpenTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(y, ref_y)
 
         # Test channels_first
+        if backend.backend() == "tensorflow" and not tensorflow_uses_gpu():
+            self.skipTest("Tensorflow CPU doesn't support `RandomSharpen`")
         backend.set_image_data_format("channels_first")
         x = get_images(dtype, "channels_first")
         layer = RandomSharpen(2.0, p=1.0, dtype=dtype)
@@ -90,6 +93,8 @@ class RandomSharpenTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(tuple(y.shape), (2, 32, 32, 3))
 
         # Test channels_first
+        if backend.backend() == "tensorflow" and not tensorflow_uses_gpu():
+            self.skipTest("Tensorflow CPU doesn't support `RandomSharpen`")
         backend.set_image_data_format("channels_first")
         x = get_images("float32", "channels_first")
         layer = RandomSharpen(2.0)

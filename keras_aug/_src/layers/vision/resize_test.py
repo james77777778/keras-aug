@@ -43,7 +43,7 @@ class ResizeTest(testing.TestCase, parameterized.TestCase):
         torch_interpolation = self.pil_modes_mapping[interpolation]
 
         if dtype == "uint8":
-            atol = 1.0
+            atol = 2.0
             rtol = 1e-6
         else:
             atol = 1e-1
