@@ -79,9 +79,8 @@ exclude = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"./examples/**/*" = ["E402"]
 "**/__init__.py" = ["F401"]
-"**/*_utils.py" = ["F401"]
+"app.py" = ["E402"]
 
 [tool.isort]
 profile = "black"
