@@ -1,6 +1,10 @@
-# For Gradio app
+# For CI
+tensorflow-cpu
+
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
+
+jax[cpu]
 
 keras

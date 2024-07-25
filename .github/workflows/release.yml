@@ -25,10 +25,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('requirements_ci.txt') }}
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt --progress-bar off --upgrade
+          pip install -r requirements_ci.txt --progress-bar off --upgrade
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Check for API changes
         run: |
