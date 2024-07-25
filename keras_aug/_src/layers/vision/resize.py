@@ -2,6 +2,7 @@ import typing
 from collections.abc import Sequence
 
 import keras
+from keras import KerasTensor
 from keras import backend
 
 from keras_aug._src.keras_aug_export import keras_aug_export
@@ -93,12 +94,14 @@ class Resize(VisionRandomLayer):
         images_shape = list(images_shape)
         images_shape[self.h_axis] = new_h
         images_shape[self.w_axis] = new_w
-        images.shape = tuple(images_shape)
+        images = KerasTensor(tuple(images_shape), dtype=images.dtype)
         if segmentation_masks is not None:
             segmentation_masks_shape = list(segmentation_masks)
             segmentation_masks_shape[self.h_axis] = new_h
             segmentation_masks_shape[self.w_axis] = new_w
-            segmentation_masks.shape = tuple(segmentation_masks_shape)
+            segmentation_masks = KerasTensor(
+                tuple(segmentation_masks_shape), dtype=segmentation_masks.dtype
+            )
 
         return self._set_spec(inputs, images, segmentation_masks)
 

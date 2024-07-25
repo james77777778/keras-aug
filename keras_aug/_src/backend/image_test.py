@@ -2,11 +2,11 @@ from absl.testing import parameterized
 from keras import backend
 from keras import ops
 from keras.src import testing
-from keras.src.testing.test_case import tensorflow_uses_gpu
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.backend.image import ImageBackend
 from keras_aug._src.utils.test_utils import get_images
+from keras_aug._src.utils.test_utils import uses_gpu
 
 
 class ImageBackendTest(testing.TestCase, parameterized.TestCase):
@@ -241,7 +241,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torch
         import torchvision.transforms.v2.functional as TF
 
-        if backend.backend() == "tensorflow" and not tensorflow_uses_gpu():
+        if backend.backend() == "tensorflow" and not uses_gpu():
             self.skipTest("Tensorflow CPU doesn't support `guassian_blur`")
         image_backend = ImageBackend()
         x = get_images(dtype, "channels_first")
@@ -315,7 +315,7 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         import torch
         import torchvision.transforms.v2.functional as TF
 
-        if backend.backend() == "tensorflow" and not tensorflow_uses_gpu():
+        if backend.backend() == "tensorflow" and not uses_gpu():
             self.skipTest("Tensorflow CPU doesn't support `sharpen`")
         image_backend = ImageBackend()
         x = get_images(dtype, "channels_first")
