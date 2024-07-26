@@ -29,3 +29,10 @@ docs/build/
 
 # ruff
 .ruff_cache
+
+# Gradio
+flagged
+
+# outputs
+*.jpg
+*.png

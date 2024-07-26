@@ -4,45 +4,57 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "keras-aug"
-authors = [{ name = "Hongyu, Chiu (james77777778)" }]
-description = "A library that includes pure TF/Keras preprocessing and augmentation layers"
-keywords = ["tensorflow", "keras", "preprocessing", "augmentation"]
+description = "A library that includes Keras 3 preprocessing and augmentation layers"
+keywords = [
+    "deep-learning",
+    "preprocessing",
+    "augmentation",
+    "keras",
+    "jax",
+    "tensorflow",
+    "torch",
+]
+authors = [{ name = "Hong-Yu Chiu", email = "james77777778@gmail.com" }]
+maintainers = [{ name = "Hong-Yu Chiu", email = "james77777778@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.8"
-license = { file = "LICENSE" }
+requires-python = ">=3.9"
+license = { text = "Apache License 2.0" }
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
     "Operating System :: Unix",
-    "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
 ]
 dynamic = ["version"]
-dependencies = ["pycocotools", "tensorflow"]
+dependencies = ["keras"]
+
+[project.urls]
+Homepage = "https://github.com/james77777778/keras-aug"
+Documentation = "https://github.com/james77777778/keras-aug"
+Repository = "https://github.com/james77777778/keras-aug.git"
+Issues = "https://github.com/james77777778/keras-aug/issues"
 
 [project.optional-dependencies]
 tests = [
+    # linter and formatter
+    "isort",
     "ruff",
-    "black[jupyter]",
+    "black",
     "pytest",
     "pytest-cov",
-    "pytest-xdist[psutil]",
+    "coverage",
+    # tool
+    "pre-commit",
+    "namex",
 ]
-examples = ["matplotlib", "opencv-python", "tensorflow-datasets"]
-
-[project.urls]
-homepage = "https://github.com/james77777778/keras-aug"
-repository = "https://github.com/james77777778/keras-aug"
-documentation = "https://kerasaug.readthedocs.io/en/latest/"
 
 [tool.setuptools.packages]
 find = { include = ["keras_aug*"] }
@@ -55,7 +67,8 @@ line-length = 80
 
 [tool.ruff]
 line-length = 80
-select = ["E", "W", "F"]
+lint.select = ["E", "W", "F"]
+lint.isort.force-single-line = true
 exclude = [
     ".venv",
     ".vscode",
@@ -63,34 +76,34 @@ exclude = [
     ".devcontainer",
     "venv",
     "__pycache__",
-    "streamlit_app",
 ]
 
-[tool.ruff.per-file-ignores]
-"./examples/**/*" = ["E402"]
+[tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401"]
-"**/*_utils.py" = ["F401"]
+"app.py" = ["E402"]
 
-[tool.ruff.isort]
-force-single-line = true
-known-first-party = ["keras_aug"]
+[tool.isort]
+profile = "black"
+force_single_line = true
+known_first_party = ["keras_aug"]
+line_length = 80
 
 [tool.pytest.ini_options]
-addopts = "--durations 10 --cov --cov-report html --cov-report term:skip-covered --cov-report xml -n logical"
+addopts = "-vv --durations 10 --cov --cov-report html --cov-report term:skip-covered --cov-report xml"
 testpaths = ["keras_aug"]
 filterwarnings = [
     "error",
+    "ignore::UserWarning",
     "ignore::DeprecationWarning",
     "ignore::ImportWarning",
     "ignore::RuntimeWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::FutureWarning",
 ]
-markers = ["large: mark test as being slow"]
 
 [tool.coverage.run]
 source = ["keras_aug"]
-omit = ["**/__init__.py", "**/demo.py", "**/conditional_imports.py", "*test*"]
+omit = ["**/__init__.py", "*test*"]
 
 [tool.coverage.report]
 exclude_lines = [
