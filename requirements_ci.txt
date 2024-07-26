@@ -8,3 +8,4 @@ torchvision
 jax[cpu]
 
 keras
+opencv-python  # For testing guides/
