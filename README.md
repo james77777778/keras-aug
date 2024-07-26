@@ -34,6 +34,9 @@ Click here: [![Open in HF Spaces](https://huggingface.co/datasets/huggingface/ba
 pip install keras keras-aug -U
 ```
 
+> [!IMPORTANT]  
+> Make sure you have installed a supported backend for Keras.
+
 ## Quickstart
 
 ### Rock, Paper and Scissors Image Classification
