@@ -8,4 +8,7 @@ torchvision
 jax[cpu]
 
 keras
-opencv-python  # For testing guides/
+
+# For testing guides/
+opencv-python
+tensorflow-datasets
