@@ -1,15 +1,8 @@
----
-title: KerasAug
-app_file: app.py
-sdk: gradio
-sdk_version: 4.37.2
----
-
 # KerasAug
 
 <!-- markdownlint-disable MD033 -->
 
-![Python](https://img.shields.io/badge/python-v3.9.0+-success.svg)
+![Keras](https://img.shields.io/badge/keras-v3.4.1+-success.svg)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/james77777778/keras-aug/actions.yml?label=tests)](https://github.com/james77777778/keras-aug/actions/workflows/actions.yml?query=branch%3Amain++)
 [![codecov](https://codecov.io/gh/james77777778/keras-aug/branch/main/graph/badge.svg?token=81ELI3VH7H)](https://codecov.io/gh/james77777778/keras-aug)
 [![PyPI](https://img.shields.io/pypi/v/keras-aug)](https://pypi.org/project/keras-aug/)
@@ -23,8 +16,9 @@ KerasAug is a library that includes Keras 3 preprocessing and augmentation layer
 <div align="center">
 <img width="45%" src="https://github.com/user-attachments/assets/bf9488c4-5c6b-4c87-8fa8-30170a67c92c" alt="object_detection.gif"> <img width="45%" src="https://github.com/user-attachments/assets/556db949-9461-438a-b1cf-3621ec63416e"  alt="semantic_segmentation.gif">
 </div>
-> **Note**
-> Left: [YOLOV8 object detection pipeline](guides/voc_yolov8_aug.py), Right: [YOLOV8 semantic segmentation pipeline](guides/oxford_yolov8_aug.py)
+
+> [!NOTE]
+> See `docs/*.py` for the GIF generation.
 
 KerasAug aims to provide fast, robust and user-friendly preprocessing and augmentation layers, facilitating seamless integration with Keras 3 and `tf.data.Dataset`.
 
