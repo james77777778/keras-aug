@@ -18,7 +18,7 @@ KerasAug is a library that includes Keras 3 preprocessing and augmentation layer
 </div>
 
 > [!NOTE]
-> See `docs/*.py` for the GIF generation.
+> See `docs/*.py` for the GIF generation. YOLOV8-like pipeline for bounding boxes and segmentation masks.
 
 KerasAug aims to provide fast, robust and user-friendly preprocessing and augmentation layers, facilitating seamless integration with Keras 3 and `tf.data.Dataset`.
 
@@ -26,7 +26,7 @@ The APIs largely follow `torchvision`, and the correctness of the layers has bee
 
 Also, you can check out the demo app on HF:
 
-[![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm-dark.svg)](https://huggingface.co/spaces/james77777778/KerasAug)
+Click here: [![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm-dark.svg)](https://huggingface.co/spaces/james77777778/KerasAug)
 
 ## Installation
 
