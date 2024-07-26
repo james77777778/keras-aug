@@ -92,6 +92,9 @@ jobs:
         run: |
           pip uninstall -y keras
           pip install keras-nightly --progress-bar off
+      - name: Test with guides
+        run: |
+          bash shell/run_guides.sh
       - name: Test with pytest
         run: |
           pytest
