@@ -20,13 +20,19 @@ KerasAug is a library that includes Keras 3 preprocessing and augmentation layer
 > [!NOTE]
 > See `docs/*.py` for the GIF generation. YOLOV8-like pipeline for bounding boxes and segmentation masks.
 
-KerasAug aims to provide fast, robust and user-friendly preprocessing and augmentation layers, facilitating seamless integration with Keras 3 and `tf.data.Dataset`.
+KerasAug aims to provide fast, robust and user-friendly preprocessing and augmentation layers, facilitating seamless integration with Keras 3 and `tf.data`.
 
 The APIs largely follow `torchvision`, and the correctness of the layers has been verified through unit tests.
 
 Also, you can check out the demo app on HF:
+App here: [![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm-dark.svg)](https://huggingface.co/spaces/james77777778/KerasAug)
 
-Click here: [![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm-dark.svg)](https://huggingface.co/spaces/james77777778/KerasAug)
+## Why KerasAug
+
+- 🚀 Supports many preprocessing & augmentation layers across all backends (JAX, TensorFlow and Torch).
+- 🧰 Seamlessly integrates with `tf.data`, offering a performant and scalable data pipeline.
+- 🔥 Follows the same API design as `torchvision`.
+- 🙌 Depends only on Keras 3.
 
 ## Installation
 
@@ -41,6 +47,8 @@ pip install keras keras-aug -U
 
 ### Rock, Paper and Scissors Image Classification
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11xc0nW06iWQ_R-oH4wLB_MYV4GY4mNwy?usp=sharing)
+
 ```python
 import keras
 import tensorflow as tf
@@ -52,7 +60,8 @@ BATCH_SIZE = 64
 NUM_CLASSES = 3
 INPUT_SIZE = (128, 128)
 
-# Create a `tf.data.Dataset`-compatible preprocessing pipeline with all backends
+# Create a `tf.data.Dataset`-compatible preprocessing pipeline.
+# Note that this example works with all backends.
 train_dataset, validation_dataset = tfds.load(
     "rock_paper_scissors", as_supervised=True, split=["train", "test"]
 )
@@ -68,6 +77,7 @@ train_dataset = (
     .shuffle(128)
     .map(ka_layers.vision.RandAugment())
     .map(ka_layers.vision.CutMix(num_classes=NUM_CLASSES))
+    .map(ka_layers.vision.Rescale(scale=2.0, offset=-1))  # [0, 1] to [-1, 1]
     .map(lambda data: (data["images"], data["labels"]))
     .prefetch(tf.data.AUTOTUNE)
 )
@@ -80,44 +90,40 @@ validation_dataset = (
         }
     )
     .map(ka_layers.vision.Resize(INPUT_SIZE))
+    .map(ka_layers.vision.Rescale(scale=2.0, offset=-1))  # [0, 1] to [-1, 1]
     .map(lambda data: (data["images"], data["labels"]))
     .prefetch(tf.data.AUTOTUNE)
 )
 
-# Create a CNN model
-model = keras.models.Sequential(
-    [
-        keras.Input((*INPUT_SIZE, 3)),
-        keras.layers.Conv2D(32, (3, 3), activation="relu"),
-        keras.layers.MaxPooling2D(2, 2),
-        keras.layers.Conv2D(64, (3, 3), activation="relu"),
-        keras.layers.MaxPooling2D(2, 2),
-        keras.layers.Conv2D(128, (3, 3), activation="relu"),
-        keras.layers.MaxPooling2D(2, 2),
-        keras.layers.Conv2D(256, (3, 3), activation="relu"),
-        keras.layers.MaxPooling2D(2, 2),
-        keras.layers.Flatten(),
-        keras.layers.Dense(512, activation="relu"),
-        keras.layers.Dense(NUM_CLASSES, activation="softmax"),
-    ]
+# Create a model using MobileNetV2 as the backbone.
+backbone = keras.applications.MobileNetV2(
+    input_shape=(*INPUT_SIZE, 3), include_top=False
 )
+backbone.trainable = False
+inputs = keras.Input((*INPUT_SIZE, 3))
+x = backbone(inputs)
+x = keras.layers.GlobalAveragePooling2D()(x)
+outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
+model = keras.Model(inputs, outputs)
 model.summary()
 model.compile(
     loss="categorical_crossentropy",
-    optimizer=keras.optimizers.AdamW(),
+    optimizer=keras.optimizers.SGD(learning_rate=1e-3, momentum=0.9),
     metrics=["accuracy"],
 )
 
-# Train your model
+# Train and evaluate your model
 model.fit(train_dataset, validation_data=validation_dataset, epochs=8)
+model.evaluate(validation_dataset)
 ```
 
 The above example runs with all backends (JAX, TensorFlow, Torch).
 
 ### More Examples
 
-- [YOLOV8 object detection pipeline](guides/voc_yolov8_aug.py)
-- [YOLOV8 semantic segmentation pipeline](guides/oxford_yolov8_aug.py)
+- [YOLOV8 object detection pipeline](guides/voc_yolov8_aug.py) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1AgnnvfTRMHKq--7gvmHP7RyxTeQResV4?usp=sharing)
+
+- [YOLOV8 semantic segmentation pipeline](guides/oxford_yolov8_aug.py) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1IJwUPiHreO7iIJ3VewgfLRoBdFdcQcJE?usp=sharing)
 
 ## Gradio App
 

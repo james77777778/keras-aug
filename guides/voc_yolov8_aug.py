@@ -1,5 +1,3 @@
-import time
-
 import cv2
 import keras
 import tensorflow as tf
@@ -27,6 +25,10 @@ def load_voc(name, split, shuffle, batch_size, position):
 
     ds = tfds.load(name, split=split, with_info=False, shuffle_files=shuffle)
     ds: tf.data.Dataset = ds.map(lambda x: unpack_voc_inputs(x))
+
+    # You can utilize KerasAug's layers in `tf.data` pipeline.
+    # The layer will automatically switch to the TensorFlow backend to be
+    # compatible with `tf.data`.
     ds = ds.map(ka_layers.vision.MaxBoundingBox(40))  # Max: 37 in train
     ds = ds.shuffle(128, reshuffle_each_iteration=True)
     ds = ds.map(
@@ -62,6 +64,10 @@ ds = ds.map(
         dtype="uint8",
     )
 )
+
+# You can also utilize KerasAug's layers in a typical Keras manner.
+# `augmenter`` will be called just like a regular Keras model, benefiting from
+# accelerator (such as GPU & TPU) and compilation.
 augmenter = keras.Sequential(
     [
         ka_layers.vision.RandomAffine(
@@ -82,14 +88,7 @@ augmenter = keras.Sequential(
     ]
 )
 
-# Warmup
 for x in ds.take(1):
-    x = augmenter(x)
-    pass
-
-st = time.time()
-
-for x in ds.take(10):
     x = augmenter(x)
     drawed_images = visualization.draw_bounding_boxes(
         x["images"], x["bounding_boxes"], bounding_box_format="xyxy"
@@ -99,5 +98,3 @@ for x in ds.take(10):
         output_path = f"output_{i_d}.jpg"
         output_image = cv2.cvtColor(drawed_images[i_d], cv2.COLOR_RGB2BGR)
         cv2.imwrite(output_path, output_image)
-ed = time.time()
-print(f"Elapsed: {ed-st:.3f}s, avg: {(ed-st)/10:.3f}s")
