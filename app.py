@@ -176,7 +176,7 @@ def random_sharpen(image, sharpness_factor, p):
 
 def random_solarize(image, threshold, p):
     threshold = ops.convert_to_tensor(threshold, "uint8")
-    threshold = ka_ops.image.transform_dtype(threshold, "float32")
+    threshold = ka_ops.image.transform_dtype(threshold, "uint8", "float32")
     output = ka_layers.vision.RandomSolarize(threshold, p)(image)
     return (ops.convert_to_numpy(output) * 255.0).astype("uint8")
 
