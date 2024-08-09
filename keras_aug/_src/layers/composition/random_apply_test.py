@@ -5,6 +5,7 @@ from keras import backend
 from keras.src import testing
 
 from keras_aug._src.layers.composition.random_apply import RandomApply
+from keras_aug._src.layers.vision.rand_augment import RandAugment
 from keras_aug._src.layers.vision.random_grayscale import RandomGrayscale
 from keras_aug._src.layers.vision.resize import Resize
 from keras_aug._src.utils.test_utils import get_images
@@ -81,9 +82,14 @@ class RandomApplyTest(testing.TestCase, parameterized.TestCase):
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 
-        layer = RandomApply(transforms=RandomGrayscale(p=1.0))
+        def to_dict(x):
+            return {"images": x, "labels": tf.convert_to_tensor([0, 1])}
+
+        layer = RandomApply(transforms=[RandAugment()], p=0.5)
         x = get_images("float32", "channels_last")
-        ds = tf.data.Dataset.from_tensor_slices(x).batch(2).map(layer)
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(2)
+        ds = ds.map(to_dict).map(layer)
         for output in ds.take(1):
+            output = output["images"]
             self.assertIsInstance(output, tf.Tensor)
             self.assertEqual(output.shape, (2, 32, 32, 3))

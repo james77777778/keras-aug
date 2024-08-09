@@ -9,4 +9,4 @@ from keras_aug import ops
 from keras_aug import visualization
 from keras_aug._src.version import version
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

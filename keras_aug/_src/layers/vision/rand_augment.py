@@ -23,6 +23,7 @@ class RandAugment(VisionRandomLayer):
     - [RandAugment: Practical automated data augmentation with a reduced search space](https://arxiv.org/abs/1909.13719)
 
     Args:
+        p: A float specifying the probability. Defaults to `1.0`.
         num_ops: Number of augmentation transformations to apply sequentially.
             Defaults to `2`.
         magnitude: Magnitude for all the transformations. Defaults to `9`.
@@ -49,6 +50,7 @@ class RandAugment(VisionRandomLayer):
 
     def __init__(
         self,
+        p: float = 1.0,
         num_ops: int = 2,
         magnitude: int = 9,
         num_magnitude_bins: int = 31,
@@ -70,6 +72,7 @@ class RandAugment(VisionRandomLayer):
                 f"num_magnitude_bins={num_magnitude_bins}"
             )
 
+        self.p = float(p)
         self.num_ops = int(num_ops)
         self.magnitude = int(magnitude)
         self.num_magnitude_bins = int(num_magnitude_bins)
@@ -120,7 +123,7 @@ class RandAugment(VisionRandomLayer):
             )
         p = [1.0] * len(self.augmentation_space)
         total = sum(p)
-        self.p = [prob / total for prob in p]
+        self.fn_idx_p = [prob / total for prob in p]
 
     def compute_output_shape(self, input_shape):
         return input_shape
@@ -129,10 +132,11 @@ class RandAugment(VisionRandomLayer):
         ops = self.backend
         random_generator = self.random_generator
 
+        p = ops.random.uniform([batch_size], seed=random_generator)
         magnitude = ops.numpy.full(
             [self.num_ops, batch_size], self.magnitude, dtype="int32"
         )
-        fn_idx_p = ops.convert_to_tensor([self.p])
+        fn_idx_p = ops.convert_to_tensor([self.fn_idx_p])
         fn_idx = ops.random.categorical(
             ops.numpy.log(fn_idx_p), self.num_ops, seed=random_generator
         )
@@ -140,6 +144,7 @@ class RandAugment(VisionRandomLayer):
         signed_p = ops.random.uniform([batch_size]) > 0.5
         signed = ops.cast(ops.numpy.where(signed_p, 1.0, -1.0), dtype="float32")
         return dict(
+            p=p,  # shape: (batch_size,)
             magnitude=magnitude,  # shape: (self.num_ops, batch_size)
             fn_idx=fn_idx,  # shape: (self.num_ops,)
             signed=signed,  # shape: (batch_size,)
@@ -340,20 +345,28 @@ class RandAugment(VisionRandomLayer):
         return images
 
     def augment_images(self, images, transformations, **kwargs):
+        ops = self.backend
+
+        p = transformations["p"]
         magnitude = transformations["magnitude"]
         fn_idx = transformations["fn_idx"]
         signed = transformations["signed"]
+        prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2, 3])
         for i in range(self.num_ops):
             idx = fn_idx[i]
             m = magnitude[i]
-            images = self._apply_images_transform(images, m, idx, signed)
+            images = ops.numpy.where(
+                prob,
+                self._apply_images_transform(images, m, idx, signed),
+                images,
+            )
         return images
 
     def augment_labels(self, labels, transformations, **kwargs):
         return labels
 
     def _apply_bounding_boxes_transform(
-        self, bounding_boxes, height, width, magnitude, idx, signed
+        self, bounding_boxes, height, width, p, magnitude, idx, signed
     ):
         ops = self.backend
 
@@ -485,7 +498,11 @@ class RandAugment(VisionRandomLayer):
                         width=width,
                     )
                 )
-        boxes = ops.core.switch(idx, transforms, bounding_boxes["boxes"])
+        prob = ops.numpy.expand_dims(p < self.p, axis=[1, 2])
+        boxes = bounding_boxes["boxes"]
+        boxes = ops.numpy.where(
+            prob, ops.core.switch(idx, transforms, boxes), boxes
+        )
         bounding_boxes = bounding_boxes.copy()
         bounding_boxes["boxes"] = boxes
         return bounding_boxes
@@ -505,6 +522,7 @@ class RandAugment(VisionRandomLayer):
             )
         ops = self.backend
 
+        p = transformations["p"]
         magnitude = transformations["magnitude"]
         fn_idx = transformations["fn_idx"]
         signed = transformations["signed"]
@@ -523,7 +541,7 @@ class RandAugment(VisionRandomLayer):
             idx = fn_idx[i]
             m = magnitude[i]
             bounding_boxes = self._apply_bounding_boxes_transform(
-                bounding_boxes, height, width, m, idx, signed
+                bounding_boxes, height, width, p, m, idx, signed
             )
         bounding_boxes = self.bbox_backend.clip_to_images(
             bounding_boxes,
@@ -545,6 +563,7 @@ class RandAugment(VisionRandomLayer):
         config = super().get_config()
         config.update(
             {
+                "p": self.p,
                 "num_ops": self.num_ops,
                 "magnitude": self.magnitude,
                 "num_magnitude_bins": self.num_magnitude_bins,
