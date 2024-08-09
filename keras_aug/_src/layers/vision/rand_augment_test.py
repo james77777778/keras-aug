@@ -55,6 +55,16 @@ class RandAugmentTest(testing.TestCase, parameterized.TestCase):
         y2 = layer(x)
         self.assertEqual(y.shape, y2.shape)
 
+        # Test `p=0.0`
+        layer = RandAugment(p=0.0)
+        y = layer(x)
+
+        layer = RandAugment.from_config(layer.get_config())
+        y2 = layer(x)
+        self.assertAllClose(y, x)
+        self.assertAllClose(y2, x)
+        self.assertEqual(y.shape, y2.shape)
+
     def test_tf_data_compatibility(self):
         import tensorflow as tf
 

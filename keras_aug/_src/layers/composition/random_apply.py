@@ -94,8 +94,14 @@ class RandomApply(keras.Layer):
         ops = self.backend
         p = self.get_params()
 
+        ori_inputs = inputs
+        if isinstance(inputs, dict):
+            inputs = inputs.copy()
+
         outputs = ops.core.cond(
-            p < self.p, lambda: self._apply_transforms(inputs), lambda: inputs
+            p < self.p,
+            lambda: self._apply_transforms(inputs),
+            lambda: ori_inputs,
         )
         return outputs
 
