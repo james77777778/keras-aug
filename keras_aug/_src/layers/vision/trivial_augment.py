@@ -58,6 +58,12 @@ class TrivialAugmentWide(VisionRandomLayer):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        if backend.is_int_dtype(self.compute_dtype):
+            raise ValueError(
+                "The compute dtype must be float for "
+                f"{self.__class__.__name__} but it is {self.compute_dtype}."
+            )
+
         self.p = float(p)
         self.num_magnitude_bins = int(num_magnitude_bins)
         self.geometric = bool(geometric)
