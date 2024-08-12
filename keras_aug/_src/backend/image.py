@@ -10,7 +10,7 @@ class ImageBackend(DynamicBackend):
     def __init__(self, name=None):
         super().__init__(name=name)
 
-    def transform_dtype(self, images, from_dtype, to_dtype):
+    def transform_dtype(self, images, from_dtype, to_dtype, scale=True):
         # Ref: torchvision.transforms.v2.ToDtype
         ops = self.backend
         from_dtype = backend.standardize_dtype(from_dtype)
@@ -18,6 +18,8 @@ class ImageBackend(DynamicBackend):
 
         if from_dtype == to_dtype:
             return images
+        if scale is False:
+            return ops.cast(images, to_dtype)
 
         is_float_input = backend.is_float_dtype(from_dtype)
         is_float_output = backend.is_float_dtype(to_dtype)

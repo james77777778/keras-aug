@@ -99,6 +99,7 @@ class VisionRandomLayer(keras.Layer):
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
         self.autocast = False
+        self._transform_dtype_scale = True
 
     @property
     def image_dtype(self):
@@ -121,6 +122,14 @@ class VisionRandomLayer(keras.Layer):
     @property
     def random_generator(self):
         return self._random_generator.random_generator
+
+    @property
+    def transform_dtype_scale(self):
+        return self._transform_dtype_scale
+
+    @transform_dtype_scale.setter
+    def transform_dtype_scale(self, value):
+        self._transform_dtype_scale = bool(value)
 
     def get_params(
         self,
@@ -389,7 +398,10 @@ class VisionRandomLayer(keras.Layer):
         if self.IMAGES in inputs:
             inputs[self.IMAGES] = ops.convert_to_tensor(inputs[self.IMAGES])
             inputs[self.IMAGES] = self.image_backend.transform_dtype(
-                inputs[self.IMAGES], inputs[self.IMAGES].dtype, self.image_dtype
+                inputs[self.IMAGES],
+                inputs[self.IMAGES].dtype,
+                self.image_dtype,
+                scale=self.transform_dtype_scale,
             )
         if self.LABELS in inputs:
             inputs[self.LABELS] = ops.convert_to_tensor(inputs[self.LABELS])

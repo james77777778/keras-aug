@@ -119,13 +119,15 @@ class TrivialAugmentWide(VisionRandomLayer):
         random_generator = self.random_generator
 
         p = ops.random.uniform([batch_size], seed=random_generator)
-        magnitude = ops.random.randint([batch_size], 0, self.num_magnitude_bins)
+        magnitude = ops.random.randint(
+            [batch_size], 0, self.num_magnitude_bins, seed=random_generator
+        )
         fn_idx_p = ops.convert_to_tensor([self.fn_idx_p])
         fn_idx = ops.random.categorical(
             ops.numpy.log(fn_idx_p), 1, seed=random_generator
         )
         fn_idx = fn_idx[0]
-        signed_p = ops.random.uniform([batch_size]) > 0.5
+        signed_p = ops.random.uniform([batch_size], seed=random_generator) > 0.5
         signed = ops.cast(ops.numpy.where(signed_p, 1.0, -1.0), dtype="float32")
         return dict(
             p=p,  # shape: (batch_size,)

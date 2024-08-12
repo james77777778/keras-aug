@@ -35,4 +35,5 @@ from keras_aug._src.layers.vision.random_sharpen import RandomSharpen
 from keras_aug._src.layers.vision.random_solarize import RandomSolarize
 from keras_aug._src.layers.vision.rescale import Rescale
 from keras_aug._src.layers.vision.resize import Resize
+from keras_aug._src.layers.vision.to_dtype import ToDType
 from keras_aug._src.layers.vision.trivial_augment import TrivialAugmentWide
