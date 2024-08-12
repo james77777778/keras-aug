@@ -25,13 +25,6 @@ class GaussianNoise(VisionRandomLayer):
         self.sigma = float(sigma)
         self.clip = bool(clip)
 
-        if not backend.is_float_dtype(self.compute_dtype):
-            dtype = self.dtype_policy
-            raise ValueError(
-                f"The `dtype` of '{self.__class__.__name__}' must be float. "
-                f"Received: dtype={dtype}"
-            )
-
     def compute_output_shape(self, input_shape):
         return input_shape
 

@@ -1,30 +1,19 @@
 import keras
 import numpy as np
-from absl.testing import parameterized
-from keras import backend
-from keras.src import testing
 
 from keras_aug._src.layers.composition.random_choice import RandomChoice
 from keras_aug._src.layers.vision.identity import Identity
 from keras_aug._src.layers.vision.random_grayscale import RandomGrayscale
 from keras_aug._src.layers.vision.resize import Resize
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class RandomChoiceTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class RandomChoiceTest(TestCase):
     def test_correctness(self):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
 
         layer = RandomChoice(
             transforms=[RandomGrayscale(p=1.0), Identity()], p=[1.0, 0.0]
@@ -34,9 +23,10 @@ class RandomChoiceTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.rgb_to_grayscale(
-            torch.tensor(np.transpose(x, [0, 3, 1, 2])), num_output_channels=3
+            convert_to_tensor(np.transpose(x, [0, 3, 1, 2])),
+            num_output_channels=3,
         )
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertAllClose(y, ref_y)
 
         # Test p=0.0

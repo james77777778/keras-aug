@@ -136,9 +136,10 @@ class ImageBackend(DynamicBackend):
     def adjust_brightness(self, images, factor):
         ops = self.backend
         images = ops.convert_to_tensor(images)
-        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+        factor = ops.convert_to_tensor(factor, compute_dtype)
         max_value = self._max_value_of_dtype(original_dtype)
         if len(ops.shape(factor)) == 1:
             factor = ops.numpy.expand_dims(factor, [1, 2, 3])
@@ -154,9 +155,10 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
-        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+        factor = ops.convert_to_tensor(factor, compute_dtype)
         if len(ops.shape(factor)) == 1:
             factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
@@ -172,9 +174,10 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
-        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
         is_float_inputs = backend.is_float_dtype(original_dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+        factor = ops.convert_to_tensor(factor, compute_dtype)
         if len(ops.shape(factor)) == 1:
             factor = ops.numpy.expand_dims(factor, [1, 2, 3])
 
@@ -190,8 +193,9 @@ class ImageBackend(DynamicBackend):
 
         ops = self.backend
         images = ops.convert_to_tensor(images)
-        factor = ops.convert_to_tensor(factor)
         original_dtype = backend.standardize_dtype(images.dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+        factor = ops.convert_to_tensor(factor, compute_dtype)
         max_value = self._max_value_of_dtype(original_dtype)
         if len(ops.shape(factor)) == 1:
             factor = ops.numpy.expand_dims(factor, [1, 2, 3])
@@ -529,6 +533,9 @@ class ImageBackend(DynamicBackend):
                 mask, ops.numpy.power(2, dtype_bits - bits)
             )
             mask = ops.cast(mask, images.dtype)
+            if len(ops.shape(mask)) == 0:
+                mask = ops.numpy.expand_dims(mask, axis=0)
+            mask = ops.numpy.expand_dims(mask, axis=(1, 2, 3))
             return images & mask
 
         if backend.is_float_dtype(dtype):
@@ -611,7 +618,7 @@ class ImageBackend(DynamicBackend):
             threshold = ops.numpy.expand_dims(threshold, axis=0)
         threshold = ops.numpy.expand_dims(threshold, axis=(1, 2, 3))
         images = ops.numpy.where(
-            images >= ops.cast(threshold, images.dtype),
+            ops.numpy.greater_equal(images, threshold),
             self.invert(images),
             images,
         )

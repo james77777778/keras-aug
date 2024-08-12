@@ -2,24 +2,14 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.pad import Pad
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class PadTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class PadTest(TestCase):
     @parameterized.named_parameters(
         named_product(
             size=[(36, 36), (40, 50)],
@@ -31,13 +21,13 @@ class PadTest(testing.TestCase, parameterized.TestCase):
                 "bottom_right",
             ],
             padding_value=[0, 10],
-            dtype=["float32", "uint8"],
+            dtype=["float32", "mixed_bfloat16", "uint8"],
         )
     )
     def test_correctness(self, size, padding_position, padding_value, dtype):
         np.random.seed(42)
         x = get_images(dtype, "channels_last")
-        if dtype == "float32":
+        if "float" in dtype:
             x = np.clip(x, 0.5, 1.0)
         elif dtype == "uint8":
             x = np.clip(x, 127, 255)
@@ -49,30 +39,30 @@ class PadTest(testing.TestCase, parameterized.TestCase):
         self.assertDType(y, dtype)
         self.assertEqual(tuple(y.shape), (2, *size, 3))
         if padding_position == "border":
-            self.assertAllClose(y[0, 0, 0, 0], padding_value)
-            self.assertAllClose(y[0, 0, -1, 0], padding_value)
-            self.assertAllClose(y[0, -1, 0, 0], padding_value)
-            self.assertAllClose(y[0, -1, -1, 0], padding_value)
+            self.assertAllClose(y[0, 0, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, 0, -1, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, -1, 0:1], padding_value)
         elif padding_position == "top_left":
-            self.assertAllClose(y[0, 0, 0, 0], padding_value)
-            self.assertAllClose(y[0, 0, -1, 0], padding_value)
-            self.assertAllClose(y[0, -1, 0, 0], padding_value)
-            self.assertNotAllClose(y[0, -1, -1, 0], padding_value)
+            self.assertAllClose(y[0, 0, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, 0, -1, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, 0, 0:1], padding_value)
+            self.assertNotAllClose(y[0, -1, -1, 0:1], padding_value)
         elif padding_position == "top_right":
-            self.assertAllClose(y[0, 0, 0, 0], padding_value)
-            self.assertAllClose(y[0, 0, -1, 0], padding_value)
-            self.assertNotAllClose(y[0, -1, 0, 0], padding_value)
-            self.assertAllClose(y[0, -1, -1, 0], padding_value)
+            self.assertAllClose(y[0, 0, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, 0, -1, 0:1], padding_value)
+            self.assertNotAllClose(y[0, -1, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, -1, 0:1], padding_value)
         elif padding_position == "bottom_left":
-            self.assertAllClose(y[0, 0, 0, 0], padding_value)
-            self.assertNotAllClose(y[0, 0, -1, 0], padding_value)
-            self.assertAllClose(y[0, -1, 0, 0], padding_value)
-            self.assertAllClose(y[0, -1, -1, 0], padding_value)
+            self.assertAllClose(y[0, 0, 0, 0:1], padding_value)
+            self.assertNotAllClose(y[0, 0, -1, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, -1, 0:1], padding_value)
         elif padding_position == "bottom_right":
-            self.assertNotAllClose(y[0, 0, 0, 0], padding_value)
-            self.assertAllClose(y[0, 0, -1, 0], padding_value)
-            self.assertAllClose(y[0, -1, 0, 0], padding_value)
-            self.assertAllClose(y[0, -1, -1, 0], padding_value)
+            self.assertNotAllClose(y[0, 0, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, 0, -1, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, 0, 0:1], padding_value)
+            self.assertAllClose(y[0, -1, -1, 0:1], padding_value)
 
     @parameterized.named_parameters(
         named_product(mode=["constant", "reflect", "symmetric"])

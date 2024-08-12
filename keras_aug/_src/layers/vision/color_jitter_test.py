@@ -3,10 +3,10 @@ import numpy as np
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.color_jitter import ColorJitter
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -36,7 +36,7 @@ class FixedFnIndexColorJitter(ColorJitter):
         return transformations
 
 
-class ColorJitterTest(testing.TestCase, parameterized.TestCase):
+class ColorJitterTest(TestCase):
     regular_args = dict(
         brightness=0.5,
         contrast=0.5,
@@ -44,35 +44,36 @@ class ColorJitterTest(testing.TestCase, parameterized.TestCase):
         hue=0.25,
     )
 
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
 
-        atol = 1e-6 if dtype == "float32" else 2
-        rtol = 1e-6 if dtype == "float32" else 2
+        if dtype == "uint8":
+            atol = 2
+            rtol = 2
+        elif "bfloat16" in dtype:
+            atol = 1e-1
+            rtol = 1e-1
+        else:
+            atol = 1e-6
+            rtol = 1e-6
+        np.random.seed(42)
 
         # Test channels_last
         x = get_images(dtype, "channels_last")
         layer = FixedColorJitter(dtype=dtype)
         y = layer(x)
 
-        ref_y = torch.tensor(np.transpose(x, [0, 3, 1, 2]))
+        ref_y = convert_to_tensor(np.transpose(x, [0, 3, 1, 2]))
         ref_y = TF.adjust_brightness(ref_y, 1.1)
         ref_y = TF.adjust_contrast(ref_y, 0.9)
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = torch.permute(ref_y, [0, 2, 3, 1])
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
@@ -82,12 +83,11 @@ class ColorJitterTest(testing.TestCase, parameterized.TestCase):
         layer = FixedColorJitter(dtype=dtype)
         y = layer(x)
 
-        ref_y = torch.tensor(x)
+        ref_y = convert_to_tensor(x)
         ref_y = TF.adjust_brightness(ref_y, 1.1)
         ref_y = TF.adjust_contrast(ref_y, 0.9)
         ref_y = TF.adjust_saturation(ref_y, 1.1)
         ref_y = TF.adjust_hue(ref_y, -0.1)
-        ref_y = ref_y.cpu().numpy()
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 

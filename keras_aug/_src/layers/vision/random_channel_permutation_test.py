@@ -3,12 +3,12 @@ import numpy as np
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_channel_permutation import (
     RandomChannelPermutation,
 )
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -20,21 +20,16 @@ class FixedRandomChannelPermutation(RandomChannelPermutation):
         return ops.stack([ones, twos, zeros], axis=-1)
 
 
-class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+class RandomChannelPermutationTest(TestCase):
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
+
+        np.random.seed(42)
 
         # Test channels_last
         x = get_images(dtype, "channels_last")
@@ -42,9 +37,9 @@ class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.permute_channels(
-            torch.tensor(np.transpose(x, [0, 3, 1, 2])), [1, 2, 0]
+            convert_to_tensor(np.transpose(x, [0, 3, 1, 2])), [1, 2, 0]
         )
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 
@@ -54,8 +49,7 @@ class RandomChannelPermutationTest(testing.TestCase, parameterized.TestCase):
         layer = FixedRandomChannelPermutation(3, dtype=dtype)
         y = layer(x)
 
-        ref_y = TF.permute_channels(torch.tensor(x), [1, 2, 0])
-        ref_y = ref_y.cpu().numpy()
+        ref_y = TF.permute_channels(convert_to_tensor(x), [1, 2, 0])
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y)
 

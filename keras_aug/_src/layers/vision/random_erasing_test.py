@@ -2,10 +2,10 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_erasing import RandomErasing
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -38,25 +38,18 @@ class FixedRandomErasing(RandomErasing):
         return dict(top=top, left=left, height=h, width=w, value=v)
 
 
-class RandomErasingTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class RandomErasingTest(TestCase):
     @parameterized.named_parameters(
         named_product(
-            value=[0.0, (1.0, 1.0, 1.0), "random"], dtype=["float32", "uint8"]
+            value=[0.0, (1.0, 1.0, 1.0), "random"],
+            dtype=["float32", "mixed_bfloat16", "uint8"],
         )
     )
     def test_correctness(self, value, dtype):
         if dtype == "uint8" and value == "random":
             self.skipTest("value='random' doesn't support dtype='uint8'")
+
+        np.random.seed(42)
 
         # Test channels_last
         images = get_images(dtype, "channels_last")
@@ -67,12 +60,12 @@ class RandomErasingTest(testing.TestCase, parameterized.TestCase):
         if value == 0.0:
             self.assertAllClose(
                 outputs[:, 0:10, 0:10, :],
-                np.zeros_like(outputs[:, 0:10, 0:10, :]),
+                np.zeros_like(self.convert_to_numpy(outputs)[:, 0:10, 0:10, :]),
             )
         elif value == (1.0, 1.0, 1.0):
             self.assertAllClose(
                 outputs[:, 0:10, 0:10, :],
-                np.ones_like(outputs[:, 0:10, 0:10, :]),
+                np.ones_like(self.convert_to_numpy(outputs)[:, 0:10, 0:10, :]),
             )
         else:
             pass
@@ -88,12 +81,12 @@ class RandomErasingTest(testing.TestCase, parameterized.TestCase):
         if value == 0.0:
             self.assertAllClose(
                 outputs[:, :, 0:10, 0:10],
-                np.zeros_like(outputs[:, :, 0:10, 0:10]),
+                np.zeros_like(self.convert_to_numpy(outputs)[:, :, 0:10, 0:10]),
             )
         elif value == (1.0, 1.0, 1.0):
             self.assertAllClose(
                 outputs[:, :, 0:10, 0:10],
-                np.ones_like(outputs[:, :, 0:10, 0:10]),
+                np.ones_like(self.convert_to_numpy(outputs)[:, :, 0:10, 0:10]),
             )
         else:
             pass

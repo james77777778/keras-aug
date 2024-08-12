@@ -2,9 +2,9 @@ import keras
 import numpy as np
 import pytest
 from keras import backend
-from keras.src import testing
 
 from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
+from keras_aug._src.testing.test_case import TestCase
 
 
 class RandomAddLayer(VisionRandomLayer):
@@ -181,7 +181,7 @@ class AssertionLayer(VisionRandomLayer):
         return custom_annotations
 
 
-class VisionRandomLayerTest(testing.TestCase):
+class VisionRandomLayerTest(TestCase):
     def test_single_image(self):
         add_layer = RandomAddLayer(fixed_value=2.0)
         image = np.random.random(size=(8, 8, 3)).astype("float32")

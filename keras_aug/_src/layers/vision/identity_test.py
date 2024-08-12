@@ -1,27 +1,20 @@
 import keras
+import ml_dtypes
 import numpy as np
 from absl.testing import parameterized
-from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.identity import Identity
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class IdentityTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+class IdentityTest(TestCase):
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
+        bbox_dtype = ml_dtypes.bfloat16 if dtype == "mixed_bfloat16" else dtype
         x = get_images(dtype, "channels_last")
         layer = Identity(dtype=dtype)
         y = layer(x)
@@ -30,13 +23,17 @@ class IdentityTest(testing.TestCase, parameterized.TestCase):
         x = {
             "images": get_images(dtype, "channels_last"),
             "bounding_boxes": {
-                "boxes": np.random.uniform(0, 1, (2, 10, 4)),
-                "classes": np.random.uniform(0, 1, (2, 10, 5)),
+                "boxes": np.random.uniform(0, 1, (2, 10, 4)).astype(bbox_dtype),
+                "classes": np.random.uniform(0, 1, (2, 10, 5)).astype(
+                    bbox_dtype
+                ),
             },
             "segmentation_masks": np.random.uniform(
                 0, 9, (2, 32, 32, 1)
             ).astype("int32"),
-            "keypoints": np.random.uniform(0, 1, (2, 10, 17)),
+            "keypoints": np.random.uniform(0, 1, (2, 10, 17)).astype(
+                bbox_dtype
+            ),
         }
         y = layer(x)
         self.assertDType(y["images"], dtype)

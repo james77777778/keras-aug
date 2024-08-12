@@ -52,12 +52,15 @@ class Normalize(VisionRandomLayer):
     def augment_images(self, images, transformations, **kwargs):
         ops = self.backend
         original_dtype = backend.standardize_dtype(images.dtype)
+        compute_dtype = backend.result_type(original_dtype, float)
+        mean = ops.cast(self.mean, compute_dtype)
+        std = ops.cast(self.std, compute_dtype)
         if self.data_format == "channels_last":
-            mean = ops.numpy.expand_dims(self.mean, axis=[0, 1, 2])
-            std = ops.numpy.expand_dims(self.std, axis=[0, 1, 2])
+            mean = ops.numpy.expand_dims(mean, axis=[0, 1, 2])
+            std = ops.numpy.expand_dims(std, axis=[0, 1, 2])
         else:
-            mean = ops.numpy.expand_dims(self.mean, axis=[0, 2, 3])
-            std = ops.numpy.expand_dims(self.std, axis=[0, 2, 3])
+            mean = ops.numpy.expand_dims(mean, axis=[0, 2, 3])
+            std = ops.numpy.expand_dims(std, axis=[0, 2, 3])
         images = ops.numpy.subtract(images, mean)
         images = ops.numpy.divide(images, std)
         return ops.cast(images, original_dtype)

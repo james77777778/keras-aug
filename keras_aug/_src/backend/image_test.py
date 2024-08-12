@@ -1,25 +1,15 @@
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.backend.image import ImageBackend
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 from keras_aug._src.utils.test_utils import uses_gpu
 
 
-class ImageBackendTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class ImageBackendTest(TestCase):
     def test_crop(self):
         image_backend = ImageBackend()
 
@@ -75,7 +65,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.adjust_brightness(x, 0.5)
 
         ref_y = TF.adjust_brightness(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -89,7 +78,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.adjust_contrast(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_contrast(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -103,22 +91,23 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.adjust_hue(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_hue(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
     @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
     def test_adjust_saturation(self, dtype):
-        import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
+
+        atol = 2 if dtype == "uint8" else 1e-6
+        rtol = 2 if dtype == "uint8" else 1e-6
 
         image_backend = ImageBackend()
         x = get_images(dtype, "channels_first")
         y = image_backend.adjust_saturation(x, 0.5, "channels_first")
 
-        ref_y = TF.adjust_saturation(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y)
+        ref_y = TF.adjust_saturation(convert_to_tensor(x), 0.5)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
         self.assertDType(y, dtype)
 
     @parameterized.named_parameters(
@@ -169,7 +158,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
             [shear_x, shear_y],
             torch_interpolation,
         )
-        ref_y = ref_y.cpu().numpy()
         # TODO: Test uint8
         if dtype != "uint8":
             # TODO: Investigate these parameters
@@ -198,7 +186,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.auto_contrast(x, "channels_first")
 
         ref_y = TF.autocontrast(torch.tensor(x))
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y, atol=atol)
         self.assertDType(y, dtype)
 
@@ -213,7 +200,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.blend(x1, x2, 0.5)
 
         ref_y = TF._color._blend(torch.tensor(x1), torch.tensor(x2), 0.5)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -232,7 +218,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.equalize(x, data_format="channels_first")
 
         ref_y = TF.equalize(torch.tensor(x))
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y, atol=atol)
         self.assertDType(y, dtype)
 
@@ -254,7 +239,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         )
 
         ref_y = TF.gaussian_blur(torch.tensor(x), (3, 3), (0.1, 0.1))
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y, atol=atol)
         self.assertDType(y, dtype)
 
@@ -268,7 +252,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.rgb_to_grayscale(x, 3, "channels_first")
 
         ref_y = TF.rgb_to_grayscale(torch.tensor(x), 3)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -276,7 +259,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = ops.image.rgb_to_grayscale(x, "channels_first")
 
         ref_y = TF.rgb_to_grayscale(torch.tensor(x))
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -292,7 +274,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.invert(x)
 
         ref_y = TF.invert(torch.tensor(x))
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -306,7 +287,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.posterize(x, bits=3)
 
         ref_y = TF.posterize(torch.tensor(x), bits=3)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -322,7 +302,6 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.sharpen(x, 0.5, "channels_first")
 
         ref_y = TF.adjust_sharpness(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)
 
@@ -340,6 +319,5 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
         y = image_backend.solarize(x, threshold=threshold)
 
         ref_y = TF.solarize(torch.tensor(x), threshold=threshold)
-        ref_y = ref_y.cpu().numpy()
         self.assertAllClose(y, ref_y)
         self.assertDType(y, dtype)

@@ -153,12 +153,10 @@ class RandAugment(VisionRandomLayer):
     def _apply_images_transform(self, images, magnitude, idx, signed):
         ops = self.backend
 
-        dtype = backend.standardize_dtype(images.dtype)
         batch_size = ops.shape(images)[0]
 
         # Build branches for ops.switch
         aug_space = self.augmentation_space
-        max_value = self.image_backend._max_value_of_dtype(dtype)
         transforms = []
         for key in sorted(self.augmentation_space.keys()):
             if key == "Identity":
@@ -208,12 +206,21 @@ class RandAugment(VisionRandomLayer):
                     lambda x: self.image_backend.posterize(x, bits)
                 )
             elif key == "Solarize":
-                factor = ops.numpy.multiply(
-                    max_value, ops.numpy.take(aug_space["Solarize"], magnitude)
-                )
-                transforms.append(
-                    lambda x: self.image_backend.solarize(x, factor)
-                )
+
+                def solarize(x):
+                    factor = ops.numpy.take(aug_space["Solarize"], magnitude)
+                    dtype = backend.standardize_dtype(x.dtype)
+                    compute_dtype = backend.result_type(dtype, float)
+                    x = self.image_backend.transform_dtype(
+                        x, dtype, compute_dtype
+                    )
+                    x = self.image_backend.solarize(x, factor)
+                    x = self.image_backend.transform_dtype(
+                        x, compute_dtype, dtype
+                    )
+                    return x
+
+                transforms.append(lambda x: solarize(x))
             elif key == "AutoContrast":
                 transforms.append(
                     lambda x: self.image_backend.auto_contrast(
