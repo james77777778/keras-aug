@@ -618,7 +618,7 @@ class ImageBackend(DynamicBackend):
             threshold = ops.numpy.expand_dims(threshold, axis=0)
         threshold = ops.numpy.expand_dims(threshold, axis=(1, 2, 3))
         images = ops.numpy.where(
-            images >= ops.cast(threshold, images.dtype),
+            ops.numpy.greater_equal(images, threshold),
             self.invert(images),
             images,
         )
