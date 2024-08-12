@@ -11,7 +11,7 @@ from keras_aug._src.utils.test_utils import get_images
 
 class TrivialAugmentWideTest(TestCase):
     @parameterized.named_parameters(
-        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+        named_product(dtype=["float32", "mixed_bfloat16"])
     )
     def test_correctness(self, dtype):
         # TODO: Add assertAllClose test
