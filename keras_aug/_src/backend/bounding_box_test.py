@@ -1,12 +1,12 @@
 import numpy as np
 from absl.testing import parameterized
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.backend.bounding_box import BoundingBoxBackend
+from keras_aug._src.testing.test_case import TestCase
 
 
-class BoundingBoxBackendTest(testing.TestCase, parameterized.TestCase):
+class BoundingBoxBackendTest(TestCase):
     size = 1000.0
     xyxy_box = np.array([[[10, 20, 110, 120], [20, 30, 120, 130]]], "float32")
     yxyx_box = np.array([[[20, 10, 120, 110], [30, 20, 130, 120]]], "float32")

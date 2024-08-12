@@ -1,11 +1,12 @@
 import keras
+import numpy as np
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_hsv import RandomHSV
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -25,21 +26,15 @@ class FixedRandomHSV(RandomHSV):
         )
 
 
-class RandomHSVTest(testing.TestCase, parameterized.TestCase):
+class RandomHSVTest(TestCase):
     regular_args = dict(hue=0.015, saturation=0.7, value=0.4)
 
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
+        np.random.seed(42)
+
         # Test channels_last
         x = get_images(dtype, "channels_last")
         layer = FixedRandomHSV(dtype=dtype)

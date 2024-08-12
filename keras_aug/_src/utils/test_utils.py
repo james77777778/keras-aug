@@ -7,8 +7,10 @@ def get_images(dtype, data_format="channels_first", size=(32, 32)):
     # channels_first
     if dtype == "float32":
         x = np.random.uniform(0, 1, (2, 3, *size)).astype(dtype)
+    elif dtype == "mixed_bfloat16":
+        x = np.random.uniform(0, 1, (2, 3, *size)).astype(ml_dtypes.bfloat16)
     elif dtype == "bfloat16":
-        x = np.random.uniform(0, 1, (2, 3, *size)).astype(dtype)
+        x = np.random.uniform(0, 1, (2, 3, *size)).astype(ml_dtypes.bfloat16)
     elif dtype == "float16":
         x = np.random.uniform(0, 1, (2, 3, *size)).astype(dtype)
     elif dtype == "uint8":

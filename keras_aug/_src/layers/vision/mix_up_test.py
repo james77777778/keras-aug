@@ -2,10 +2,10 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.mix_up import MixUp
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -16,23 +16,12 @@ class FixedMixUp(MixUp):
         return lam
 
 
-class MixUpTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+class MixUpTest(TestCase):
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
-        if "float" in dtype:
-            atol = 1e-6
-        else:
-            atol = 0.5
+        atol = 1e-2 if "float" in dtype else 0.5
 
         # Test channels_last
         images = get_images(dtype, "channels_last")

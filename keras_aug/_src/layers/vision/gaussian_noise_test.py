@@ -1,11 +1,10 @@
 import keras
 import numpy as np
 from absl.testing import parameterized
-from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.gaussian_noise import GaussianNoise
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -17,38 +16,37 @@ class FixedGaussianNoise(GaussianNoise):
         return noise
 
 
-class GaussianNoiseTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class GaussianNoiseTest(TestCase):
     @parameterized.named_parameters(
-        named_product(dtype=["float32", "bfloat16"])
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
     )
     def test_correctness(self, dtype):
+        atol = 1 if dtype == "uint8" else 1e-2
+        rtol = 1 if dtype == "uint8" else 1e-2
+
         # Test channels_last
         x = get_images(dtype, "channels_last")
         layer = FixedGaussianNoise(dtype=dtype)
         y = layer(x)
 
-        ref_y = np.clip(x + 0.5, 0, 1)
+        if dtype == "uint8":
+            ref_y = np.clip(x.astype("float32") + 255 * 0.5, 0, 255)
+        else:
+            ref_y = np.clip(x + 0.5, 0, 1)
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y, atol=1e-2)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
         # Test channels_first
         x = get_images(dtype, "channels_first")
         layer = FixedGaussianNoise(dtype=dtype)
         y = layer(x)
 
-        ref_y = np.clip(x + 0.5, 0, 1)
+        if dtype == "uint8":
+            ref_y = np.clip(x.astype("float32") + 255 * 0.5, 0, 255)
+        else:
+            ref_y = np.clip(x + 0.5, 0, 1)
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y, atol=1e-2)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
     def test_shape(self):
         # Test dynamic shape

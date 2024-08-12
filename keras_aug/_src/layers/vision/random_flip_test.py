@@ -2,50 +2,42 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_flip import RandomFlip
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class RandomFlipTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class RandomFlipTest(TestCase):
     @parameterized.named_parameters(
         named_product(
             mode=["horizontal", "vertical", "horizontal_and_vertical"],
-            dtype=["float32", "uint8"],
+            dtype=["float32", "mixed_bfloat16", "uint8"],
         )
     )
     def test_correctness(self, mode, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
+
+        np.random.seed(42)
 
         # Test channels_last
-        np.random.seed(42)
         x = get_images(dtype, "channels_last")
         layer = RandomFlip(mode, p=1.0, dtype=dtype)
         y = layer(x)
 
         if mode == "horizontal":
-            ref_y = TF.hflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+            ref_y = TF.hflip(convert_to_tensor(np.transpose(x, [0, 3, 1, 2])))
         elif mode == "vertical":
-            ref_y = TF.vflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+            ref_y = TF.vflip(convert_to_tensor(np.transpose(x, [0, 3, 1, 2])))
         else:
-            ref_y = TF.hflip(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
+            ref_y = TF.hflip(convert_to_tensor(np.transpose(x, [0, 3, 1, 2])))
             ref_y = TF.vflip(ref_y)
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y)
 
         # Test channels_first
         backend.set_image_data_format("channels_first")
@@ -55,15 +47,14 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         if mode == "horizontal":
-            ref_y = TF.hflip(torch.tensor(x))
+            ref_y = TF.hflip(convert_to_tensor(x))
         elif mode == "vertical":
-            ref_y = TF.vflip(torch.tensor(x))
+            ref_y = TF.vflip(convert_to_tensor(x))
         else:
-            ref_y = TF.hflip(torch.tensor(x))
+            ref_y = TF.hflip(convert_to_tensor(x))
             ref_y = TF.vflip(ref_y)
-        ref_y = ref_y.cpu().numpy()
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y, atol=0.1)
+        self.assertAllClose(y, ref_y)
 
     def test_shape(self):
         # Test dynamic shape

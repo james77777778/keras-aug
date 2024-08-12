@@ -2,10 +2,10 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_resized_crop import RandomResizedCrop
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
@@ -14,30 +14,23 @@ class FixedRandomResizedCrop(RandomResizedCrop):
         return dict(top=10, left=5, height=8, width=16)
 
 
-class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
+class RandomResizedCropTest(TestCase):
     pil_modes_mapping = {"nearest": 0, "bilinear": 2, "bicubic": 3}
-
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
 
     @parameterized.named_parameters(
         named_product(
             size=[(32, 32), (40, 50), (64, 64)],
             interpolation=["nearest", "bilinear", "bicubic"],
             antialias=[True, False],
-            dtype=["float32", "uint8"],
+            dtype=["float32", "mixed_bfloat16", "uint8"],
         )
     )
     def test_correctness(self, size, interpolation, antialias, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
+
+        np.random.seed(42)
 
         if size == (40, 50) and interpolation == "nearest":
             self.skipTest("TODO: Need to investigate")
@@ -63,7 +56,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.resized_crop(
-            torch.tensor(np.transpose(x, [0, 3, 1, 2])),
+            convert_to_tensor(np.transpose(x, [0, 3, 1, 2])),
             10,
             5,
             8,
@@ -72,7 +65,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             torch_interpolation,
             antialias,
         )
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 
@@ -86,7 +79,7 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
         y = layer(x)
 
         ref_y = TF.resized_crop(
-            torch.tensor(x),
+            convert_to_tensor(x),
             10,
             5,
             8,
@@ -95,7 +88,6 @@ class RandomResizedCropTest(testing.TestCase, parameterized.TestCase):
             torch_interpolation,
             antialias,
         )
-        ref_y = ref_y.cpu().numpy()
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
 

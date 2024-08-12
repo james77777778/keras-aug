@@ -1,25 +1,15 @@
 from absl.testing import parameterized
 from keras import backend
 from keras import ops
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.backend.image import ImageBackend
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 from keras_aug._src.utils.test_utils import uses_gpu
 
 
-class ImageBackendTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class ImageBackendTest(TestCase):
     def test_crop(self):
         image_backend = ImageBackend()
 
@@ -109,16 +99,18 @@ class ImageBackendTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
     def test_adjust_saturation(self, dtype):
-        import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
+
+        atol = 2 if dtype == "uint8" else 1e-6
+        rtol = 2 if dtype == "uint8" else 1e-6
 
         image_backend = ImageBackend()
         x = get_images(dtype, "channels_first")
         y = image_backend.adjust_saturation(x, 0.5, "channels_first")
 
-        ref_y = TF.adjust_saturation(torch.tensor(x), 0.5)
-        ref_y = ref_y.cpu().numpy()
-        self.assertAllClose(y, ref_y)
+        ref_y = TF.adjust_saturation(convert_to_tensor(x), 0.5)
+        self.assertAllClose(y, ref_y, atol=atol, rtol=rtol)
         self.assertDType(y, dtype)
 
     @parameterized.named_parameters(

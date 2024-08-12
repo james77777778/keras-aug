@@ -2,42 +2,36 @@ import keras
 import numpy as np
 from absl.testing import parameterized
 from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.random_equalize import RandomEqualize
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class RandomEqualizeTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
-    @parameterized.named_parameters(named_product(dtype=["float32", "uint8"]))
+class RandomEqualizeTest(TestCase):
+    @parameterized.named_parameters(
+        named_product(dtype=["float32", "mixed_bfloat16", "uint8"])
+    )
     def test_correctness(self, dtype):
         import torch
         import torchvision.transforms.v2.functional as TF
+        from keras.src.backend.torch import convert_to_tensor
 
-        # Test channels_last
         # TODO: Reduce atol
-        if dtype == "float32":
+        if "float" in dtype:
             atol = 0.3
         elif dtype == "uint8":
             atol = 64
         np.random.seed(42)
+
+        # Test channels_last
         x = get_images(dtype, "channels_last")
         layer = RandomEqualize(p=1.0, dtype=dtype)
         y = layer(x)
 
-        ref_y = TF.equalize(torch.tensor(np.transpose(x, [0, 3, 1, 2])))
-        ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
+        ref_y = TF.equalize(convert_to_tensor(np.transpose(x, [0, 3, 1, 2])))
+        ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol)
 
@@ -47,8 +41,7 @@ class RandomEqualizeTest(testing.TestCase, parameterized.TestCase):
         layer = RandomEqualize(p=1.0, dtype=dtype)
         y = layer(x)
 
-        ref_y = TF.equalize(torch.tensor(x))
-        ref_y = ref_y.cpu().numpy()
+        ref_y = TF.equalize(convert_to_tensor(x))
         self.assertDType(y, dtype)
         self.assertAllClose(y, ref_y, atol=atol)
 

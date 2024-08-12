@@ -1,32 +1,23 @@
 import keras
+import numpy as np
 from absl.testing import parameterized
-from keras import backend
-from keras.src import testing
 from keras.src.testing.test_utils import named_product
 
 from keras_aug._src.layers.vision.rescale import Rescale
+from keras_aug._src.testing.test_case import TestCase
 from keras_aug._src.utils.test_utils import get_images
 
 
-class RescaleTest(testing.TestCase, parameterized.TestCase):
-    def setUp(self):
-        # Defaults to channels_last
-        self.data_format = backend.image_data_format()
-        backend.set_image_data_format("channels_last")
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        backend.set_image_data_format(self.data_format)
-        return super().tearDown()
-
+class RescaleTest(TestCase):
     @parameterized.named_parameters(
-        named_product(dtype=["float32", "bfloat16"])
+        named_product(dtype=["float32", "mixed_bfloat16", "bfloat16"])
     )
     def test_correctness(self, dtype):
-        if dtype == "bfloat16":
+        if "bfloat16" in dtype:
             atol = 1e-2
         else:
             atol = 1e-6
+        np.random.seed(42)
 
         x = get_images(dtype, "channels_last")
         layer = Rescale(scale=0.5, offset=0.1, dtype=dtype)
