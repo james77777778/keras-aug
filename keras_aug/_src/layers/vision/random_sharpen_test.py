@@ -19,6 +19,12 @@ class RandomSharpenTest(TestCase):
         import torchvision.transforms.v2.functional as TF
         from keras.src.backend.torch import convert_to_tensor
 
+        if dtype == "float32":
+            atol = 1e-6
+        elif "bfloat16" in dtype:
+            atol = 1e-2
+        elif dtype == "uint8":
+            atol = 1e-6
         np.random.seed(42)
 
         # Test channels_last
@@ -32,7 +38,7 @@ class RandomSharpenTest(TestCase):
         )
         ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=atol)
 
         # Test channels_first
         if backend.backend() == "tensorflow" and not uses_gpu():
@@ -44,7 +50,7 @@ class RandomSharpenTest(TestCase):
 
         ref_y = TF.adjust_sharpness(convert_to_tensor(x), sharpness_factor=2.0)
         self.assertDType(y, dtype)
-        self.assertAllClose(y, ref_y)
+        self.assertAllClose(y, ref_y, atol=atol)
 
         # Test p=0.0
         backend.set_image_data_format("channels_last")

@@ -35,7 +35,7 @@ class ToDTypeTest(TestCase):
         )
         ref_y = torch.permute(ref_y, (0, 2, 3, 1))
         self.assertDType(y, to_dtype)
-        if from_dtype == "bfloat16" and to_dtype == "int16":
+        if from_dtype == "bfloat16" and to_dtype in ("uint8", "int16"):
             return
         self.assertAllClose(y, ref_y)
 

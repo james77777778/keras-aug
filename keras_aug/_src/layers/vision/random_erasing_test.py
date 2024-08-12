@@ -60,12 +60,12 @@ class RandomErasingTest(TestCase):
         if value == 0.0:
             self.assertAllClose(
                 outputs[:, 0:10, 0:10, :],
-                np.zeros_like(outputs[:, 0:10, 0:10, :]),
+                np.zeros_like(self.convert_to_numpy(outputs)[:, 0:10, 0:10, :]),
             )
         elif value == (1.0, 1.0, 1.0):
             self.assertAllClose(
                 outputs[:, 0:10, 0:10, :],
-                np.ones_like(outputs[:, 0:10, 0:10, :]),
+                np.ones_like(self.convert_to_numpy(outputs)[:, 0:10, 0:10, :]),
             )
         else:
             pass
@@ -81,12 +81,12 @@ class RandomErasingTest(TestCase):
         if value == 0.0:
             self.assertAllClose(
                 outputs[:, :, 0:10, 0:10],
-                np.zeros_like(outputs[:, :, 0:10, 0:10]),
+                np.zeros_like(self.convert_to_numpy(outputs)[:, :, 0:10, 0:10]),
             )
         elif value == (1.0, 1.0, 1.0):
             self.assertAllClose(
                 outputs[:, :, 0:10, 0:10],
-                np.ones_like(outputs[:, :, 0:10, 0:10]),
+                np.ones_like(self.convert_to_numpy(outputs)[:, :, 0:10, 0:10]),
             )
         else:
             pass

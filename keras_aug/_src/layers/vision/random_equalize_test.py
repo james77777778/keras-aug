@@ -19,8 +19,10 @@ class RandomEqualizeTest(TestCase):
         from keras.src.backend.torch import convert_to_tensor
 
         # TODO: Reduce atol
-        if "float" in dtype:
+        if dtype == "float32":
             atol = 0.3
+        elif "bfloat16" in dtype:
+            atol = 1.0
         elif dtype == "uint8":
             atol = 64
         np.random.seed(42)

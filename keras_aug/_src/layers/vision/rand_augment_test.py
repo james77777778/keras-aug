@@ -26,6 +26,9 @@ class RandAugmentTest(TestCase):
         self.assertDType(y, dtype)
 
         # Test channels_first
+        if backend.backend() == "tensorflow":
+            # Some ops not supported by tensorflow CPU
+            return
         backend.set_image_data_format("channels_first")
         x = get_images(dtype, "channels_first")
         layer = RandAugment(dtype=dtype)
