@@ -15,6 +15,12 @@ def get_images(dtype, data_format="channels_first", size=(32, 32)):
         x = np.random.uniform(0, 255, (2, 3, *size)).astype(dtype)
     elif dtype == "int8":
         x = np.random.uniform(-128, 127, (2, 3, *size)).astype(dtype)
+    elif dtype == "int16":
+        x = np.random.uniform(-32768, 32767, (2, 3, *size)).astype(dtype)
+    elif dtype == "int32":
+        x = np.random.uniform(-2147483648, 2147483647, (2, 3, *size)).astype(
+            dtype
+        )
     if data_format == "channels_last":
         x = np.transpose(x, [0, 2, 3, 1])
     return x

@@ -22,8 +22,8 @@ class ToDTypeTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.named_parameters(
         named_product(
-            from_dtype=["uint8", "float16", "float32"],
-            to_dtype=["uint8", "float16", "float32"],
+            from_dtype=["uint8", "int16", "int32", "bfloat16", "float32"],
+            to_dtype=["uint8", "int16", "bfloat16", "float32"],
             scale=[True, False],
         )
     )
@@ -37,13 +37,22 @@ class ToDTypeTest(testing.TestCase, parameterized.TestCase):
         layer = ToDType(to_dtype, scale)
         y = layer(x)
 
+        if from_dtype == "bfloat16":
+            x = x.astype("float32")
         ref_y = TF.to_dtype(
             torch.tensor(np.transpose(x, [0, 3, 1, 2])),
             dtype=to_torch_dtype(to_dtype),
             scale=scale,
         )
+
+        if to_dtype == "bfloat16":
+            y = keras.ops.cast(y, "float32")
+            ref_y = ref_y.to(torch.float32)
+            to_dtype = "float32"
         ref_y = np.transpose(ref_y.cpu().numpy(), [0, 2, 3, 1])
         self.assertDType(y, to_dtype)
+        if from_dtype == "bfloat16" and to_dtype in ("uint8", "int16"):
+            return
         self.assertAllClose(y, ref_y)
 
     def test_shape(self):

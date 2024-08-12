@@ -10,7 +10,11 @@ from keras_aug._src.layers.base.vision_random_layer import VisionRandomLayer
 class ToDType(VisionRandomLayer):
     """Converts the input to a specific dtype, optionally scaling the values.
 
-    If
+    If `scale` is `True`, the value range will changed as follows:
+    - `"uint8"`: `[0, 255]`
+    - `"int16"`: `[-32768, 32767]`
+    - `"int32"`: `[-2147483648, 2147483647]`
+    - float: `[0.0, 1.0]`
 
     Args:
         to_dtype: A string specifying the target dtype.

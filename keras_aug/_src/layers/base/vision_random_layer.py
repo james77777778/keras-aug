@@ -74,14 +74,17 @@ class VisionRandomLayer(keras.Layer):
     IS_DICT = "is_dict"
     BATCHED = "batched"
 
+    SUPPORTED_INT_DTYPES = ("uint8", "int16", "int32")
+
     def __init__(self, has_generator=True, seed=None, **kwargs):
         super().__init__(**kwargs)
         # Check dtype
         if not backend.is_float_dtype(self.compute_dtype):
-            if self.compute_dtype != "uint8":
+            if self.compute_dtype not in self.SUPPORTED_INT_DTYPES:
                 raise ValueError(
-                    "Only floating and 'uint8' are supported for compute dtype."
-                    f" Received: compute_dtype={self.compute_dtype}"
+                    f"Only floating and {self.SUPPORTED_INT_DTYPES} are "
+                    "supported for compute dtype. "
+                    f"Received: compute_dtype={self.compute_dtype}"
                 )
 
         self._backend = DynamicBackend(backend.backend())
