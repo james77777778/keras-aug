@@ -141,7 +141,7 @@ class RandAugment(VisionRandomLayer):
             ops.numpy.log(fn_idx_p), self.num_ops, seed=random_generator
         )
         fn_idx = fn_idx[0]
-        signed_p = ops.random.uniform([batch_size]) > 0.5
+        signed_p = ops.random.uniform([batch_size], seed=random_generator) > 0.5
         signed = ops.cast(ops.numpy.where(signed_p, 1.0, -1.0), dtype="float32")
         return dict(
             p=p,  # shape: (batch_size,)

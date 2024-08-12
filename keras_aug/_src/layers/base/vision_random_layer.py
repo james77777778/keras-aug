@@ -74,14 +74,17 @@ class VisionRandomLayer(keras.Layer):
     IS_DICT = "is_dict"
     BATCHED = "batched"
 
+    SUPPORTED_INT_DTYPES = ("uint8", "int16", "int32")
+
     def __init__(self, has_generator=True, seed=None, **kwargs):
         super().__init__(**kwargs)
         # Check dtype
         if not backend.is_float_dtype(self.compute_dtype):
-            if self.compute_dtype != "uint8":
+            if self.compute_dtype not in self.SUPPORTED_INT_DTYPES:
                 raise ValueError(
-                    "Only floating and 'uint8' are supported for compute dtype."
-                    f" Received: compute_dtype={self.compute_dtype}"
+                    f"Only floating and {self.SUPPORTED_INT_DTYPES} are "
+                    "supported for compute dtype. "
+                    f"Received: compute_dtype={self.compute_dtype}"
                 )
 
         self._backend = DynamicBackend(backend.backend())
@@ -99,6 +102,7 @@ class VisionRandomLayer(keras.Layer):
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
         self.autocast = False
+        self._transform_dtype_scale = True
 
     @property
     def image_dtype(self):
@@ -121,6 +125,14 @@ class VisionRandomLayer(keras.Layer):
     @property
     def random_generator(self):
         return self._random_generator.random_generator
+
+    @property
+    def transform_dtype_scale(self):
+        return self._transform_dtype_scale
+
+    @transform_dtype_scale.setter
+    def transform_dtype_scale(self, value):
+        self._transform_dtype_scale = bool(value)
 
     def get_params(
         self,
@@ -389,7 +401,10 @@ class VisionRandomLayer(keras.Layer):
         if self.IMAGES in inputs:
             inputs[self.IMAGES] = ops.convert_to_tensor(inputs[self.IMAGES])
             inputs[self.IMAGES] = self.image_backend.transform_dtype(
-                inputs[self.IMAGES], inputs[self.IMAGES].dtype, self.image_dtype
+                inputs[self.IMAGES],
+                inputs[self.IMAGES].dtype,
+                self.image_dtype,
+                scale=self.transform_dtype_scale,
             )
         if self.LABELS in inputs:
             inputs[self.LABELS] = ops.convert_to_tensor(inputs[self.LABELS])

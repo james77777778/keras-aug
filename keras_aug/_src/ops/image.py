@@ -5,9 +5,11 @@ from keras_aug._src.keras_aug_export import keras_aug_export
 
 
 @keras_aug_export(parent_path=["keras_aug.ops.image"])
-def transform_dtype(images, from_dtype, to_dtype):
+def transform_dtype(images, from_dtype, to_dtype, scale=True):
     backend = "tensorflow" if in_tf_graph() else None
-    return ImageBackend(backend).transform_dtype(images, from_dtype, to_dtype)
+    return ImageBackend(backend).transform_dtype(
+        images, from_dtype, to_dtype, scale=scale
+    )
 
 
 @keras_aug_export(parent_path=["keras_aug.ops.image"])

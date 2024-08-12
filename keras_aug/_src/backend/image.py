@@ -10,7 +10,7 @@ class ImageBackend(DynamicBackend):
     def __init__(self, name=None):
         super().__init__(name=name)
 
-    def transform_dtype(self, images, from_dtype, to_dtype):
+    def transform_dtype(self, images, from_dtype, to_dtype, scale=True):
         # Ref: torchvision.transforms.v2.ToDtype
         ops = self.backend
         from_dtype = backend.standardize_dtype(from_dtype)
@@ -18,6 +18,8 @@ class ImageBackend(DynamicBackend):
 
         if from_dtype == to_dtype:
             return images
+        if scale is False:
+            return ops.cast(images, to_dtype)
 
         is_float_input = backend.is_float_dtype(from_dtype)
         is_float_output = backend.is_float_dtype(to_dtype)
@@ -51,13 +53,30 @@ class ImageBackend(DynamicBackend):
             num_bits_input = self._num_bits_of_dtype(from_dtype)
             num_bits_output = self._num_bits_of_dtype(to_dtype)
 
+            def right_shift(inputs, bits):
+                if self.name == "tensorflow":
+                    import tensorflow as tf
+
+                    return tf.bitwise.right_shift(inputs, bits)
+                else:
+                    return inputs >> bits
+
+            def left_shift(inputs, bits):
+                if self.name == "tensorflow":
+                    import tensorflow as tf
+
+                    return tf.bitwise.left_shift(inputs, bits)
+                else:
+                    return inputs << bits
+
             if num_bits_input > num_bits_output:
                 return ops.cast(
-                    images >> (num_bits_input - num_bits_output), to_dtype
+                    right_shift(images, (num_bits_input - num_bits_output)),
+                    to_dtype,
                 )
             else:
-                return ops.cast(images, to_dtype) << (
-                    num_bits_output - num_bits_input
+                return left_shift(
+                    ops.cast(images, to_dtype), num_bits_output - num_bits_input
                 )
 
     def crop(self, images, top, left, height, width, data_format=None):
